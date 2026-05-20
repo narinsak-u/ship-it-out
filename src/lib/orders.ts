@@ -7,12 +7,20 @@ export interface TrackingEvent {
   description: string;
 }
 
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
 export interface Order {
   id: string;
   trackingNumber: string;
   customer: string;
   destination: string;
   origin: string;
+  originCoords: GeoPoint;
+  destinationCoords: GeoPoint;
+  currentCoords: GeoPoint;
   status: ShipmentStatus;
   carrier: string;
   weight: string;
