@@ -1,8 +1,5 @@
-<script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { Primitive, type PrimitiveProps } from 'radix-vue'
+<script lang="ts">
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@/lib/utils'
 
 export const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
@@ -29,6 +26,12 @@ export const buttonVariants = cva(
     },
   },
 )
+</script>
+
+<script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
+import { Primitive, type PrimitiveProps } from 'radix-vue'
+import { cn } from '@/lib/utils'
 
 interface Props extends PrimitiveProps {
   variant?: VariantProps<typeof buttonVariants>['variant']
