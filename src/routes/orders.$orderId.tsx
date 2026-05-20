@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, MapPin, Package, Truck, Calendar, Hash, User, Weight } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { getOrder } from "@/lib/orders";
+import { getOrder, type TrackingEvent } from "@/lib/orders";
 
 export const Route = createFileRoute("/orders/$orderId")({
   head: ({ params }) => ({
@@ -97,7 +97,7 @@ function OrderDetail() {
           </div>
 
           <ol className="relative space-y-6 border-l border-border pl-6">
-            {order.events.map((e, i) => (
+            {order.events.map((e: TrackingEvent, i: number) => (
               <li key={i} className="relative">
                 <span className={`absolute -left-[31px] flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-background ${i === 0 ? "bg-primary shadow-glow" : "bg-muted-foreground/50"}`}>
                   {i === 0 && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary-foreground" />}
