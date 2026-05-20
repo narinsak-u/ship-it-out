@@ -7,7 +7,7 @@ import { orders, statusLabels, type ShipmentStatus } from "@/lib/orders";
 import { StatusBadge } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/orders")({
+export const Route = createFileRoute("/orders/")({
   head: () => ({
     meta: [
       { title: "Orders — Harbor Ops" },

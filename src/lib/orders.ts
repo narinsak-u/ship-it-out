@@ -7,12 +7,20 @@ export interface TrackingEvent {
   description: string;
 }
 
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
 export interface Order {
   id: string;
   trackingNumber: string;
   customer: string;
   destination: string;
   origin: string;
+  originCoords: GeoPoint;
+  destinationCoords: GeoPoint;
+  currentCoords: GeoPoint;
   status: ShipmentStatus;
   carrier: string;
   weight: string;
@@ -37,6 +45,9 @@ export const orders: Order[] = [
     estimatedDelivery: "May 24, 2026",
     createdAt: "May 18, 2026",
     progress: 62,
+    originCoords: { lat: 51.9244, lng: 4.4777 },
+    destinationCoords: { lat: 40.6782, lng: -73.9442 },
+    currentCoords: { lat: 46.5, lng: -34.5 },
     events: [
       { timestamp: "May 22, 09:14", location: "Mid-Atlantic", status: "In transit", description: "Vessel underway, on schedule." },
       { timestamp: "May 20, 17:42", location: "Rotterdam Port", status: "Departed", description: "Container loaded onto MV Northstar." },
@@ -57,6 +68,9 @@ export const orders: Order[] = [
     estimatedDelivery: "May 20, 2026",
     createdAt: "May 14, 2026",
     progress: 92,
+    originCoords: { lat: 22.5431, lng: 114.0579 },
+    destinationCoords: { lat: 52.52, lng: 13.405 },
+    currentCoords: { lat: 52.52, lng: 13.38 },
     events: [
       { timestamp: "May 20, 07:01", location: "Berlin Mitte", status: "Out for delivery", description: "Loaded on courier vehicle." },
       { timestamp: "May 19, 22:18", location: "Berlin Hub", status: "Arrived", description: "Sorted for last-mile." },
@@ -77,6 +91,9 @@ export const orders: Order[] = [
     estimatedDelivery: "May 17, 2026",
     createdAt: "May 09, 2026",
     progress: 100,
+    originCoords: { lat: -23.5505, lng: -46.6333 },
+    destinationCoords: { lat: 38.7223, lng: -9.1393 },
+    currentCoords: { lat: 38.7223, lng: -9.1393 },
     events: [
       { timestamp: "May 17, 14:21", location: "Lisbon", status: "Delivered", description: "Signed by L. Okafor." },
       { timestamp: "May 17, 09:00", location: "Lisbon Hub", status: "Out for delivery", description: "" },
@@ -97,6 +114,9 @@ export const orders: Order[] = [
     estimatedDelivery: "May 26, 2026",
     createdAt: "May 16, 2026",
     progress: 41,
+    originCoords: { lat: 59.9139, lng: 10.7522 },
+    destinationCoords: { lat: 64.1466, lng: -21.9426 },
+    currentCoords: { lat: 62.5, lng: -2.5 },
     events: [
       { timestamp: "May 21, 10:00", location: "North Sea", status: "Delayed", description: "Weather hold, 36h estimate." },
       { timestamp: "May 18, 22:14", location: "Oslo Port", status: "Departed", description: "" },
@@ -116,6 +136,9 @@ export const orders: Order[] = [
     estimatedDelivery: "May 25, 2026",
     createdAt: "May 20, 2026",
     progress: 8,
+    originCoords: { lat: 19.076, lng: 72.8777 },
+    destinationCoords: { lat: 25.2048, lng: 55.2708 },
+    currentCoords: { lat: 19.076, lng: 72.8777 },
     events: [
       { timestamp: "May 20, 16:40", location: "Mumbai Warehouse", status: "Label created", description: "Awaiting pickup." },
     ],
@@ -133,6 +156,9 @@ export const orders: Order[] = [
     estimatedDelivery: "May 22, 2026",
     createdAt: "May 19, 2026",
     progress: 55,
+    originCoords: { lat: 41.3851, lng: 2.1734 },
+    destinationCoords: { lat: 43.2965, lng: 5.3698 },
+    currentCoords: { lat: 42.6986, lng: 2.8954 },
     events: [
       { timestamp: "May 20, 13:22", location: "Perpignan", status: "In transit", description: "Crossing border." },
       { timestamp: "May 19, 18:00", location: "Barcelona Hub", status: "Departed", description: "" },
