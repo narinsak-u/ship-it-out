@@ -1,8 +1,10 @@
 # Harbor Ops — Shipment Tracking Dashboard
 
-Real-time shipment tracking dashboard built with Vue 3 and deployed on Cloudflare Workers. Monitor cargo globally with interactive maps, status filters, and timeline tracking.
+Real-time shipment tracking dashboard with a Vue 3 frontend and Go backend. Monitor cargo globally with interactive maps, status filters, and timeline tracking.
 
 ## Tech Stack
+
+### Frontend
 
 - **Framework:** Vue 3 (Composition API, `<script setup lang="ts">`)
 - **Build tool:** Vite 6
@@ -17,23 +19,33 @@ Real-time shipment tracking dashboard built with Vue 3 and deployed on Cloudflar
 - **Hosting:** Cloudflare Workers
 - **Package manager:** Bun
 
+### Backend
+
+- **Language:** Go 1.24+
+- **API:** REST / GraphQL (TBD)
+
 ## Getting Started
 
+### Frontend
+
+All commands must be run from the `frontend/` directory:
+
 ```bash
-# Install dependencies
+cd frontend
 bun install
-
-# Start dev server
 npm run dev
-
-# Type-check and build for production
 npm run build
-
-# Preview production build
 npm run preview
 ```
 
-## Available Scripts
+### Backend
+
+```bash
+cd backend
+go run .
+```
+
+## Available Scripts (Frontend)
 
 | Command           | Description                            |
 | ----------------- | -------------------------------------- |
@@ -46,24 +58,24 @@ npm run preview
 ## Project Structure
 
 ```
-src/
-├── components/          # Shared Vue components
-│   ├── ui/              # shadcn-vue primitives (auto-generated)
-│   ├── ShipmentMap.vue  # Leaflet map with route polylines
-│   ├── SiteHeader.vue   # Sticky navigation header
-│   └── StatusBadge.vue  # Color-coded shipment status pill
-├── views/               # Page-level route components
-│   ├── HomeView.vue     # Landing page with tracking search + stats
-│   ├── OrdersView.vue   # Filterable/searchable shipment table
-│   └── OrderDetailView.vue  # Shipment detail + live map
-├── lib/
-│   ├── orders.ts        # In-memory order data + types
-│   └── utils.ts         # cn() helper (clsx + tailwind-merge)
-├── router/
-│   └── index.ts         # Vue Router configuration
-├── App.vue              # Root component
-├── main.ts              # App entry point (Pinia, router, Vue Query)
-└── styles.css           # Tailwind entry, theme tokens, custom utilities
+ship-simple/
+├── frontend/            # Vue 3 SPA
+│   ├── src/
+│   │   ├── components/  # Shared Vue components
+│   │   │   └── ui/      # shadcn-vue primitives (auto-generated)
+│   │   ├── views/       # Page-level route components
+│   │   ├── lib/         # Utilities, types, data
+│   │   ├── router/      # Vue Router configuration
+│   │   ├── App.vue      # Root component
+│   │   ├── main.ts      # App entry point
+│   │   └── styles.css   # Tailwind entry + theme tokens
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── ...
+├── backend/             # Go API server
+│   ├── go.mod
+│   └── ...
+└── README.md
 ```
 
 ## Features
@@ -78,9 +90,10 @@ src/
 
 ## shadcn-vue Components
 
-Components in `src/components/ui/` are shadcn-vue primitives. Do not edit them directly. To add or update:
+Components in `frontend/src/components/ui/` are shadcn-vue primitives. Do not edit them directly. To add or update:
 
 ```bash
+cd frontend
 bunx shadcn-vue@latest add <component-name>
 ```
 
@@ -91,13 +104,14 @@ Available components: Badge, Button, Card (and subcomponents), Input, Separator,
 The app is configured for Cloudflare Workers via `wrangler.jsonc`:
 
 ```bash
+cd frontend
 npm run build
 npx wrangler deploy
 ```
 
 ## Design Tokens
 
-CSS custom properties are defined in `src/styles.css` under the `:root` block:
+CSS custom properties are defined in `frontend/src/styles.css` under the `:root` block:
 
 | Token                 | Purpose                    |
 | --------------------- | -------------------------- |

@@ -1,14 +1,27 @@
 # AGENTS.md — ship-simple
 
-## Project Overview
+## Project Structure
 
-Vue 3 app deployed on Cloudflare Workers. Shipment tracking dashboard using Tailwind CSS v4, shadcn-vue (New York), TanStack Vue Query, Pinia, and Vue Router.
+```
+ship-simple/
+├── frontend/          # Vue 3 SPA (Vite, Tailwind CSS v4, shadcn-vue)
+│   ├── src/           # Application source
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── ...
+├── backend/           # Go API server
+│   ├── go.mod
+│   └── ...
+└── .gitignore
+```
+
+## Frontend (Vue 3)
+
+Shipment tracking dashboard using Tailwind CSS v4, shadcn-vue (New York), TanStack Vue Query, Pinia, and Vue Router.
 
 **Package manager:** Bun (`bun.lock`, `bunfig.toml`). Use `bun add` / `bun remove` / `bun install`.
 
----
-
-## Build / Lint / Test Commands
+All commands must be run from the `frontend/` directory:
 
 | Command           | Purpose                        |
 | ----------------- | ------------------------------ |
@@ -18,10 +31,10 @@ Vue 3 app deployed on Cloudflare Workers. Shipment tracking dashboard using Tail
 | `npm run lint`    | ESLint check (entire project)  |
 | `npm run format`  | Prettier auto-format           |
 
-**No test framework is currently installed.** Do not assume vitest, jest, or playwright exist. If tests need to be added, use `bun add -d vitest` with `@vue/test-utils` and set up `vitest.config.ts` alongside the existing `vite.config.ts`.
+**No test framework is currently installed.** If tests need to be added, use `bun add -d vitest` with `@vue/test-utils` and set up `vitest.config.ts` alongside the existing `vite.config.ts`.
 
-ESLint config: `eslint.config.js` (flat config, typescript-eslint + eslint-plugin-vue + Prettier).
-Prettier config: `.prettierrc` (printWidth 100, semi, double quotes, trailingComma all).
+ESLint config: `frontend/eslint.config.js` (flat config, typescript-eslint + eslint-plugin-vue + Prettier).
+Prettier config: `frontend/.prettierrc` (printWidth 100, semi, double quotes, trailingComma all).
 
 ---
 
@@ -55,7 +68,7 @@ Prettier config: `.prettierrc` (printWidth 100, semi, double quotes, trailingCom
 
 ### Types
 
-- Define shared types in `src/lib/*.ts` files using `export type` or `export interface`.
+- Define shared types in `frontend/src/lib/*.ts` files using `export type` or `export interface`.
 - Co-locate component-local types within the component's `<script setup>` block.
 - Use `Record<UnionType, ValueType>` for lookup maps (e.g., `statusLabels` in `orders.ts`).
 - Prefer `interface` for object shapes, `type` for unions and utility types.
@@ -89,7 +102,7 @@ Prettier config: `.prettierrc` (printWidth 100, semi, double quotes, trailingCom
 ### Routing
 
 - Vue Router with `createWebHistory()`.
-- Routes defined in `src/router/index.ts` using `{ path, name, component }` shape.
+- Routes defined in `frontend/src/router/index.ts` using `{ path, name, component }` shape.
 - All route components are lazy-loaded via `() => import('@/views/...')`.
 - Route params accessed via `useRoute().params`.
 - Navigation with `RouterLink` component or `useRouter().push({ name: '...', params: {...} })`.
@@ -109,7 +122,7 @@ Prettier config: `.prettierrc` (printWidth 100, semi, double quotes, trailingCom
 - shadcn-vue theme tokens: `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-card`, `bg-secondary`, `bg-primary`, `bg-destructive`, `bg-success`, `bg-warning`, `bg-info`.
 - Custom CSS utilities: `bg-gradient-hero`, `bg-gradient-accent`, `shadow-elegant`, `shadow-glow` (defined in `styles.css` `@layer utilities`).
 - Font: `font-mono` ("JetBrains Mono") for data-heavy text, `font-sans` ("Work Sans") for prose.
-- All shadcn-vue components under `src/components/ui/` — do not edit these directly; use `bunx shadcn-vue@latest add <component>`.
+- All shadcn-vue components under `frontend/src/components/ui/` — do not edit these directly; use `bunx shadcn-vue@latest add <component>`.
 
 ### Icons
 
@@ -119,15 +132,19 @@ Prettier config: `.prettierrc` (printWidth 100, semi, double quotes, trailingCom
 ### File Structure
 
 ```
-src/
-├── components/       # Shared Vue components
-│   └── ui/           # shadcn-vue primitives (auto-generated)
-├── views/            # Page-level views (consumed by router)
-├── lib/              # Utilities, types, data, error handling
-├── router/           # Vue Router setup
-├── App.vue           # Root component
-├── main.ts           # App entry point (creates app, installs plugins)
-└── styles.css        # Tailwind entry point + theme tokens
+frontend/
+├── src/
+│   ├── components/       # Shared Vue components
+│   │   └── ui/           # shadcn-vue primitives (auto-generated)
+│   ├── views/            # Page-level views (consumed by router)
+│   ├── lib/              # Utilities, types, data, error handling
+│   ├── router/           # Vue Router setup
+│   ├── App.vue           # Root component
+│   ├── main.ts           # App entry point (creates app, installs plugins)
+│   └── styles.css        # Tailwind entry point + theme tokens
+├── package.json
+├── vite.config.ts
+└── ...
 ```
 
 ### Feature Conventions
@@ -135,4 +152,22 @@ src/
 - **No tests currently exist.** When adding tests, use `vitest` with `@vue/test-utils`.
 - **No i18n** — hardcoded English strings throughout.
 - **Leaflet maps** with `leaflet` + custom `L.divIcon` — rendered client-side inside `<Suspense>` via `defineAsyncComponent`, guarded with `onMounted` flag.
-- **In-memory data** — all order data lives in `src/lib/orders.ts` (no API calls). Future API integration should go through TanStack Vue Query.
+- **In-memory data** — all order data lives in `frontend/src/lib/orders.ts` (no API calls). Future API integration should go through TanStack Vue Query.
+
+---
+
+## Backend (Go)
+
+Go API server. Initialize new packages with:
+
+```bash
+cd backend
+go get <package>
+```
+
+Run with:
+
+```bash
+cd backend
+go run .
+```
