@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { Package } from 'lucide-vue-next';
-import { RouterLink, useRoute } from 'vue-router';
+import { Package, LogIn, LogOut } from 'lucide-vue-next';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
+const authStore = useAuthStore();
+const router = useRouter();
 </script>
 
 <template>
@@ -36,6 +39,24 @@ const route = useRoute();
         >
           Carriers
         </RouterLink>
+        <div class="ml-4 flex items-center gap-2 border-l border-border pl-4">
+          <template v-if="authStore.isAuthenticated">
+            <span class="font-mono text-xs text-muted-foreground">Admin</span>
+            <button
+              @click="authStore.logout()"
+              class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <LogOut class="h-3.5 w-3.5" /> Sign out
+            </button>
+          </template>
+          <button
+            v-else
+            @click="router.push({ name: 'orders' })"
+            class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
+          >
+            <LogIn class="h-3.5 w-3.5" /> Sign in
+          </button>
+        </div>
       </nav>
     </div>
   </header>
