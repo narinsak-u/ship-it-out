@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent } from 'vue'
-import { Truck, Warehouse, BarChart3, Package } from 'lucide-vue-next'
+import { Truck, Warehouse, BarChart3, Package, Plus } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
+import Button from '@/components/ui/Button.vue'
 import { cn } from '@/lib/utils'
 
 const DriversPanel = defineAsyncComponent(() => import('@/components/DriversPanel.vue'))
@@ -25,11 +27,23 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Truck }> = [
 
     <section class="border-b border-border bg-gradient-hero">
       <div class="mx-auto max-w-7xl px-6 py-14">
-        <span class="font-mono text-xs uppercase tracking-widest text-primary">/ carriers</span>
-        <h1 class="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Carrier operations</h1>
-        <p class="mt-3 max-w-2xl text-muted-foreground">
-          Manage carrier drivers, hubs, and monitor active deliveries across the fleet.
-        </p>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="font-mono text-xs uppercase tracking-widest text-primary">/ carriers</span>
+            <h1 class="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Carrier operations</h1>
+            <p class="mt-3 max-w-2xl text-muted-foreground">
+              Manage carrier drivers, hubs, and monitor active deliveries across the fleet.
+            </p>
+          </div>
+          <RouterLink
+            :to="{ name: 'order-create' }"
+            class="hidden shrink-0 md:block"
+          >
+            <Button class="gap-2">
+              <Plus class="h-4 w-4" /> New Order
+            </Button>
+          </RouterLink>
+        </div>
       </div>
     </section>
 

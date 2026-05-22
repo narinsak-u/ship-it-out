@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Search, Filter, ArrowRight } from 'lucide-vue-next'
+import { Search, Filter, ArrowRight, Plus } from 'lucide-vue-next'
 import Input from '@/components/ui/Input.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { orders, statusLabels, type ShipmentStatus } from '@/lib/orders'
+import Button from '@/components/ui/Button.vue'
 import { cn } from '@/lib/utils'
 
 const FILTERS: Array<{ key: ShipmentStatus | 'all'; label: string }> = [
@@ -38,11 +39,23 @@ const filtered = computed(() => {
 
     <section class="border-b border-border bg-gradient-hero">
       <div class="mx-auto max-w-7xl px-6 py-14">
-        <span class="font-mono text-xs uppercase tracking-widest text-primary">/ orders</span>
-        <h1 class="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Shipment manifest</h1>
-        <p class="mt-3 max-w-2xl text-muted-foreground">
-          {{ orders.length }} total shipments tracked across all carriers.
-        </p>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="font-mono text-xs uppercase tracking-widest text-primary">/ orders</span>
+            <h1 class="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Shipment manifest</h1>
+            <p class="mt-3 max-w-2xl text-muted-foreground">
+              {{ orders.length }} total shipments tracked across all carriers.
+            </p>
+          </div>
+          <RouterLink
+            :to="{ name: 'order-create' }"
+            class="hidden shrink-0 md:block"
+          >
+            <Button class="gap-2">
+              <Plus class="h-4 w-4" /> New Order
+            </Button>
+          </RouterLink>
+        </div>
       </div>
     </section>
 
