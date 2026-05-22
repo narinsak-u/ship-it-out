@@ -27,7 +27,7 @@ type LoginRequest struct {
 
 func setAuthCookie(c *fiber.Ctx, token string) {
 	c.Cookie(&fiber.Cookie{
-		Name:     cookieName,
+	role := "customer"
 		Value:    token,
 		Path:     "/",
 		HTTPOnly: true,
