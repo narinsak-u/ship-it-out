@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Search, Filter, ArrowRight, Plus } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Search, Filter, ArrowRight, Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import Input from '@/components/ui/Input.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { orders, statusLabels, type ShipmentStatus } from '@/lib/orders'
 import Button from '@/components/ui/Button.vue'
 import { cn } from '@/lib/utils'
+
+const router = useRouter()
+const deletedIds = ref(new Set<string>())
 
 const FILTERS: Array<{ key: ShipmentStatus | 'all'; label: string }> = [
   { key: 'all', label: 'All' },
@@ -22,6 +26,7 @@ const query = ref('')
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
   return orders.filter((o) => {
+    if (deletedIds.value.has(o.id)) return false
     if (filter.value !== 'all' && o.status !== filter.value) return false
     if (!q) return true
     return (
@@ -32,6 +37,12 @@ const filtered = computed(() => {
     )
   })
 })
+
+function deleteOrder(id: string) {
+  deletedIds.value.add(id)
+  const idx = orders.findIndex((o) => o.id === id)
+  if (idx !== -1) orders.splice(idx, 1)
+}
 </script>
 
 <template>
@@ -90,26 +101,28 @@ const filtered = computed(() => {
 
       <!-- Table -->
       <div class="mt-8 overflow-hidden rounded-xl border border-border bg-card shadow-elegant">
-        <div class="hidden grid-cols-[1.1fr_1.4fr_1.6fr_2fr_1.2fr_0.6fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid">
+        <div class="hidden grid-cols-[1.1fr_1.4fr_1.6fr_2fr_1.2fr_0.6fr_0.6fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid">
           <span>Order ID</span>
           <span>Tracking</span>
           <span>Customer</span>
           <span>Route</span>
           <span>Status</span>
           <span class="text-right">ETA</span>
+          <span class="text-right">Actions</span>
         </div>
 
         <div v-if="filtered.length === 0" class="px-6 py-16 text-center font-mono text-sm text-muted-foreground">
           No shipments match your filters.
         </div>
         <template v-else>
-          <RouterLink
+          <div
             v-for="o in filtered"
             :key="o.id"
-            :to="{ name: 'order-detail', params: { orderId: o.id } }"
-            class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[1.1fr_1.4fr_1.6fr_2fr_1.2fr_0.6fr] md:items-center md:gap-4"
+            class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[1.1fr_1.4fr_1.6fr_2fr_1.2fr_0.6fr_0.6fr] md:items-center md:gap-4"
           >
-            <span class="font-mono text-sm text-primary">{{ o.id }}</span>
+            <RouterLink :to="{ name: 'order-detail', params: { orderId: o.id } }" class="font-mono text-sm text-primary">
+              {{ o.id }}
+            </RouterLink>
             <span class="font-mono text-sm text-muted-foreground">{{ o.trackingNumber }}</span>
             <span class="text-sm">{{ o.customer }}</span>
             <span class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
@@ -119,7 +132,21 @@ const filtered = computed(() => {
             </span>
             <span><StatusBadge :status="o.status" /></span>
             <span class="font-mono text-xs text-muted-foreground md:text-right">{{ o.estimatedDelivery }}</span>
-          </RouterLink>
+            <div class="flex justify-end gap-1">
+              <button
+                @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
+                class="rounded p-1.5 text-muted-foreground hover:text-primary"
+              >
+                <Pencil class="h-4 w-4" />
+              </button>
+              <button
+                @click.stop="deleteOrder(o.id)"
+                class="rounded p-1.5 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </template>
       </div>
 
