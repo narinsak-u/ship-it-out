@@ -20,6 +20,8 @@ backend/
 │   ├── websocket/             # WebSocket hub pattern + client management
 │   └── middleware/            # JWT auth guard, CORS, request logging
 ├── pkg/utils/                 # Shared helpers (hash, response formatters)
+├── Dockerfile
+├── docker-compose.yml
 ├── go.mod / go.sum
 └── .env.example
 ```
@@ -101,10 +103,29 @@ WS     /ws/driver                    # Driver-specific events
 
 ```
 PORT=8080
-DATABASE_URL=postgres://user:pass@localhost:5432/shipments
-REDIS_URL=redis://localhost:6379
+DATABASE_URL=postgres://user:pass@db:5432/shipments
+REDIS_URL=redis://redis:6379
 JWT_SECRET=change-me
 ```
+
+## Docker
+
+### Dockerfile (multi-stage)
+
+- **Build stage**: `golang:1.24-alpine`, copies `go.mod`/`go.sum`, runs `go mod download`, builds binary
+- **Run stage**: `alpine:3.19`, copies binary from build stage, exposes `$PORT`, runs as non-root user
+
+### docker-compose.yml
+
+Three services:
+
+| Service   | Image                    | Ports       | Depends on    |
+| --------- | ------------------------ | ----------- | ------------- |
+| `backend` | builds from `./backend/` | `8080:8080` | `db`, `redis` |
+| `db`      | `postgres:16-alpine`     | `5432:5432` | —             |
+| `redis`   | `redis:7-alpine`         | `6379:6379` | —             |
+
+Environment variables wired through `.env` file.
 
 ## Non-Goals (Phase 2+)
 
@@ -113,4 +134,4 @@ JWT_SECRET=change-me
 - Analytics aggregation
 - Background workers
 - Barcode/QR generation
-- Docker Compose
+- Nginx reverse proxy
