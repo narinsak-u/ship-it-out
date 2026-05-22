@@ -1,10 +1,6 @@
 package websocket
 
-import (
-	"sync"
-
-	"github.com/gorilla/websocket"
-)
+import "sync"
 
 type Hub struct {
 	mu      sync.RWMutex
