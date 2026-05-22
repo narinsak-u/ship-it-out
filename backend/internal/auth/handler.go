@@ -11,6 +11,8 @@ import (
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
+const cookieName = "jwt"
+
 type RegisterRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
@@ -21,6 +23,17 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+func setAuthCookie(c *fiber.Ctx, token string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     cookieName,
+		Value:    token,
+		Path:     "/",
+		HTTPOnly: true,
+		SameSite: "Lax",
+		MaxAge:   86400,
+	})
 }
 
 func Register(c *fiber.Ctx) error {
@@ -53,6 +66,19 @@ func Register(c *fiber.Ctx) error {
 		return utils.Error(c, 409, "email already registered")
 	}
 
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"role":    user.Role,
+		"exp":     time.Now().Add(config.App.JWTTTL).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString([]byte(config.App.JWTSecret))
+	if err != nil {
+		return utils.Error(c, 500, "failed to generate token")
+	}
+
+	setAuthCookie(c, tokenStr)
+
 	return utils.Success(c, fiber.Map{"user": user})
 }
 
@@ -83,8 +109,42 @@ func Login(c *fiber.Ctx) error {
 		return utils.Error(c, 500, "failed to generate token")
 	}
 
+	setAuthCookie(c, tokenStr)
+
 	return utils.Success(c, fiber.Map{
 		"token": tokenStr,
 		"user":  user,
 	})
+}
+
+func Me(c *fiber.Ctx) error {
+	userID := c.Locals("user_id")
+	if userID == nil {
+		return utils.Error(c, 401, "not authenticated")
+	}
+
+	var user models.User
+	if result := database.DB.First(&user, userID); result.Error != nil {
+		return utils.Error(c, 404, "user not found")
+	}
+
+	return utils.Success(c, fiber.Map{
+		"id":         user.ID,
+		"name":       user.Name,
+		"email":      user.Email,
+		"role":       user.Role,
+		"created_at": user.CreatedAt,
+	})
+}
+
+func Logout(c *fiber.Ctx) error {
+	c.Cookie(&fiber.Cookie{
+		Name:     cookieName,
+		Value:    "",
+		Path:     "/",
+		HTTPOnly: true,
+		SameSite: "Lax",
+		MaxAge:   0,
+	})
+	return utils.Success(c, fiber.Map{"message": "logged out"})
 }
