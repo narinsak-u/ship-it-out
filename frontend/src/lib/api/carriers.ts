@@ -1,6 +1,6 @@
 import type { Driver, DriverStatus, Hub, HubStatus } from "@/lib/carriers";
 import { carriers, drivers, hubs } from "@/lib/carriers";
-import { orders, type Order, type ShipmentStatus } from "@/lib/orders";
+import { orders } from "@/lib/orders";
 
 function delay(ms = 200): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
