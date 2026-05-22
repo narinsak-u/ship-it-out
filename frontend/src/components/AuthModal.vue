@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { X, LogIn, UserPlus } from "lucide-vue-next";
+import { ref, computed } from "vue";
+import { X, LogIn, UserPlus, Loader2 } from "lucide-vue-next";
 import { useAuthStore } from "@/stores/auth";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
@@ -11,6 +11,7 @@ const store = useAuthStore();
 
 type Tab = "login" | "signup";
 const activeTab = ref<Tab>("login");
+const submitting = ref(false);
 
 // Login fields
 const loginEmail = ref("");
@@ -22,37 +23,43 @@ const signupEmail = ref("");
 const signupPassword = ref("");
 const signupConfirm = ref("");
 
-const error = ref("");
+const error = computed(() => store.error);
 
 function switchTab(tab: Tab) {
   activeTab.value = tab;
-  error.value = "";
+  store.error = "";
 }
 
-function handleLogin() {
-  const ok = store.login(loginEmail.value, loginPassword.value);
-  if (!ok) {
-    error.value = "Please fill in all fields";
+async function handleLogin() {
+  submitting.value = true;
+  store.error = "";
+  const err = await store.login(loginEmail.value, loginPassword.value);
+  submitting.value = false;
+  if (!err) emit("authenticated");
+}
+
+async function handleSignup() {
+  store.error = "";
+  if (!signupName.value.trim() || !signupEmail.value.trim() || !signupPassword.value.trim() || !signupConfirm.value.trim()) {
+    store.error = "Please fill in all fields";
     return;
   }
-  emit("authenticated");
-}
-
-function handleSignup() {
-  const err = store.signup(
+  if (signupPassword.value !== signupConfirm.value) {
+    store.error = "Passwords do not match";
+    return;
+  }
+  submitting.value = true;
+  const err = await store.signup(
     signupName.value,
     signupEmail.value,
     signupPassword.value,
-    signupConfirm.value,
   );
-  if (err) {
-    error.value = err;
-    return;
-  }
-  emit("authenticated");
+  submitting.value = false;
+  if (!err) emit("authenticated");
 }
 
 function handleGuest() {
+  store.enterGuestMode();
   emit("guest");
 }
 </script>
@@ -138,8 +145,10 @@ function handleGuest() {
           {{ error }}
         </p>
 
-        <Button type="submit" class="w-full gap-2">
-          <LogIn class="h-4 w-4" /> Sign In
+        <Button type="submit" class="w-full gap-2" :disabled="submitting">
+          <LogIn v-if="!submitting" class="h-4 w-4" />
+          <Loader2 v-else class="h-4 w-4 animate-spin" />
+          {{ submitting ? 'Signing in...' : 'Sign In' }}
         </Button>
 
         <div class="relative my-4">
@@ -223,8 +232,10 @@ function handleGuest() {
           {{ error }}
         </p>
 
-        <Button type="submit" class="w-full gap-2">
-          <UserPlus class="h-4 w-4" /> Create Account
+        <Button type="submit" class="w-full gap-2" :disabled="submitting">
+          <UserPlus v-if="!submitting" class="h-4 w-4" />
+          <Loader2 v-else class="h-4 w-4 animate-spin" />
+          {{ submitting ? 'Creating account...' : 'Create Account' }}
         </Button>
 
         <div class="relative my-4">
