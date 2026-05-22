@@ -29,6 +29,13 @@ const route = useRoute();
         >
           Orders
         </RouterLink>
+        <RouterLink
+          to="/carriers"
+          class="rounded-md px-3 py-1.5 transition-colors"
+          :class="route.path.startsWith('/carriers') ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'"
+        >
+          Carriers
+        </RouterLink>
       </nav>
     </div>
   </header>
