@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { X } from 'lucide-vue-next'
 import { useHubs, useCreateHub, useUpdateHub } from '@/hooks/useHubs'
-import { carriers, hubs, hubStatusLabels, type HubStatus } from '@/lib/carriers'
+import { carriers, hubStatusLabels, type HubStatus } from '@/lib/carriers'
 import Input from '@/components/ui/Input.vue'
 import Button from '@/components/ui/Button.vue'
 

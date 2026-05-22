@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useCarriers } from '@/hooks/useCarriers'
 import { orders, statusLabels } from '@/lib/orders'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import Button from '@/components/ui/Button.vue'
 
 const { data: carriersData, isLoading, isError, refetch } = useCarriers()
 
@@ -61,12 +62,7 @@ const maxStatusCount = computed(() =>
 
   <div v-else-if="isError" class="py-12 text-center">
     <p class="font-mono text-sm text-destructive">Failed to load analytics data.</p>
-    <button
-      @click="refetch()"
-      class="mt-4 font-mono text-xs uppercase tracking-widest text-primary hover:underline"
-    >
-      Retry
-    </button>
+    <Button variant="outline" class="mt-4" @click="refetch()">Retry</Button>
   </div>
 
   <div v-else>
