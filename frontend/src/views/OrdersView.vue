@@ -7,6 +7,11 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import { orders, statusLabels, type ShipmentStatus } from '@/lib/orders'
 import Button from '@/components/ui/Button.vue'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/stores/auth'
+import AuthModal from '@/components/AuthModal.vue'
+
+const authStore = useAuthStore()
+const showAuthModal = ref(false)
 
 const router = useRouter()
 const deletedIds = ref(new Set<string>())
@@ -43,6 +48,16 @@ function deleteOrder(id: string) {
   const idx = orders.findIndex((o) => o.id === id)
   if (idx !== -1) orders.splice(idx, 1)
 }
+
+function onAuthenticated() {
+  showAuthModal = false
+  router.push({ name: 'order-create' })
+}
+
+function onGuest() {
+  showAuthModal = false
+  router.push({ name: 'order-create' })
+}
 </script>
 
 <template>
@@ -58,14 +73,18 @@ function deleteOrder(id: string) {
               {{ orders.length }} total shipments tracked across all carriers.
             </p>
           </div>
-          <RouterLink
-            :to="{ name: 'order-create' }"
-            class="hidden shrink-0 md:block"
-          >
-            <Button class="gap-2">
+          <div v-if="authStore.isAuthenticated" class="shrink-0">
+            <RouterLink :to="{ name: 'order-create' }">
+              <Button class="gap-2">
+                <Plus class="h-4 w-4" /> New Order
+              </Button>
+            </RouterLink>
+          </div>
+          <div v-else class="shrink-0">
+            <Button class="gap-2" @click="showAuthModal = true">
               <Plus class="h-4 w-4" /> New Order
             </Button>
-          </RouterLink>
+          </div>
         </div>
       </div>
     </section>
@@ -108,7 +127,7 @@ function deleteOrder(id: string) {
           <span>Route</span>
           <span>Status</span>
           <span class="text-right">ETA</span>
-          <span class="text-right">Actions</span>
+          <span v-if="authStore.isAuthenticated" class="text-right">Actions</span>
         </div>
 
         <div v-if="filtered.length === 0" class="px-6 py-16 text-center font-mono text-sm text-muted-foreground">
@@ -132,7 +151,7 @@ function deleteOrder(id: string) {
             </span>
             <span><StatusBadge :status="o.status" /></span>
             <span class="font-mono text-xs text-muted-foreground md:text-right">{{ o.estimatedDelivery }}</span>
-            <div class="flex justify-end gap-1">
+            <div v-if="authStore.isAuthenticated" class="flex justify-end gap-1">
               <button
                 @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
                 class="rounded p-1.5 text-muted-foreground hover:text-primary"
@@ -154,5 +173,12 @@ function deleteOrder(id: string) {
         Showing {{ filtered.length }} of {{ orders.length }} · Status: {{ filter === 'all' ? 'All' : statusLabels[filter] }}
       </div>
     </section>
+
+    <AuthModal
+      v-if="showAuthModal"
+      @close="showAuthModal = false"
+      @authenticated="onAuthenticated"
+      @guest="onGuest"
+    />
   </div>
 </template>
