@@ -1,91 +1,113 @@
 # GEMINI.md — Harbor Ops (ship-simple)
 
+Comprehensive instructional context for AI agents working on the Harbor Ops shipment tracking platform.
+
+## Project Overview
+Harbor Ops is a real-time shipment tracking dashboard. It features a modern Vue 3 SPA frontend and a high-performance Go API server.
+
+- **Primary Goal:** Provide a portfolio-grade logistics platform with real-time updates, interactive maps, and analytics.
+- **Frontend:** Vue 3.5+ (Composition API, Vite, Tailwind CSS v4, shadcn-vue).
+- **Backend:** Go 1.24+ (Fiber v2, GORM, PostgreSQL, Redis, WebSockets).
+
+---
+
 ## Project Structure
 
-```
+```text
 ship-simple/
 ├── frontend/          # Vue 3 SPA
-│   ├── src/           # Application source
+│   ├── src/
+│   │   ├── components/  # Shared Vue components
+│   │   │   └── ui/      # shadcn-vue primitives (do not edit directly)
+│   │   ├── views/       # Page-level route components
+│   │   ├── lib/         # Utilities, types, mock data
+│   │   ├── router/      # Vue Router configuration
+│   │   ├── App.vue      # Root component
+│   │   └── main.ts      # App entry point
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── ...
 ├── backend/           # Go API server
+│   ├── cmd/server/    # Application entry point (main.go)
+│   ├── internal/      # Domain logic (auth, shipment, tracking, etc.)
+│   ├── pkg/           # Shared utilities
 │   ├── go.mod
-│   └── ...
+│   └── docker-compose.yml
+├── docs/              # Additional documentation & plans
+└── specs/             # Project requirements and designs
 ```
 
-## Project Overview
+---
 
-Harbor Ops is a shipment tracking dashboard prototype. The **frontend** is a Vue 3 SPA; the **backend** is a Go API server.
+## Tech Stack Details
 
-- **Frontend Framework:** Vue 3.5+ (Composition API, `<script setup>`)
-- **Build Tool:** Vite 6+
-- **Routing:** Vue Router 4
-- **Server State:** TanStack Vue Query 5
-- **Global State:** Pinia 2
-- **Styling:** Tailwind CSS v4 (using `@tailwindcss/vite` plugin)
-- **UI Components:** `shadcn-vue` (built on `radix-vue`)
-- **Icons:** Lucide Vue Next
+### Frontend
+- **Framework:** Vue 3 (Composition API, `<script setup lang="ts">`)
+- **Build Tool:** Vite 6
+- **Routing:** Vue Router 4 (Lazy-loaded routes)
+- **State Management:** Pinia (Client state) + TanStack Vue Query 5 (Server state)
+- **Styling:** Tailwind CSS v4 (Utility-first, using `@tailwindcss/vite`)
+- **UI Components:** shadcn-vue (Radix Vue)
 - **Maps:** Leaflet
 - **Package Manager:** Bun (preferred)
-- **Backend:** Go 1.24+
+
+### Backend
+- **Framework:** Fiber v2 (Fast HTTP framework)
+- **ORM:** GORM with PostgreSQL (pgx driver)
+- **Cache/PubSub:** Redis (for real-time events)
+- **Auth:** JWT (JSON Web Tokens)
+- **Real-time:** Gorilla WebSockets
+- **Logging:** Zerolog
 
 ---
 
-## Getting Started (Frontend)
+## Building and Running
 
-All commands must be run from the `frontend/` directory:
+### Frontend
+Run from the `frontend/` directory:
+- `bun install` — Install dependencies.
+- `npm run dev` — Start the development server (Vite).
+- `npm run build` — Build for production (`vue-tsc && vite build`).
+- `npm run lint` — Run ESLint check.
+- `npm run format` — Run Prettier auto-format.
 
-| Command           | Purpose                                                    |
-| :---------------- | :--------------------------------------------------------- |
-| `npm run dev`     | Start the development server (Vite)                        |
-| `npm run build`   | Build the project for production (`vue-tsc && vite build`) |
-| `npm run preview` | Preview the production build locally                       |
-| `npm run lint`    | Run ESLint check                                           |
-| `npm run format`  | Run Prettier auto-format                                   |
-
-**Note:** No automated test framework is currently configured. To add tests, consider installing `vitest`.
-
----
-
-## Getting Started (Backend)
-
-```bash
-cd backend
-go run .
-```
+### Backend
+Run from the `backend/` directory:
+- `go run ./cmd/server/main.go` — Start the API server.
+- `docker-compose up -d` — Start PostgreSQL and Redis (if using Docker).
 
 ---
 
 ## Development Conventions
 
-### Architecture & Pattern
+### Frontend (Vue 3)
+- **Patterns:** Always use `<script setup lang="ts">`.
+- **State:** Use `useQuery` for all data fetching. Use Pinia for cross-component UI state.
+- **Naming:** PascalCase for components/views (e.g., `StatusBadge.vue`). camelCase for functions.
+- **Path Aliases:** Use `@/` to reference `frontend/src/`.
+- **UI Primitives:** Do not edit `src/components/ui/` files directly. Use `bunx shadcn-vue@latest add <component>` to update or add.
+- **Detailed Style Guide:** Refer to `AGENTS.md` for exhaustive rules on component structure, imports, and types.
 
-- **Composition API:** Always use `<script setup lang="ts">` for components.
-- **SPA:** The project is a client-side rendered SPA.
-- **Server State:** Use `useQuery` from `@tanstack/vue-query` for all data fetching logic.
-- **Routing:** Centralized configuration in `frontend/src/router/index.ts`.
-
-### Naming & Structure
-
-- **Components:** Use PascalCase for component names and filenames (e.g., `StatusBadge.vue`).
-- **Views:** Page-level components are located in `frontend/src/views/` (e.g., `OrdersView.vue`).
-- **UI Primitives:** shadcn-vue components are in `frontend/src/components/ui/`.
-- **Path Aliases:** Use the `@/` alias to reference the `frontend/src/` directory.
-
-### Styling & UI
-
-- **Tailwind CSS v4:** Use utility classes exclusively. Avoid custom CSS files unless necessary.
-- **Dynamic Classes:** Use the `cn()` utility from `@/lib/utils` for merging Tailwind classes (`clsx` + `tailwind-merge`).
-- **Icons:** Use `lucide-vue-next` components.
-
-### Data Handling
-
-- Mock data and types are defined in `frontend/src/lib/orders.ts`.
-- Types should be exported and reused across components.
+### Backend (Go)
+- **Package Layout:** Follow the `internal/` pattern for domain-specific logic.
+- **Config:** Use `internal/config` for environment variable management (via `.env`).
+- **Models:** Define database schemas in `internal/models`.
+- **API Versioning:** All routes should be under `/api`.
 
 ---
 
-## Important Note
+## Key Files to Watch
+- `frontend/src/lib/orders.ts`: Current source of mock data and shared shipment types.
+- `backend/internal/database/postgres.go`: DB connection and migration logic.
+- `PROJECT-PLAN.md`: Current implementation roadmap and feature list.
 
-`AGENTS.md` contains the full code style guide. **This `GEMINI.md` file is the foundational source of truth** for project overview and development workflows.
+---
+
+## Project Status (AI Context)
+- **Authentication:** Partially implemented (JWT tokens, Register/Login routes).
+- **Shipments:** Core CRUD and Status updates in place.
+- **Tracking:** Public tracking route `/api/track/:trackingNumber` implemented.
+- **Real-time:** WebSocket hubs for Admin, Driver, and Tracking active.
+- **Frontend Views:** Home, Orders, and OrderDetail views are functional.
+
+When suggesting changes, prioritize matching existing patterns (Composition API, Tailwind v4 utilities, and Go Fiber patterns).
