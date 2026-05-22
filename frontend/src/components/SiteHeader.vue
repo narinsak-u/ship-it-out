@@ -40,13 +40,25 @@ const router = useRouter();
           Carriers
         </RouterLink>
         <div class="ml-4 flex items-center gap-2 border-l border-border pl-4">
-          <template v-if="authStore.isAuthenticated">
-            <span class="font-mono text-xs text-muted-foreground">Admin</span>
+          <template v-if="authStore.loading">
+            <span class="font-mono text-xs text-muted-foreground">...</span>
+          </template>
+          <template v-else-if="authStore.user">
+            <span class="font-mono text-xs text-muted-foreground">Admin ({{ authStore.user.name }})</span>
             <button
-              @click="authStore.logout()"
+              @click="authStore.logout(); router.push({ name: 'home' })"
               class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               <LogOut class="h-3.5 w-3.5" /> Sign out
+            </button>
+          </template>
+          <template v-else-if="authStore.isGuest">
+            <span class="font-mono text-xs text-muted-foreground">Guest</span>
+            <button
+              @click="router.push({ name: 'orders' })"
+              class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
+            >
+              <LogIn class="h-3.5 w-3.5" /> Sign in
             </button>
           </template>
           <button
