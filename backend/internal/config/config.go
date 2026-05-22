@@ -20,7 +20,8 @@ var App Config
 
 func Load() {
 	if err := godotenv.Load(); err != nil {
-		zerolog.New(os.Stderr).Warn().Msg(".env file not found, using system env")
+		l := zerolog.New(os.Stderr)
+		l.Warn().Msg(".env file not found, using system env")
 	}
 
 	App = Config{
