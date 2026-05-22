@@ -118,8 +118,8 @@ func Login(c *fiber.Ctx) error {
 }
 
 func Me(c *fiber.Ctx) error {
-	userID := c.Locals("user_id")
-	if userID == nil {
+	userID, ok := c.Locals("user_id").(uint)
+	if !ok {
 		return utils.Error(c, 401, "not authenticated")
 	}
 

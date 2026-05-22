@@ -37,7 +37,8 @@ func AuthRequired() fiber.Handler {
 			return utils.Error(c, 401, "invalid token claims")
 		}
 
-		c.Locals("user_id", claims["user_id"])
+		uid, _ := claims["user_id"].(float64)
+		c.Locals("user_id", uint(uid))
 		c.Locals("role", claims["role"])
 		return c.Next()
 	}

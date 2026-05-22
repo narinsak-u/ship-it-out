@@ -32,11 +32,6 @@ func main() {
 
 	api := app.Group("/api")
 
-	// greeting
-	api.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
-	})
-
 	authGroup := api.Group("/auth")
 	authGroup.Post("/register", auth.Register)
 	authGroup.Post("/login", auth.Login)
