@@ -50,12 +50,12 @@ function deleteOrder(id: string) {
 }
 
 function onAuthenticated() {
-  showAuthModal = false
+  showAuthModal.value = false
   router.push({ name: 'order-create' })
 }
 
 function onGuest() {
-  showAuthModal = false
+  showAuthModal.value = false
   router.push({ name: 'order-create' })
 }
 </script>
