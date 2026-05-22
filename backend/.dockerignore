@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Go
+vendor/
+tmp/
+
+# IDE
+.vscode/
+.idea/
+*.sw?
+
+# Environment
+.env
+.env.local
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# CI / docs
+docs/
+specs/
+AGENTS.md
+GEMINI.md
+README.md
