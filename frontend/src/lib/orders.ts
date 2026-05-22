@@ -23,6 +23,7 @@ export interface Order {
   currentCoords: GeoPoint;
   status: ShipmentStatus;
   carrier: string;
+  driverId?: string;
   weight: string;
   items: number;
   estimatedDelivery: string;
