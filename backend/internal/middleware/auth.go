@@ -12,10 +12,18 @@ import (
 func AuthRequired() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		auth := c.Get("Authorization")
-		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
+		tokenStr := ""
+
+		if auth != "" && strings.HasPrefix(auth, "Bearer ") {
+			tokenStr = strings.TrimPrefix(auth, "Bearer ")
+		} else {
+			// Fallback to jwt cookie
+			tokenStr = c.Cookies("jwt")
+		}
+
+		if tokenStr == "" {
 			return utils.Error(c, 401, "missing or invalid token")
 		}
-		tokenStr := strings.TrimPrefix(auth, "Bearer ")
 
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 			return []byte(config.App.JWTSecret), nil
