@@ -32,9 +32,16 @@ func main() {
 
 	api := app.Group("/api")
 
+	// greeting
+	api.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, World!")
+	})
+
 	authGroup := api.Group("/auth")
 	authGroup.Post("/register", auth.Register)
 	authGroup.Post("/login", auth.Login)
+	authGroup.Get("/me", middleware.AuthRequired(), auth.Me)
+	authGroup.Post("/logout", auth.Logout)
 
 	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
 	shipmentGroup.Get("/", shipment.List)
