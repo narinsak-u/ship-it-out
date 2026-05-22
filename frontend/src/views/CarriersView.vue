@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent } from 'vue'
 import { Truck, Warehouse, BarChart3, Package } from 'lucide-vue-next'
-import SiteHeader from '@/components/SiteHeader.vue'
 import { cn } from '@/lib/utils'
 
 const DriversPanel = defineAsyncComponent(() => import('@/components/DriversPanel.vue'))
@@ -22,8 +21,7 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Truck }> = [
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <SiteHeader />
+  <div>
 
     <section class="border-b border-border bg-gradient-hero">
       <div class="mx-auto max-w-7xl px-6 py-14">

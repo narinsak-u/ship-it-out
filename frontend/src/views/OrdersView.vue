@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Search, Filter, ArrowRight } from 'lucide-vue-next'
-import SiteHeader from '@/components/SiteHeader.vue'
 import Input from '@/components/ui/Input.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { orders, statusLabels, type ShipmentStatus } from '@/lib/orders'
@@ -35,8 +34,7 @@ const filtered = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <SiteHeader />
+  <div>
 
     <section class="border-b border-border bg-gradient-hero">
       <div class="mx-auto max-w-7xl px-6 py-14">

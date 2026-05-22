@@ -4,7 +4,6 @@ import { useRoute, RouterLink } from 'vue-router'
 import {
   ArrowLeft, MapPin, Truck, Calendar, Hash, User, Weight, Maximize2
 } from 'lucide-vue-next'
-import SiteHeader from '@/components/SiteHeader.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { getOrder } from '@/lib/orders'
@@ -34,8 +33,7 @@ const meta = order ? [
 </script>
 
 <template>
-  <div v-if="order" class="min-h-screen">
-    <SiteHeader />
+  <div v-if="order">
 
     <div class="mx-auto grid max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <!-- LEFT: details -->
@@ -181,8 +179,7 @@ const meta = order ? [
       </div>
     </div>
   </div>
-  <div v-else class="min-h-screen">
-    <SiteHeader />
+  <div v-else>
     <div class="mx-auto max-w-2xl px-6 py-32 text-center">
       <h1 class="font-mono text-4xl">404</h1>
       <p class="mt-3 text-muted-foreground">Shipment not found.</p>

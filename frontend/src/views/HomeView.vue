@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowRight, Boxes, Search, Truck, Globe2, Activity } from 'lucide-vue-next'
-import SiteHeader from '@/components/SiteHeader.vue'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -35,8 +34,7 @@ const recent = orders.slice(0, 3)
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <SiteHeader />
+  <div>
 
     <!-- Hero -->
     <section class="relative overflow-hidden bg-gradient-hero">
@@ -127,10 +125,5 @@ const recent = orders.slice(0, 3)
       </div>
     </section>
 
-    <footer class="border-t border-border py-8">
-      <div class="mx-auto max-w-7xl px-6 font-mono text-xs text-muted-foreground">
-        © 2026 Harbor Ops · Logistics control plane
-      </div>
-    </footer>
   </div>
 </template>
