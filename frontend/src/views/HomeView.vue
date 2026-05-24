@@ -112,7 +112,7 @@ const recent = orders.slice(0, 3)
             <StatusBadge :status="o.status" />
           </div>
           <div class="mt-4 font-mono text-lg">{{ o.trackingNumber }}</div>
-          <div class="mt-1 text-sm text-muted-foreground">{{ o.customer }}</div>
+          <div class="mt-1 text-sm text-muted-foreground">{{ o.customer.name }}</div>
           <div class="mt-6 flex items-center gap-2 font-mono text-xs">
             <span>{{ o.origin }}</span>
             <ArrowRight class="h-3 w-3 text-primary" />

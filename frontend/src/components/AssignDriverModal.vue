@@ -91,7 +91,7 @@ async function handleAssign() {
             class="w-full rounded-lg px-3 py-2 text-left font-mono text-sm transition-colors"
             :class="selectedOrderId === o.id ? 'bg-primary/15 text-primary' : 'hover:bg-secondary'"
           >
-            <div>{{ o.id }} — {{ o.customer }}</div>
+            <div>{{ o.id }} — {{ o.customer.name }}</div>
             <div class="text-xs text-muted-foreground">{{ o.origin }} → {{ o.destination }}</div>
           </button>
         </div>

@@ -9,6 +9,7 @@ import (
 	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/config"
 	"github.com/narinsak-u/backend/internal/database"
+	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/internal/shipment"
@@ -37,7 +38,7 @@ func main() {
 	database.ConnectRedis(config.App.RedisURL)
 
 	// Auto-create/update tables so they match our model structs
-	database.DB.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{})
+	database.DB.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{})
 
 	// --- Create the Fiber app and attach global middleware ---
 	app := fiber.New()
@@ -68,6 +69,14 @@ func main() {
 
 	// --- Public tracking (anyone can look up a shipment by tracking number) ---
 	api.Get("/track/:trackingNumber", tracking.Track)
+
+	// --- Hub routes (auth required) ---
+	hubGroup := api.Group("/hubs", middleware.AuthRequired())
+	hubGroup.Get("/", hub.List)
+	hubGroup.Post("/", hub.Create)
+	hubGroup.Get("/:id", hub.GetByID)
+	hubGroup.Put("/:id", hub.Update)
+	hubGroup.Delete("/:id", hub.Delete)
 
 	// --- Analytics (auth required) ---
 	api.Get("/analytics/overview", middleware.AuthRequired(), analytics.Overview)

@@ -25,7 +25,7 @@ if (!order) {
 
 const meta = order ? [
   { icon: Hash, label: 'Tracking #', value: order.trackingNumber },
-  { icon: User, label: 'Customer', value: order.customer },
+  { icon: User, label: 'Customer', value: order.customer.name },
   { icon: Truck, label: 'Carrier', value: order.carrier },
   { icon: Weight, label: 'Weight', value: order.weight },
   { icon: Calendar, label: 'Created', value: order.createdAt },
@@ -49,7 +49,7 @@ const meta = order ? [
             <StatusBadge :status="order.status" />
           </div>
           <div class="mt-2 font-mono text-sm text-muted-foreground">
-            Order ID <span class="text-primary">{{ order.id }}</span> · {{ order.customer }}
+            Order ID <span class="text-primary">{{ order.id }}</span> · {{ order.customer.name }}
           </div>
 
           <!-- Route summary card -->
@@ -123,7 +123,7 @@ const meta = order ? [
                 </div>
                 <div class="mt-1 flex items-center gap-1.5 font-mono text-xs text-primary">
                   <MapPin class="h-3 w-3" />
-                  {{ e.location }}
+                  {{ e.location.name }}
                 </div>
                 <p v-if="e.description" class="mt-1 text-sm text-muted-foreground">{{ e.description }}</p>
               </li>
@@ -137,8 +137,8 @@ const meta = order ? [
         <div class="h-[420px] w-full lg:h-full">
           <Suspense v-if="mounted">
             <ShipmentMap
-              :origin="order.originCoords"
-              :destination="order.destinationCoords"
+              :origin="order.customer.coords"
+              :destination="order.receiver.coords"
               :current="order.currentCoords"
               :origin-label="order.origin"
               :destination-label="order.destination"

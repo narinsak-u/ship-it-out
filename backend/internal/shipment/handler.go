@@ -1,3 +1,4 @@
+// Package shipment provides HTTP handlers for shipment CRUD operations.
 package shipment
 
 import (
@@ -10,24 +11,36 @@ import (
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
+// CreateRequest is the JSON body for creating a new shipment.
+// Uses the same nested ContactInfo structure as the frontend Order type.
 type CreateRequest struct {
-	SenderName         string  `json:"sender_name"`
-	ReceiverName       string  `json:"receiver_name"`
-	OriginAddress      string  `json:"origin_address"`
-	DestinationAddress string  `json:"destination_address"`
-	Weight             float64 `json:"weight"`
+	Customer models.ContactInfo `json:"customer"`
+	Receiver models.ContactInfo `json:"receiver"`
+	Carrier  string             `json:"carrier"`
+	Weight   string             `json:"weight"`
+	Items    int                `json:"items"`
 }
 
+// generateTrackingNumber creates a unique identifier for each shipment.
+// Format: "TH" + current year + 5-digit millisecond-based number
+// Example: "TH202596374"
 func generateTrackingNumber() string {
 	return fmt.Sprintf("TH%d%05d", time.Now().Year(), time.Now().UnixMilli()%100000)
 }
 
+// composeAddress builds a display string from a ContactInfo's address fields.
+func composeAddress(c models.ContactInfo) string {
+	return fmt.Sprintf("%s, %s, %s", c.SubDistrict, c.District, c.Province)
+}
+
+// List returns all shipments from the database.
 func List(c *fiber.Ctx) error {
 	var shipments []models.Shipment
 	database.DB.Find(&shipments)
 	return utils.Success(c, shipments)
 }
 
+// Create adds a new shipment to the database.
 func Create(c *fiber.Ctx) error {
 	var req CreateRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -35,13 +48,18 @@ func Create(c *fiber.Ctx) error {
 	}
 
 	shipment := models.Shipment{
-		TrackingNumber:     generateTrackingNumber(),
-		SenderName:         req.SenderName,
-		ReceiverName:       req.ReceiverName,
-		OriginAddress:      req.OriginAddress,
-		DestinationAddress: req.DestinationAddress,
-		Weight:             req.Weight,
-		Status:             "CREATED",
+		TrackingNumber:    generateTrackingNumber(),
+		Customer:          req.Customer,
+		Receiver:          req.Receiver,
+		Origin:            composeAddress(req.Customer),
+		Destination:       composeAddress(req.Receiver),
+		CurrentCoords:     req.Customer.Coords,
+		Status:            "pending",
+		Carrier:           req.Carrier,
+		Weight:            req.Weight,
+		Items:             req.Items,
+		EstimatedDelivery: time.Now().Add(72 * time.Hour),
+		Progress:          0,
 	}
 
 	if result := database.DB.Create(&shipment); result.Error != nil {
@@ -51,6 +69,7 @@ func Create(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
+// GetByID fetches a single shipment by its primary key ID.
 func GetByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -65,6 +84,8 @@ func GetByID(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
+// UpdateStatus changes the status of a shipment and records the change
+// as a ShipmentEvent for the tracking timeline.
 func UpdateStatus(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -87,8 +108,13 @@ func UpdateStatus(c *fiber.Ctx) error {
 	database.DB.Save(&shipment)
 
 	event := models.ShipmentEvent{
-		ShipmentID:  shipment.ID,
-		Status:      body.Status,
+		ShipmentID: shipment.ID,
+		Status:     body.Status,
+		Location: models.Location{
+			Name: shipment.Destination,
+			Lat:  shipment.CurrentCoords.Lat,
+			Lng:  shipment.CurrentCoords.Lng,
+		},
 		Description: fmt.Sprintf("Status updated to %s", body.Status),
 	}
 	database.DB.Create(&event)

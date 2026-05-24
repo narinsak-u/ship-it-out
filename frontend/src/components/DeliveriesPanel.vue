@@ -39,7 +39,7 @@ const filtered = computed(() => {
     return (
       o.id.toLowerCase().includes(q) ||
       o.trackingNumber.toLowerCase().includes(q) ||
-      o.customer.toLowerCase().includes(q) ||
+      o.customer.name.toLowerCase().includes(q) ||
       o.carrier.toLowerCase().includes(q)
     )
   })
@@ -112,7 +112,7 @@ function handleAssign(orderId: string) {
       <div v-for="o in filtered" :key="o.id" class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[0.8fr_1fr_1fr_1fr_1fr_1fr_1fr_0.6fr] md:items-center">
         <div class="font-mono text-sm text-primary">{{ o.id }}</div>
         <div class="font-mono text-xs text-muted-foreground">{{ o.trackingNumber }}</div>
-        <div class="font-mono text-sm">{{ o.customer }}</div>
+        <div class="font-mono text-sm">{{ o.customer.name }}</div>
         <div class="font-mono text-sm text-muted-foreground">{{ o.carrier }}</div>
         <div>
           <div v-if="getDriverForOrder(o.id)" class="font-mono text-sm">
@@ -155,8 +155,8 @@ function handleAssign(orderId: string) {
         <div class="h-[300px] w-full">
           <ShipmentMap
             v-if="filtered[0]"
-            :origin="filtered[0].originCoords"
-            :destination="filtered[0].destinationCoords"
+            :origin="filtered[0].customer.coords"
+            :destination="filtered[0].receiver.coords"
             :current="filtered[0].currentCoords"
             :origin-label="filtered[0].origin"
             :destination-label="filtered[0].destination"

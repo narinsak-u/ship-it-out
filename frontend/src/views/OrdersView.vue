@@ -37,7 +37,7 @@ const filtered = computed(() => {
     return (
       o.id.toLowerCase().includes(q) ||
       o.trackingNumber.toLowerCase().includes(q) ||
-      o.customer.toLowerCase().includes(q) ||
+      o.customer.name.toLowerCase().includes(q) ||
       o.destination.toLowerCase().includes(q)
     )
   })
@@ -143,7 +143,7 @@ function onGuest() {
               {{ o.id }}
             </RouterLink>
             <span class="font-mono text-sm text-muted-foreground">{{ o.trackingNumber }}</span>
-            <span class="text-sm">{{ o.customer }}</span>
+            <span class="text-sm">{{ o.customer.name }}</span>
             <span class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
               <span>{{ o.origin }}</span>
               <ArrowRight class="h-3 w-3 text-primary" />
