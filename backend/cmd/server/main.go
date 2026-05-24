@@ -12,6 +12,7 @@ import (
 	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
+	"github.com/narinsak-u/backend/internal/seed"
 	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/internal/tracking"
 	"github.com/narinsak-u/backend/internal/websocket"
@@ -39,6 +40,10 @@ func main() {
 
 	// Auto-create/update tables so they match our model structs
 	database.DB.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{})
+
+	// Seed demo data (skips if tables already have rows)
+	seed.SeedHubs(database.DB)
+	seed.SeedShipments(database.DB)
 
 	// --- Create the Fiber app and attach global middleware ---
 	app := fiber.New()
