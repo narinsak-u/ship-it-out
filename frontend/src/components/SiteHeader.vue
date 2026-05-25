@@ -99,7 +99,7 @@ const showAuthModal = ref(false);
   </header>
 
   <AuthModal
-    v-if="showAuthModal"
+    :open="showAuthModal"
     @close="showAuthModal = false"
     @authenticated="showAuthModal = false"
     @guest="showAuthModal = false"

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { X, LogIn, UserPlus, Loader2 } from "lucide-vue-next";
+import { LogIn, UserPlus, Loader2 } from "lucide-vue-next";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuthStore } from "@/stores/auth";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
 
+const props = defineProps<{ open?: boolean }>();
 const emit = defineEmits<{ close: []; authenticated: []; guest: [] }>();
 
 const store = useAuthStore();
@@ -66,19 +68,13 @@ function handleGuest() {
 </script>
 
 <template>
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-    @click.self="emit('close')"
-  >
-    <div class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant">
-      <div class="flex items-center justify-between">
-        <h2 class="font-mono text-lg font-semibold">
+  <Dialog :open="open" @update:open="(v) => !v && emit('close')">
+    <DialogContent class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle class="font-mono text-lg font-semibold">
           {{ activeTab === "login" ? "Sign in" : "Create account" }}
-        </h2>
-        <button @click="emit('close')" class="text-muted-foreground hover:text-foreground">
-          <X class="h-5 w-5" />
-        </button>
-      </div>
+        </DialogTitle>
+      </DialogHeader>
 
       <!-- Tab bar -->
       <div class="mt-5 flex gap-0 border-b border-border">
@@ -224,6 +220,6 @@ function handleGuest() {
           </button>
         </p>
       </form>
-    </div>
-  </div>
+    </DialogContent>
+  </Dialog>
 </template>
