@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { X } from "lucide-vue-next";
 import { useHubs, useCreateHub, useUpdateHub } from "@/hooks/useHubs";
-import { carriers, hubStatusLabels, type HubStatus } from "@/lib/carriers";
+import { hubStatusLabels, type HubStatus } from "@/lib/carriers";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
 
@@ -19,7 +19,7 @@ const existing = computed(() => {
 });
 
 const name = ref(existing.value?.name ?? "");
-const carrierId = ref(existing.value?.carrierId ?? carriers[0].id);
+const carrierId = "THUN";
 const address = ref(existing.value?.address ?? "");
 const capacity = ref(existing.value?.capacity ?? 1000);
 const status = ref<HubStatus>(existing.value?.status ?? "active");
@@ -37,7 +37,7 @@ const submitError = computed(() =>
 async function handleSubmit() {
   const data = {
     name: name.value,
-    carrierId: carrierId.value,
+    carrierId,
     address: address.value,
     coords: { lat: 0, lng: 0 },
     capacity: capacity.value,
@@ -82,12 +82,11 @@ async function handleSubmit() {
           <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Carrier</label
           >
-          <select
-            v-model="carrierId"
-            class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
+          <div
+            class="mt-1.5 flex h-10 w-full items-center rounded-lg border border-border bg-background px-3 font-mono text-sm text-muted-foreground"
           >
-            <option v-for="c in carriers" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+            Thun-u-der Express
+          </div>
         </div>
         <div>
           <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
