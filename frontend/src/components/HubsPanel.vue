@@ -3,11 +3,14 @@ import { ref, computed } from "vue";
 import { Search, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import { useHubs, useDeleteHub } from "@/hooks/useHubs";
 import { getCarrier, hubStatusLabels } from "@/lib/carriers";
+import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
 import HubFormModal from "@/components/HubFormModal.vue";
+
+const auth = useAuthStore();
 
 const { data: hubs, isLoading, isError, refetch } = useHubs();
 const deleteHub = useDeleteHub();
@@ -107,19 +110,26 @@ const hubStatusCounts = computed(() => {
           class="h-10 border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
         />
       </div>
-      <Button size="sm" class="gap-2" @click="openAdd"> <Plus class="h-4 w-4" /> Add Hub </Button>
+      <Button v-if="auth.isAuthenticated" size="sm" class="gap-2" @click="openAdd">
+        <Plus class="h-4 w-4" /> Add Hub
+      </Button>
     </div>
 
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
       <div
-        class="hidden grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr_0.6fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
+        class="hidden gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
+        :class="
+          auth.isAuthenticated
+            ? 'grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr_0.6fr]'
+            : 'grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr]'
+        "
       >
         <span>Name</span>
         <span>Carrier</span>
         <span>Address</span>
         <span>Capacity</span>
         <span>Status</span>
-        <span class="text-right">Actions</span>
+        <span v-if="auth.isAuthenticated" class="text-right">Actions</span>
       </div>
 
       <div
@@ -132,7 +142,12 @@ const hubStatusCounts = computed(() => {
       <div
         v-for="h in filtered"
         :key="h.id"
-        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr_0.6fr] md:items-center"
+        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:items-center"
+        :class="
+          auth.isAuthenticated
+            ? 'md:grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr_0.6fr]'
+            : 'md:grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr]'
+        "
       >
         <div class="font-mono text-sm">{{ h.name }}</div>
         <div class="font-mono text-sm text-muted-foreground">
@@ -168,7 +183,7 @@ const hubStatusCounts = computed(() => {
             {{ hubStatusLabels[h.status] }}
           </span>
         </div>
-        <div class="flex justify-end gap-1">
+        <div v-if="auth.isAuthenticated" class="flex justify-end gap-1">
           <button
             @click="openEdit(h.id)"
             class="rounded p-1.5 text-muted-foreground hover:text-foreground"
