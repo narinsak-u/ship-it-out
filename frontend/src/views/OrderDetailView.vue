@@ -1,49 +1,49 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
-import { useQuery } from '@tanstack/vue-query'
-import {
-  ArrowLeft, MapPin, Truck, Calendar, Hash, User, Weight, Maximize2,
-} from 'lucide-vue-next'
-import StatusBadge from '@/components/StatusBadge.vue'
-import Skeleton from '@/components/ui/Skeleton.vue'
-import { fetchOrder, fetchOrderEvents } from '@/lib/api/orders'
+import { ref, computed, onMounted, defineAsyncComponent } from "vue";
+import { useRoute, RouterLink } from "vue-router";
+import { useQuery } from "@tanstack/vue-query";
+import { ArrowLeft, MapPin, Truck, Calendar, Hash, User, Weight, Maximize2 } from "lucide-vue-next";
+import StatusBadge from "@/components/StatusBadge.vue";
+import Skeleton from "@/components/ui/Skeleton.vue";
+import { fetchOrder, fetchOrderEvents } from "@/lib/api/orders";
 
-const ShipmentMap = defineAsyncComponent(() => import('@/components/ShipmentMap.vue'))
+const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.vue"));
 
-const route = useRoute()
-const orderId = route.params.orderId as string
+const route = useRoute();
+const orderId = route.params.orderId as string;
 
 const { data: order, isLoading } = useQuery({
-  queryKey: ['order', orderId],
+  queryKey: ["order", orderId],
   queryFn: () => fetchOrder(orderId),
-})
+});
 
 const { data: events } = useQuery({
-  queryKey: ['order-events', orderId],
+  queryKey: ["order-events", orderId],
   queryFn: () => {
-    if (!order.value) return []
-    return fetchOrderEvents(order.value.trackingNumber)
+    if (!order.value) return [];
+    return fetchOrderEvents(order.value.trackingNumber);
   },
   enabled: computed(() => !!order.value),
-})
+});
 
-const mounted = ref(false)
+const timeline = computed(() => [...(events.value ?? [])].reverse());
+
+const mounted = ref(false);
 onMounted(() => {
-  mounted.value = true
-})
+  mounted.value = true;
+});
 
 const meta = computed(() => {
-  const o = order.value
-  if (!o) return []
+  const o = order.value;
+  if (!o) return [];
   return [
-    { icon: Hash, label: 'Tracking #', value: o.trackingNumber },
-    { icon: User, label: 'Customer', value: o.customer.name },
-    { icon: Truck, label: 'Carrier', value: o.carrier },
-    { icon: Weight, label: 'Weight', value: o.weight },
-    { icon: Calendar, label: 'Created', value: o.createdAt },
-  ]
-})
+    { icon: Hash, label: "Tracking #", value: o.trackingNumber },
+    { icon: User, label: "Customer", value: o.customer.name },
+    { icon: Truck, label: "Carrier", value: o.carrier },
+    { icon: Weight, label: "Weight", value: o.weight },
+    { icon: Calendar, label: "Created", value: o.createdAt },
+  ];
+});
 </script>
 
 <template>
@@ -55,11 +55,11 @@ const meta = computed(() => {
         <Skeleton class="h-48 rounded-xl" />
         <Skeleton class="h-64 rounded-xl" />
       </div>
-      <Skeleton class="h-[420px] rounded-xl lg:h-full" />
+      <Skeleton class="h-105 rounded-xl lg:h-full" />
     </div>
   </div>
   <div v-else-if="order">
-    <div class="mx-auto grid max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+    <div class="mx-auto grid max-w-400 gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <!-- LEFT: details -->
       <div class="border-r border-border">
         <div class="px-6 py-8 lg:px-10 lg:py-10">
@@ -166,10 +166,10 @@ const meta = computed(() => {
               Shipment status
             </h2>
             <ol class="relative mt-5 space-y-5 border-l border-border pl-6">
-              <li v-for="(e, i) in (events ?? [])" :key="i" class="relative">
+              <li v-for="(e, i) in timeline" :key="i" class="relative">
                 <span
                   :class="[
-                    'absolute -left-[31px] flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-background',
+                    'absolute -left-7.75 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-background',
                     i === 0 ? 'bg-primary shadow-glow' : 'bg-muted-foreground/40',
                   ]"
                 >
@@ -197,7 +197,7 @@ const meta = computed(() => {
 
       <!-- RIGHT: map -->
       <div class="relative bg-secondary/40 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)]">
-        <div class="h-[420px] w-full lg:h-full">
+        <div class="h-105 w-full lg:h-full">
           <Suspense v-if="mounted">
             <ShipmentMap
               :origin="order.customer.coords"
@@ -225,7 +225,7 @@ const meta = computed(() => {
 
         <!-- Floating telemetry card -->
         <div
-          class="pointer-events-none absolute left-16 top-4 z-[400] rounded-lg border border-border bg-card/95 px-4 py-3 font-mono text-xs shadow-elegant backdrop-blur"
+          class="pointer-events-none absolute left-16 top-4 z-400 rounded-lg border border-border bg-card/95 px-4 py-3 font-mono text-xs shadow-elegant backdrop-blur"
         >
           <div class="flex items-center gap-2 text-muted-foreground">
             <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
@@ -238,7 +238,7 @@ const meta = computed(() => {
         </div>
 
         <div
-          class="pointer-events-none absolute right-4 top-4 z-[400] rounded-lg border border-border bg-card/95 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground shadow-elegant backdrop-blur"
+          class="pointer-events-none absolute right-4 top-4 z-400 rounded-lg border border-border bg-card/95 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground shadow-elegant backdrop-blur"
         >
           <Maximize2 class="mr-1 inline h-3 w-3" />
           Geo route
