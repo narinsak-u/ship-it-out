@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { X } from "lucide-vue-next";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useHubs, useCreateHub, useUpdateHub } from "@/hooks/useHubs";
 import { hubStatusLabels, type HubStatus } from "@/lib/carriers";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
 
-const props = defineProps<{ hubId?: string | null }>();
+const props = defineProps<{ hubId?: string | null; open?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const { data: hubsData } = useHubs();
@@ -59,17 +59,13 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-    @click.self="emit('close')"
-  >
-    <div class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant">
-      <div class="flex items-center justify-between">
-        <h2 class="font-mono text-lg font-semibold">{{ isEditing ? "Edit Hub" : "Add Hub" }}</h2>
-        <button @click="emit('close')" class="text-muted-foreground hover:text-foreground">
-          <X class="h-5 w-5" />
-        </button>
-      </div>
+  <Dialog :open="open" @update:open="(v) => !v && emit('close')">
+    <DialogContent class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle class="font-mono text-lg font-semibold">
+          {{ isEditing ? "Edit Hub" : "Add Hub" }}
+        </DialogTitle>
+      </DialogHeader>
 
       <div class="mt-5 space-y-4">
         <div>
@@ -133,6 +129,6 @@ async function handleSubmit() {
           {{ submitPending ? "Saving…" : isEditing ? "Update Hub" : "Create Hub" }}
         </Button>
       </div>
-    </div>
-  </div>
+    </DialogContent>
+  </Dialog>
 </template>

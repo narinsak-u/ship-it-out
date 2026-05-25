@@ -201,6 +201,6 @@ const hubStatusCounts = computed(() => {
       </div>
     </div>
 
-    <HubFormModal v-if="showForm" :hub-id="editingHubId" @close="showForm = false" />
+    <HubFormModal :open="showForm" :hub-id="editingHubId" @close="showForm = false" />
   </div>
 </template>
