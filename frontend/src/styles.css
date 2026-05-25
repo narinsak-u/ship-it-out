@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
 @import "tailwindcss" source(none);
 @import "tw-animate-css";
 @source "../src";
@@ -33,6 +35,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --font-heading: var(--font-mono);
 }
 
 :root {

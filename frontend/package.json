@@ -13,6 +13,7 @@
     "@lucide/vue": "^1.16.0",
     "@tanstack/vue-query": "^5.62.7",
     "@tanstack/vue-table": "^8.21.3",
+    "@vueuse/core": "^14.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk-vue": "^1.0.0",
