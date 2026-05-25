@@ -10,6 +10,14 @@ import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -139,94 +147,94 @@ function handleUpdate(orderId: string) {
 
     <!-- Table -->
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
-      <div
-        class="hidden grid-cols-[0.8fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr_1fr_0.5fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
-      >
-        <span>Order ID</span>
-        <span>Tracking</span>
-        <span>Customer</span>
-        <span>Carrier</span>
-        <span>Status</span>
-        <span>Hub</span>
-        <span>ETA</span>
-        <span class="text-right">Actions</span>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50">
+            <TableHead class="hidden md:table-cell">Order ID</TableHead>
+            <TableHead class="hidden md:table-cell">Tracking</TableHead>
+            <TableHead class="hidden md:table-cell">Customer</TableHead>
+            <TableHead class="hidden md:table-cell">Carrier</TableHead>
+            <TableHead class="hidden md:table-cell">Status</TableHead>
+            <TableHead class="hidden md:table-cell">Hub</TableHead>
+            <TableHead class="hidden md:table-cell">ETA</TableHead>
+            <TableHead class="hidden md:table-cell text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
+            v-for="o in filtered"
+            :key="o.id"
+            class="border-b border-border transition-colors hover:bg-secondary/40"
+          >
+            <TableCell class="font-mono text-sm text-primary">{{ o.id }}</TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ o.trackingNumber }}</TableCell>
+            <TableCell class="font-mono text-sm">{{ o.customer.name }}</TableCell>
+            <TableCell class="font-mono text-sm text-muted-foreground">{{ o.carrier }}</TableCell>
+            <TableCell>
+              <Select
+                :model-value="draftStatus[o.id] ?? o.status"
+                @update:model-value="(v) => draftStatus[o.id] = v as ShipmentStatus"
+                :disabled="!auth.isAuthenticated"
+              >
+                <SelectTrigger class="h-7 rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem v-for="(label, key) in statusLabels" :key="key" :value="key">
+                      {{ label }}
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </TableCell>
+            <TableCell>
+              <Select
+                v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
+                :model-value="draftHubId[o.id] ?? o.hubId ?? ''"
+                @update:model-value="(v) => draftHubId[o.id] = (v ?? '') as string"
+                :disabled="!auth.isAuthenticated"
+              >
+                <SelectTrigger class="h-7 w-full rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
+                  <SelectValue placeholder="Select hub..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem v-for="h in hubOptions" :key="h.id" :value="h.id">
+                      {{ h.name }}
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <span v-else class="font-mono text-xs text-muted-foreground">&mdash;</span>
+            </TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ o.estimatedDelivery }}</TableCell>
+            <TableCell class="text-right">
+              <RouterLink
+                :to="{ name: 'order-detail', params: { orderId: o.id } }"
+                class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                title="View details"
+              >
+                <Eye class="h-4 w-4" />
+              </RouterLink>
+              <button
+                @click="handleUpdate(o.id)"
+                :disabled="!auth.isAuthenticated || !canUpdate(o.id)"
+                class="rounded p-1.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
+                title="Update"
+              >
+                <Check class="h-4 w-4" />
+              </button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <div
         v-if="filtered.length === 0"
         class="px-6 py-12 text-center font-mono text-sm text-muted-foreground"
       >
         No active deliveries match your filters.
-      </div>
-
-      <div
-        v-for="o in filtered"
-        :key="o.id"
-        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[0.8fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr_1fr_0.5fr] md:items-center"
-      >
-        <div class="font-mono text-sm text-primary">{{ o.id }}</div>
-        <div class="font-mono text-xs text-muted-foreground">{{ o.trackingNumber }}</div>
-        <div class="font-mono text-sm">{{ o.customer.name }}</div>
-        <div class="font-mono text-sm text-muted-foreground">{{ o.carrier }}</div>
-        <div>
-          <Select
-            :model-value="draftStatus[o.id] ?? o.status"
-            @update:model-value="(v) => draftStatus[o.id] = v as ShipmentStatus"
-            :disabled="!auth.isAuthenticated"
-          >
-            <SelectTrigger class="h-7 rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem v-for="(label, key) in statusLabels" :key="key" :value="key">
-                  {{ label }}
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <!-- Hub column -->
-        <div>
-          <Select
-            v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
-            :model-value="draftHubId[o.id] ?? o.hubId ?? ''"
-            @update:model-value="(v) => draftHubId[o.id] = (v ?? '') as string"
-            :disabled="!auth.isAuthenticated"
-          >
-            <SelectTrigger class="h-7 w-full rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
-              <SelectValue placeholder="Select hub..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem v-for="h in hubOptions" :key="h.id" :value="h.id">
-                  {{ h.name }}
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <span v-else class="font-mono text-xs text-muted-foreground">&mdash;</span>
-        </div>
-        <div class="font-mono text-xs text-muted-foreground">{{ o.estimatedDelivery }}</div>
-
-        <!-- Actions -->
-        <div class="flex justify-end gap-1">
-          <RouterLink
-            :to="{ name: 'order-detail', params: { orderId: o.id } }"
-            class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
-            title="View details"
-          >
-            <Eye class="h-4 w-4" />
-          </RouterLink>
-          <button
-            @click="handleUpdate(o.id)"
-            :disabled="!auth.isAuthenticated || !canUpdate(o.id)"
-            class="rounded p-1.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
-            title="Update"
-          >
-            <Check class="h-4 w-4" />
-          </button>
-        </div>
       </div>
     </div>
 

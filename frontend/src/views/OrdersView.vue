@@ -8,6 +8,14 @@ import StatusBadge from "@/components/StatusBadge.vue";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import { fetchActiveDeliveries, deleteOrder } from "@/lib/api/orders";
 import Button from "@/components/ui/Button.vue";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 import AuthModal from "@/components/AuthModal.vue";
@@ -134,17 +142,60 @@ function onGuest() {
 
       <!-- Table -->
       <div class="mt-8 overflow-hidden rounded-xl border border-border bg-card shadow-elegant">
-        <div
-          class="hidden grid-cols-[1.1fr_1.4fr_1.6fr_2fr_1.2fr_0.6fr_0.6fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
-        >
-          <span>Order ID</span>
-          <span>Tracking</span>
-          <span>Customer</span>
-          <span>Route</span>
-          <span>Status</span>
-          <span class="text-right">ETA</span>
-          <span v-if="authStore.user" class="text-right">Actions</span>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50">
+              <TableHead class="hidden md:table-cell">Order ID</TableHead>
+              <TableHead class="hidden md:table-cell">Tracking</TableHead>
+              <TableHead class="hidden md:table-cell">Customer</TableHead>
+              <TableHead class="hidden md:table-cell">Route</TableHead>
+              <TableHead class="hidden md:table-cell">Status</TableHead>
+              <TableHead class="hidden md:table-cell text-right">ETA</TableHead>
+              <TableHead v-if="authStore.user" class="hidden md:table-cell text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow
+              v-for="o in filtered"
+              :key="o.id"
+              class="border-b border-border transition-colors hover:bg-secondary/40"
+            >
+              <TableCell>
+                <RouterLink
+                  :to="{ name: 'order-detail', params: { orderId: o.id } }"
+                  class="font-mono text-sm text-primary"
+                >
+                  {{ o.id }}
+                </RouterLink>
+              </TableCell>
+              <TableCell class="font-mono text-sm text-muted-foreground">{{ o.trackingNumber }}</TableCell>
+              <TableCell class="text-sm">{{ o.customer.name }}</TableCell>
+              <TableCell>
+                <span class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+                  <span>{{ o.origin }}</span>
+                  <ArrowRight class="h-3 w-3 text-primary" />
+                  <span>{{ o.destination }}</span>
+                </span>
+              </TableCell>
+              <TableCell><StatusBadge :status="o.status" /></TableCell>
+              <TableCell class="font-mono text-xs text-muted-foreground text-right">{{ o.estimatedDelivery }}</TableCell>
+              <TableCell v-if="authStore.user" class="text-right">
+                <button
+                  @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
+                  class="rounded p-1.5 text-muted-foreground hover:text-primary"
+                >
+                  <Pencil class="h-4 w-4" />
+                </button>
+                <button
+                  @click.stop="deleteMutation.mutate(o.id)"
+                  class="rounded p-1.5 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 class="h-4 w-4" />
+                </button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
 
         <div
           v-if="filtered.length === 0"
@@ -152,45 +203,6 @@ function onGuest() {
         >
           No shipments match your filters.
         </div>
-        <template v-else>
-          <div
-            v-for="o in filtered"
-            :key="o.id"
-            class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[1.1fr_1.4fr_1.6fr_2fr_1.2fr_0.6fr_0.6fr] md:items-center md:gap-4"
-          >
-            <RouterLink
-              :to="{ name: 'order-detail', params: { orderId: o.id } }"
-              class="font-mono text-sm text-primary"
-            >
-              {{ o.id }}
-            </RouterLink>
-            <span class="font-mono text-sm text-muted-foreground">{{ o.trackingNumber }}</span>
-            <span class="text-sm">{{ o.customer.name }}</span>
-            <span class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-              <span>{{ o.origin }}</span>
-              <ArrowRight class="h-3 w-3 text-primary" />
-              <span>{{ o.destination }}</span>
-            </span>
-            <span><StatusBadge :status="o.status" /></span>
-            <span class="font-mono text-xs text-muted-foreground md:text-right">{{
-              o.estimatedDelivery
-            }}</span>
-            <div v-if="authStore.user" class="flex justify-end gap-1">
-              <button
-                @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
-                class="rounded p-1.5 text-muted-foreground hover:text-primary"
-              >
-                <Pencil class="h-4 w-4" />
-              </button>
-              <button
-                @click.stop="deleteMutation.mutate(o.id)"
-                class="rounded p-1.5 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </template>
       </div>
 
       <div class="mt-4 font-mono text-xs text-muted-foreground">

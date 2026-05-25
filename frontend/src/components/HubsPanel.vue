@@ -8,6 +8,14 @@ import { cn } from "@/lib/utils";
 import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import HubFormModal from "@/components/HubFormModal.vue";
 
 const auth = useAuthStore();
@@ -117,87 +125,82 @@ const hubStatusCounts = computed(() => {
 
     <!-- table -->
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
-      <div
-        class="hidden gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
-        :class="
-          auth.isAuthenticated
-            ? 'grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr_0.6fr]'
-            : 'grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr]'
-        "
-      >
-        <span>Name</span>
-        <span>Carrier</span>
-        <span>Address</span>
-        <span>Capacity</span>
-        <span>Status</span>
-        <span v-if="auth.isAuthenticated" class="text-right">Actions</span>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50">
+            <TableHead class="hidden md:table-cell">Name</TableHead>
+            <TableHead class="hidden md:table-cell">Carrier</TableHead>
+            <TableHead class="hidden md:table-cell">Address</TableHead>
+            <TableHead class="hidden md:table-cell">Capacity</TableHead>
+            <TableHead class="hidden md:table-cell">Status</TableHead>
+            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
+            v-for="h in filtered"
+            :key="h.id"
+            class="border-b border-border transition-colors hover:bg-secondary/40"
+          >
+            <TableCell class="font-mono text-sm">{{ h.name }}</TableCell>
+            <TableCell class="font-mono text-sm text-muted-foreground">
+              {{ getCarrier(h.carrierId)?.name ?? h.carrierId }}
+            </TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ h.address }}</TableCell>
+            <TableCell>
+              <div class="flex items-center gap-2">
+                <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    class="h-full rounded-full transition-all"
+                    :class="h.currentUtilization / h.capacity > 0.8 ? 'bg-warning' : 'bg-primary'"
+                    :style="{ width: `${Math.min(100, (h.currentUtilization / h.capacity) * 100)}%` }"
+                  />
+                </div>
+                <span class="font-mono text-xs text-muted-foreground"
+                  >{{ Math.round((h.currentUtilization / h.capacity) * 100) }}%</span
+                >
+              </div>
+            </TableCell>
+            <TableCell>
+              <span
+                :class="
+                  cn(
+                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider',
+                    h.status === 'active' ? 'bg-success/15 text-success border-success/30' : '',
+                    h.status === 'maintenance' ? 'bg-warning/15 text-warning border-warning/30' : '',
+                    h.status === 'closed'
+                      ? 'bg-destructive/15 text-destructive border-destructive/30'
+                      : '',
+                  )
+                "
+              >
+                <span class="h-1.5 w-1.5 rounded-full bg-current" />
+                {{ hubStatusLabels[h.status] }}
+              </span>
+            </TableCell>
+            <TableCell v-if="auth.isAuthenticated" class="text-right">
+              <button
+                @click="openEdit(h.id)"
+                class="rounded p-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <Pencil class="h-4 w-4" />
+              </button>
+              <button
+                @click="deleteHub.mutate(h.id)"
+                class="rounded p-1.5 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 class="h-4 w-4" />
+              </button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       <div
         v-if="filtered.length === 0"
         class="px-6 py-12 text-center font-mono text-sm text-muted-foreground"
       >
         No hubs match your filters.
-      </div>
-
-      <div
-        v-for="h in filtered"
-        :key="h.id"
-        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:items-center"
-        :class="
-          auth.isAuthenticated
-            ? 'md:grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr_0.6fr]'
-            : 'md:grid-cols-[1.3fr_1.3fr_1.8fr_1fr_1fr]'
-        "
-      >
-        <div class="font-mono text-sm">{{ h.name }}</div>
-        <div class="font-mono text-sm text-muted-foreground">
-          {{ getCarrier(h.carrierId)?.name ?? h.carrierId }}
-        </div>
-        <div class="font-mono text-xs text-muted-foreground">{{ h.address }}</div>
-        <div class="flex items-center gap-2">
-          <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
-            <div
-              class="h-full rounded-full transition-all"
-              :class="h.currentUtilization / h.capacity > 0.8 ? 'bg-warning' : 'bg-primary'"
-              :style="{ width: `${Math.min(100, (h.currentUtilization / h.capacity) * 100)}%` }"
-            />
-          </div>
-          <span class="font-mono text-xs text-muted-foreground"
-            >{{ Math.round((h.currentUtilization / h.capacity) * 100) }}%</span
-          >
-        </div>
-        <div>
-          <span
-            :class="
-              cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider',
-                h.status === 'active' ? 'bg-success/15 text-success border-success/30' : '',
-                h.status === 'maintenance' ? 'bg-warning/15 text-warning border-warning/30' : '',
-                h.status === 'closed'
-                  ? 'bg-destructive/15 text-destructive border-destructive/30'
-                  : '',
-              )
-            "
-          >
-            <span class="h-1.5 w-1.5 rounded-full bg-current" />
-            {{ hubStatusLabels[h.status] }}
-          </span>
-        </div>
-        <div v-if="auth.isAuthenticated" class="flex justify-end gap-1">
-          <button
-            @click="openEdit(h.id)"
-            class="rounded p-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <Pencil class="h-4 w-4" />
-          </button>
-          <button
-            @click="deleteHub.mutate(h.id)"
-            class="rounded p-1.5 text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 class="h-4 w-4" />
-          </button>
-        </div>
       </div>
     </div>
 
