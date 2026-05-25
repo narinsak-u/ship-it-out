@@ -43,7 +43,10 @@ async function handleAssign() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="emit('close')">
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    @click.self="emit('close')"
+  >
     <div class="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-elegant">
       <div class="flex items-center justify-between">
         <h2 class="font-mono text-lg font-semibold">Assign Driver to Shipment</h2>
@@ -54,8 +57,12 @@ async function handleAssign() {
 
       <!-- Driver selection -->
       <div class="mt-5">
-        <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground">Select Driver</label>
-        <div class="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+        <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          >Select Driver</label
+        >
+        <div
+          class="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background px-3"
+        >
           <Search class="h-4 w-4 text-muted-foreground" />
           <Input
             v-model="driverQuery"
@@ -72,9 +79,14 @@ async function handleAssign() {
             :class="selectedDriverId === d.id ? 'bg-primary/15 text-primary' : 'hover:bg-secondary'"
           >
             <div>{{ d.name }}</div>
-            <div class="text-xs text-muted-foreground">{{ d.vehicleInfo }} · {{ getCarrier(d.carrierId)?.name }}</div>
+            <div class="text-xs text-muted-foreground">
+              {{ d.vehicleInfo }} · {{ getCarrier(d.carrierId)?.name }}
+            </div>
           </button>
-          <div v-if="availableDrivers.length === 0" class="py-4 text-center font-mono text-xs text-muted-foreground">
+          <div
+            v-if="availableDrivers.length === 0"
+            class="py-4 text-center font-mono text-xs text-muted-foreground"
+          >
             No available drivers found.
           </div>
         </div>
@@ -82,7 +94,9 @@ async function handleAssign() {
 
       <!-- Order selection -->
       <div class="mt-5">
-        <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground">Target Shipment</label>
+        <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          >Target Shipment</label
+        >
         <div class="mt-2 space-y-1 max-h-40 overflow-y-auto">
           <button
             v-for="o in unfinishedOrders"

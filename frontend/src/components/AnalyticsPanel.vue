@@ -1,54 +1,53 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useCarriers } from '@/hooks/useCarriers'
-import { orders, statusLabels } from '@/lib/orders'
-import Skeleton from '@/components/ui/Skeleton.vue'
-import Button from '@/components/ui/Button.vue'
+import { computed } from "vue";
+import { useCarriers } from "@/hooks/useCarriers";
+import { orders, statusLabels } from "@/lib/orders";
+import Skeleton from "@/components/ui/Skeleton.vue";
+import Button from "@/components/ui/Button.vue";
 
-const { data: carriersData, isLoading, isError, refetch } = useCarriers()
+const { data: carriersData, isLoading, isError, refetch } = useCarriers();
 
 const kpis = computed(() => {
-  const total = orders.length
-  const delivered = orders.filter((o) => o.status === 'delivered').length
-  const onTime = Math.round((delivered / Math.max(total, 1)) * 100)
-  const activeCarriers = carriersData.value?.filter((c) => c.status === 'active').length ?? 0
-  return { total, onTime, activeCarriers, avgDeliveryTime: '3.2 days' }
-})
+  const total = orders.length;
+  const delivered = orders.filter((o) => o.status === "delivered").length;
+  const onTime = Math.round((delivered / Math.max(total, 1)) * 100);
+  const activeCarriers = carriersData.value?.filter((c) => c.status === "active").length ?? 0;
+  return { total, onTime, activeCarriers, avgDeliveryTime: "3.2 days" };
+});
 
 const carrierPerformance = computed(() => {
-  if (!carriersData.value) return []
+  if (!carriersData.value) return [];
   return carriersData.value.map((c) => {
-    const carrierOrders = orders.filter((o) => o.carrier === c.name)
-    const delivered = carrierOrders.filter((o) => o.status === 'delivered').length
+    const carrierOrders = orders.filter((o) => o.carrier === c.name);
+    const delivered = carrierOrders.filter((o) => o.status === "delivered").length;
     return {
       name: c.name,
       total: carrierOrders.length,
       delivered,
-      onTimeRate: carrierOrders.length > 0 ? Math.round((delivered / carrierOrders.length) * 100) : 0,
-    }
-  })
-})
+      onTimeRate:
+        carrierOrders.length > 0 ? Math.round((delivered / carrierOrders.length) * 100) : 0,
+    };
+  });
+});
 
 const statusDistribution = computed(() => {
-  const counts: Record<string, number> = {}
+  const counts: Record<string, number> = {};
   for (const o of orders) {
-    counts[o.status] = (counts[o.status] || 0) + 1
+    counts[o.status] = (counts[o.status] || 0) + 1;
   }
   return Object.entries(counts).map(([status, count]) => ({
     status,
     label: statusLabels[status as keyof typeof statusLabels] ?? status,
     count,
     pct: Math.round((count / orders.length) * 100),
-  }))
-})
+  }));
+});
 
 const maxCarrierOrders = computed(() =>
-  Math.max(...carrierPerformance.value.map((c) => c.total), 1)
-)
+  Math.max(...carrierPerformance.value.map((c) => c.total), 1),
+);
 
-const maxStatusCount = computed(() =>
-  Math.max(...statusDistribution.value.map((s) => s.count), 1)
-)
+const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((s) => s.count), 1));
 </script>
 
 <template>
@@ -69,19 +68,27 @@ const maxStatusCount = computed(() =>
     <!-- KPI cards -->
     <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Total Shipments</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Total Shipments
+        </div>
         <div class="mt-1 font-mono text-3xl font-semibold">{{ kpis.total }}</div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">On-Time Rate</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          On-Time Rate
+        </div>
         <div class="mt-1 font-mono text-3xl font-semibold text-success">{{ kpis.onTime }}%</div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Active Carriers</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Active Carriers
+        </div>
         <div class="mt-1 font-mono text-3xl font-semibold text-info">{{ kpis.activeCarriers }}</div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Avg Delivery</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Avg Delivery
+        </div>
         <div class="mt-1 font-mono text-3xl font-semibold">{{ kpis.avgDeliveryTime }}</div>
       </div>
     </div>
@@ -90,10 +97,16 @@ const maxStatusCount = computed(() =>
     <div class="mt-8">
       <h3 class="font-mono text-sm font-semibold">Carrier Performance</h3>
       <div class="mt-4 space-y-3">
-        <div v-for="c in carrierPerformance" :key="c.name" class="rounded-lg border border-border bg-card p-4">
+        <div
+          v-for="c in carrierPerformance"
+          :key="c.name"
+          class="rounded-lg border border-border bg-card p-4"
+        >
           <div class="flex items-center justify-between">
             <span class="font-mono text-sm">{{ c.name }}</span>
-            <span class="font-mono text-xs text-muted-foreground">{{ c.delivered }}/{{ c.total }} delivered</span>
+            <span class="font-mono text-xs text-muted-foreground"
+              >{{ c.delivered }}/{{ c.total }} delivered</span
+            >
           </div>
           <div class="mt-2 flex items-center gap-3">
             <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
@@ -102,7 +115,10 @@ const maxStatusCount = computed(() =>
                 :style="{ width: `${(c.total / maxCarrierOrders) * 100}%` }"
               />
             </div>
-            <span class="font-mono text-xs" :class="c.onTimeRate >= 80 ? 'text-success' : 'text-warning'">
+            <span
+              class="font-mono text-xs"
+              :class="c.onTimeRate >= 80 ? 'text-success' : 'text-warning'"
+            >
               {{ c.onTimeRate }}%
             </span>
           </div>
@@ -120,16 +136,22 @@ const maxStatusCount = computed(() =>
             <div
               class="h-full rounded-full transition-all"
               :class="
-                s.status === 'delivered' ? 'bg-success' :
-                s.status === 'delayed' ? 'bg-destructive' :
-                s.status === 'in_transit' ? 'bg-info' :
-                s.status === 'out_for_delivery' ? 'bg-primary' :
-                'bg-muted-foreground/40'
+                s.status === 'delivered'
+                  ? 'bg-success'
+                  : s.status === 'delayed'
+                    ? 'bg-destructive'
+                    : s.status === 'in_transit'
+                      ? 'bg-info'
+                      : s.status === 'out_for_delivery'
+                        ? 'bg-primary'
+                        : 'bg-muted-foreground/40'
               "
               :style="{ width: `${(s.count / maxStatusCount) * 100}%` }"
             />
           </div>
-          <span class="w-16 text-right font-mono text-xs text-muted-foreground">{{ s.count }} ({{ s.pct }}%)</span>
+          <span class="w-16 text-right font-mono text-xs text-muted-foreground"
+            >{{ s.count }} ({{ s.pct }}%)</span
+          >
         </div>
       </div>
     </div>

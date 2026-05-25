@@ -3,6 +3,8 @@ package shipment
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -40,6 +42,23 @@ func List(c *fiber.Ctx) error {
 	return utils.Success(c, shipments)
 }
 
+// generateOrderID creates a human-readable order ID like "ORD-10251".
+// Scans existing order IDs to find the highest numeric suffix and increments it.
+func generateOrderID() string {
+	var shipments []models.Shipment
+	database.DB.Select("order_id").Find(&shipments)
+	maxNum := 10245
+	for _, s := range shipments {
+		parts := strings.SplitN(s.OrderID, "-", 2)
+		if len(parts) == 2 {
+			if n, err := strconv.Atoi(parts[1]); err == nil && n > maxNum {
+				maxNum = n
+			}
+		}
+	}
+	return fmt.Sprintf("ORD-%d", maxNum+1)
+}
+
 // Create adds a new shipment to the database.
 func Create(c *fiber.Ctx) error {
 	var req CreateRequest
@@ -48,6 +67,7 @@ func Create(c *fiber.Ctx) error {
 	}
 
 	shipment := models.Shipment{
+		OrderID:           generateOrderID(),
 		TrackingNumber:    generateTrackingNumber(),
 		Customer:          req.Customer,
 		Receiver:          req.Receiver,
@@ -69,15 +89,12 @@ func Create(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
-// GetByID fetches a single shipment by its primary key ID.
+// GetByID fetches a single shipment by its order ID.
 func GetByID(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return utils.Error(c, 400, "invalid id")
-	}
+	orderID := c.Params("orderId")
 
 	var shipment models.Shipment
-	if result := database.DB.First(&shipment, id); result.Error != nil {
+	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
 		return utils.Error(c, 404, "shipment not found")
 	}
 
@@ -87,10 +104,7 @@ func GetByID(c *fiber.Ctx) error {
 // UpdateStatus changes the status of a shipment and records the change
 // as a ShipmentEvent for the tracking timeline.
 func UpdateStatus(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-	if err != nil {
-		return utils.Error(c, 400, "invalid id")
-	}
+	orderID := c.Params("orderId")
 
 	var body struct {
 		Status string `json:"status"`
@@ -100,7 +114,7 @@ func UpdateStatus(c *fiber.Ctx) error {
 	}
 
 	var shipment models.Shipment
-	if result := database.DB.First(&shipment, id); result.Error != nil {
+	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
 		return utils.Error(c, 404, "shipment not found")
 	}
 
@@ -120,4 +134,69 @@ func UpdateStatus(c *fiber.Ctx) error {
 	database.DB.Create(&event)
 
 	return utils.Success(c, shipment)
+}
+
+// UpdateRequest is the JSON body for updating an existing shipment.
+type UpdateRequest struct {
+	Customer          *models.ContactInfo `json:"customer,omitempty"`
+	Receiver          *models.ContactInfo `json:"receiver,omitempty"`
+	Carrier           *string             `json:"carrier,omitempty"`
+	Weight            *string             `json:"weight,omitempty"`
+	Items             *int                `json:"items,omitempty"`
+	EstimatedDelivery *time.Time          `json:"estimatedDelivery,omitempty"`
+}
+
+// Update modifies an existing shipment's fields.
+func Update(c *fiber.Ctx) error {
+	orderID := c.Params("orderId")
+
+	var req UpdateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.Error(c, 400, "invalid request body")
+	}
+
+	var shipment models.Shipment
+	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
+		return utils.Error(c, 404, "shipment not found")
+	}
+
+	if req.Customer != nil {
+		shipment.Customer = *req.Customer
+		shipment.CurrentCoords = req.Customer.Coords
+		shipment.Origin = composeAddress(*req.Customer)
+	}
+	if req.Receiver != nil {
+		shipment.Receiver = *req.Receiver
+		shipment.Destination = composeAddress(*req.Receiver)
+	}
+	if req.Carrier != nil {
+		shipment.Carrier = *req.Carrier
+	}
+	if req.Weight != nil {
+		shipment.Weight = *req.Weight
+	}
+	if req.Items != nil {
+		shipment.Items = *req.Items
+	}
+	if req.EstimatedDelivery != nil {
+		shipment.EstimatedDelivery = *req.EstimatedDelivery
+	}
+
+	database.DB.Save(&shipment)
+	return utils.Success(c, shipment)
+}
+
+// Delete removes a shipment and its events from the database.
+func Delete(c *fiber.Ctx) error {
+	orderID := c.Params("orderId")
+
+	var shipment models.Shipment
+	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
+		return utils.Error(c, 404, "shipment not found")
+	}
+
+	database.DB.Where("shipment_id = ?", shipment.ID).Delete(&models.ShipmentEvent{})
+	database.DB.Delete(&shipment)
+
+	return utils.Success(c, fiber.Map{"message": "shipment deleted"})
 }

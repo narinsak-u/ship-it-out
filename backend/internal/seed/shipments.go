@@ -30,6 +30,7 @@ func SeedShipments(db *gorm.DB) {
 	}
 
 	type seedShipment struct {
+		OrderID           string
 		TrackingNumber    string
 		Customer          models.ContactInfo
 		Receiver          models.ContactInfo
@@ -45,7 +46,7 @@ func SeedShipments(db *gorm.DB) {
 
 	seeds := []seedShipment{
 		{
-			TrackingNumber: "TRK-9F2A-44B1",
+			OrderID: "ORD-10245", TrackingNumber: "TRK-9F2A-44B1",
 			Customer: models.ContactInfo{
 				Name: "สมชาย วงศ์เจริญ", Zipcode: "20110",
 				SubDistrict: "แหลมฉบัง", District: "ศรีราชา", Province: "ชลบุรี",
@@ -70,7 +71,7 @@ func SeedShipments(db *gorm.DB) {
 			},
 		},
 		{
-			TrackingNumber: "TRK-FF02-1188",
+			OrderID: "ORD-10249", TrackingNumber: "TRK-FF02-1188",
 			Customer: models.ContactInfo{
 				Name: "วิมล ศรีสุวรรณ", Zipcode: "24000",
 				SubDistrict: "หน้าเมือง", District: "เมือง", Province: "ฉะเชิงเทรา",
@@ -93,7 +94,7 @@ func SeedShipments(db *gorm.DB) {
 			},
 		},
 		{
-			TrackingNumber: "TRK-5E73-220B",
+			OrderID: "ORD-10250", TrackingNumber: "TRK-5E73-220B",
 			Customer: models.ContactInfo{
 				Name: "วิชัย สมบูรณ์", Zipcode: "21000",
 				SubDistrict: "ท่าประดู่", District: "เมือง", Province: "ระยอง",
@@ -125,6 +126,7 @@ func SeedShipments(db *gorm.DB) {
 
 	for _, s := range seeds {
 		shipment := models.Shipment{
+			OrderID:           s.OrderID,
 			TrackingNumber:    s.TrackingNumber,
 			Customer:          s.Customer,
 			Receiver:          s.Receiver,

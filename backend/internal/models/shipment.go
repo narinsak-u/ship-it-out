@@ -26,7 +26,8 @@ type ContactInfo struct {
 
 // Shipment maps to the frontend's Order type.
 type Shipment struct {
-	ID                uint        `gorm:"primaryKey;autoIncrement" json:"id"`
+	ID                uint        `gorm:"primaryKey;autoIncrement" json:"-"`
+	OrderID           string      `gorm:"uniqueIndex;not null" json:"id"`
 	TrackingNumber    string      `gorm:"unique;index;not null" json:"trackingNumber"`
 	Customer          ContactInfo `gorm:"embedded;embeddedPrefix:customer_" json:"customer"`
 	CustomerLat       float64     `gorm:"column:customer_lat" json:"-"`

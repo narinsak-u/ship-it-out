@@ -59,20 +59,34 @@ const showAssignModal = ref(false);
     <!-- Stats -->
     <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Total Drivers</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Total Drivers
+        </div>
         <div class="mt-1 font-mono text-3xl font-semibold">{{ statusCounts.total }}</div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Available</div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-success">{{ statusCounts.available }}</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Available
+        </div>
+        <div class="mt-1 font-mono text-3xl font-semibold text-success">
+          {{ statusCounts.available }}
+        </div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">On Delivery</div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-info">{{ statusCounts.on_delivery }}</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          On Delivery
+        </div>
+        <div class="mt-1 font-mono text-3xl font-semibold text-info">
+          {{ statusCounts.on_delivery }}
+        </div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Off Duty</div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-muted-foreground">{{ statusCounts.off_duty }}</div>
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Off Duty
+        </div>
+        <div class="mt-1 font-mono text-3xl font-semibold text-muted-foreground">
+          {{ statusCounts.off_duty }}
+        </div>
       </div>
     </div>
 
@@ -88,17 +102,19 @@ const showAssignModal = ref(false);
       </div>
       <div class="flex items-center gap-2">
         <button
-          v-for="s in (['all', 'available', 'on_delivery', 'off_duty'] as const)"
+          v-for="s in ['all', 'available', 'on_delivery', 'off_duty'] as const"
           :key="s"
           @click="statusFilter = s"
-          :class="cn(
-            'rounded-full border px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition-colors',
-            statusFilter === s
-              ? 'border-primary bg-primary/15 text-primary'
-              : 'border-border text-muted-foreground hover:text-foreground',
-          )"
+          :class="
+            cn(
+              'rounded-full border px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition-colors',
+              statusFilter === s
+                ? 'border-primary bg-primary/15 text-primary'
+                : 'border-border text-muted-foreground hover:text-foreground',
+            )
+          "
         >
-          {{ s === 'all' ? 'All' : driverStatusLabels[s] }}
+          {{ s === "all" ? "All" : driverStatusLabels[s] }}
         </button>
         <Button size="sm" class="gap-2 ml-2" @click="showAssignModal = true">
           <UserPlus class="h-4 w-4" /> Assign
@@ -108,7 +124,9 @@ const showAssignModal = ref(false);
 
     <!-- Table -->
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
-      <div class="hidden grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid">
+      <div
+        class="hidden grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
+      >
         <span>Driver</span>
         <span>Carrier</span>
         <span>Status</span>
@@ -116,24 +134,35 @@ const showAssignModal = ref(false);
         <span class="text-right">Actions</span>
       </div>
 
-      <div v-if="filtered.length === 0" class="px-6 py-12 text-center font-mono text-sm text-muted-foreground">
+      <div
+        v-if="filtered.length === 0"
+        class="px-6 py-12 text-center font-mono text-sm text-muted-foreground"
+      >
         No drivers match your filters.
       </div>
 
-      <div v-for="d in filtered" :key="d.id" class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] md:items-center">
+      <div
+        v-for="d in filtered"
+        :key="d.id"
+        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr] md:items-center"
+      >
         <div>
           <div class="font-mono text-sm">{{ d.name }}</div>
           <div class="font-mono text-xs text-muted-foreground">{{ d.email }}</div>
         </div>
-        <div class="font-mono text-sm text-muted-foreground">{{ getCarrier(d.carrierId)?.name ?? d.carrierId }}</div>
+        <div class="font-mono text-sm text-muted-foreground">
+          {{ getCarrier(d.carrierId)?.name ?? d.carrierId }}
+        </div>
         <div>
           <span
-            :class="cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider',
-              d.status === 'available' ? 'bg-success/15 text-success border-success/30' : '',
-              d.status === 'on_delivery' ? 'bg-info/15 text-info border-info/30' : '',
-              d.status === 'off_duty' ? 'bg-muted text-muted-foreground border-border' : '',
-            )"
+            :class="
+              cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider',
+                d.status === 'available' ? 'bg-success/15 text-success border-success/30' : '',
+                d.status === 'on_delivery' ? 'bg-info/15 text-info border-info/30' : '',
+                d.status === 'off_duty' ? 'bg-muted text-muted-foreground border-border' : '',
+              )
+            "
           >
             <span class="h-1.5 w-1.5 rounded-full bg-current" />
             {{ driverStatusLabels[d.status] }}

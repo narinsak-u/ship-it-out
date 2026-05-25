@@ -67,10 +67,12 @@ func main() {
 
 	// --- Shipment routes (auth required) ---
 	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
-	shipmentGroup.Get("/", shipment.List)                     // GET    /api/shipments
-	shipmentGroup.Post("/", shipment.Create)                  // POST   /api/shipments
-	shipmentGroup.Get("/:id", shipment.GetByID)               // GET    /api/shipments/:id
-	shipmentGroup.Patch("/:id/status", shipment.UpdateStatus) // PATCH  /api/shipments/:id/status
+	shipmentGroup.Get("/", shipment.List)                          // GET    /api/shipments
+	shipmentGroup.Post("/", shipment.Create)                       // POST   /api/shipments
+	shipmentGroup.Get("/:orderId", shipment.GetByID)               // GET    /api/shipments/:orderId
+	shipmentGroup.Patch("/:orderId/status", shipment.UpdateStatus) // PATCH  /api/shipments/:orderId/status
+	shipmentGroup.Put("/:orderId", shipment.Update)                // PUT    /api/shipments/:orderId
+	shipmentGroup.Delete("/:orderId", shipment.Delete)             // DELETE /api/shipments/:orderId
 
 	// --- Public tracking (anyone can look up a shipment by tracking number) ---
 	api.Get("/track/:trackingNumber", tracking.Track)

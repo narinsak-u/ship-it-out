@@ -1,6 +1,8 @@
 package database
 
 import (
+	"time"
+
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,21 +16,20 @@ import (
 var DB *gorm.DB
 
 // ConnectPostgres opens a connection to PostgreSQL using the provided DSN
-// (connection string) and stores the handle in the global DB variable.
-//
-// How it works:
-//  1. gorm.Open() tells GORM to connect using the Postgres driver
-//  2. The logger is set to "Warn" level — only slow queries and errors are printed
-//  3. If the connection fails (wrong URL, Postgres not running, etc.), the
-//     app shuts down immediately with log.Fatal()
-//  4. On success, a confirmation message is logged
+// with retries. Postgres often takes a few seconds to be ready in Docker,
+// so we retry every 2 seconds up to 30 seconds before giving up.
 func ConnectPostgres(dsn string) {
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
-	})
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to postgres")
+	for i := 0; i < 15; i++ {
+		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Warn),
+		})
+		if err == nil {
+			log.Info().Msg("postgres connected")
+			return
+		}
+		log.Warn().Err(err).Msgf("postgres not ready (attempt %d/15), retrying in 2s...", i+1)
+		time.Sleep(2 * time.Second)
 	}
-	log.Info().Msg("postgres connected")
+	log.Fatal().Err(err).Msg("failed to connect to postgres after 15 attempts")
 }
