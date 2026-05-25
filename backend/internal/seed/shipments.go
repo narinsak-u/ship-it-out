@@ -35,6 +35,7 @@ func SeedShipments(db *gorm.DB) {
 		Customer          models.ContactInfo
 		Receiver          models.ContactInfo
 		Status            string
+		HubID             string
 		Weight            string
 		Items             int
 		EstimatedDelivery string
@@ -58,6 +59,7 @@ func SeedShipments(db *gorm.DB) {
 				Coords: models.GeoPoint{Lat: 12.6096, Lng: 102.1041},
 			},
 			Status:            "in_transit",
+			HubID:             "HUB-003",
 			Weight:            "5.2 กก.",
 			Items:             2,
 			EstimatedDelivery: "May 26, 2026",
@@ -65,9 +67,10 @@ func SeedShipments(db *gorm.DB) {
 			Progress:          45,
 			CurrentCoords:     models.GeoPoint{Lat: 12.85, Lng: 101.5},
 			Events: []seedEvent{
-				{Timestamp: "May 24, 08:30", Location: models.Location{Name: "Near Ban Bueng", Lat: 12.85, Lng: 101.5}, Status: "In transit", Description: "กำลังเดินทางผ่าน อ.บ้านบึง"},
-				{Timestamp: "May 22, 14:00", Location: models.Location{Name: "Laem Chabang Port Hub", Lat: 13.0833, Lng: 100.8833}, Status: "Departed", Description: "ออกจากคลังสินค้าแหลมฉบัง"},
-				{Timestamp: "May 22, 09:15", Location: models.Location{Name: "Laem Chabang Port Hub", Lat: 13.0833, Lng: 100.8833}, Status: "Picked up", Description: "รับพัสดุจากผู้ส่ง"},
+				{Timestamp: "May 24, 08:30", Location: models.Location{Name: "Near Ban Bueng", Lat: 12.85, Lng: 101.5}, Status: "In Transit", Description: "Transit to next hub."},
+				{Timestamp: "May 22, 14:00", Location: models.Location{Name: "Rayong Hub, 150 ถ.สุขุมวิท ต.ท่าประดู่ อ.เมือง จ.ระยอง", Lat: 12.6814, Lng: 101.2817}, Status: "Departed", Description: "In transit to hub."},
+				{Timestamp: "May 22, 09:15", Location: models.Location{Name: "แหลมฉบัง, ศรีราชา, ชลบุรี", Lat: 13.0833, Lng: 100.8833}, Status: "Picked Up", Description: "Parcel collected from sender."},
+				{Timestamp: "May 22, 08:00", Location: models.Location{Name: "แหลมฉบัง, ศรีราชา, ชลบุรี", Lat: 13.0833, Lng: 100.8833}, Status: "Label Created", Description: "Awaiting pickup."},
 			},
 		},
 		{
@@ -83,6 +86,7 @@ func SeedShipments(db *gorm.DB) {
 				Coords: models.GeoPoint{Lat: 12.9236, Lng: 100.8825},
 			},
 			Status:            "pending",
+			HubID:             "",
 			Weight:            "1.5 กก.",
 			Items:             1,
 			EstimatedDelivery: "May 27, 2026",
@@ -90,7 +94,7 @@ func SeedShipments(db *gorm.DB) {
 			Progress:          5,
 			CurrentCoords:     models.GeoPoint{Lat: 13.6883, Lng: 101.0719},
 			Events: []seedEvent{
-				{Timestamp: "May 24, 11:20", Location: models.Location{Name: "Chachoengsao Hub", Lat: 13.6883, Lng: 101.0719}, Status: "Label created", Description: "รอรับพัสดุจากผู้ส่ง"},
+				{Timestamp: "May 24, 11:20", Location: models.Location{Name: "หน้าเมือง, เมือง, ฉะเชิงเทรา", Lat: 13.6883, Lng: 101.0719}, Status: "Label Created", Description: "Awaiting pickup."},
 			},
 		},
 		{
@@ -105,17 +109,20 @@ func SeedShipments(db *gorm.DB) {
 				SubDistrict: "บางพระ", District: "เมือง", Province: "ตราด",
 				Coords: models.GeoPoint{Lat: 12.2417, Lng: 102.5167},
 			},
-			Status:            "in_transit",
+			Status:            "out_for_delivery",
+			HubID:             "HUB-006",
 			Weight:            "3.8 กก.",
 			Items:             3,
 			EstimatedDelivery: "May 25, 2026",
 			CreatedAt:         "May 23, 2026",
-			Progress:          60,
+			Progress:          75,
 			CurrentCoords:     models.GeoPoint{Lat: 12.45, Lng: 101.9},
 			Events: []seedEvent{
-				{Timestamp: "May 24, 06:45", Location: models.Location{Name: "Near Klaeng", Lat: 12.45, Lng: 101.9}, Status: "In transit", Description: "กำลังเดินทางผ่าน อ.แกลง"},
-				{Timestamp: "May 23, 16:30", Location: models.Location{Name: "Rayong Hub", Lat: 12.6814, Lng: 101.2817}, Status: "Departed", Description: "ออกจากคลังสินค้าระยอง"},
-				{Timestamp: "May 23, 13:00", Location: models.Location{Name: "Rayong Hub", Lat: 12.6814, Lng: 101.2817}, Status: "Picked up", Description: "รับพัสดุจากผู้ส่ง"},
+				{Timestamp: "May 25, 09:00", Location: models.Location{Name: "Trat Hub, 12 ถ.ตราด-คลองใหญ่ ต.บางพระ อ.เมือง จ.ตราด", Lat: 12.2417, Lng: 102.5167}, Status: "Out for Delivery", Description: "Out for delivery."},
+				{Timestamp: "May 24, 15:30", Location: models.Location{Name: "Chanthaburi Hub, 45 ถ.ท่าใหม่ ต.ตลาด อ.เมือง จ.จันทบุรี", Lat: 12.6096, Lng: 102.1041}, Status: "In Transit", Description: "Transit to next hub."},
+				{Timestamp: "May 23, 16:30", Location: models.Location{Name: "Rayong Hub, 150 ถ.สุขุมวิท ต.ท่าประดู่ อ.เมือง จ.ระยอง", Lat: 12.6814, Lng: 101.2817}, Status: "Departed", Description: "In transit to hub."},
+				{Timestamp: "May 23, 13:00", Location: models.Location{Name: "ท่าประดู่, เมือง, ระยอง", Lat: 12.6814, Lng: 101.2817}, Status: "Picked Up", Description: "Parcel collected from sender."},
+				{Timestamp: "May 23, 08:00", Location: models.Location{Name: "ท่าประดู่, เมือง, ระยอง", Lat: 12.6814, Lng: 101.2817}, Status: "Label Created", Description: "Awaiting pickup."},
 			},
 		},
 	}
@@ -133,6 +140,7 @@ func SeedShipments(db *gorm.DB) {
 			Origin:            composeAddress(s.Customer),
 			Destination:       composeAddress(s.Receiver),
 			Status:            s.Status,
+			HubID:             s.HubID,
 			Carrier:           "Thun-u-der Express",
 			Weight:            s.Weight,
 			Items:             s.Items,
