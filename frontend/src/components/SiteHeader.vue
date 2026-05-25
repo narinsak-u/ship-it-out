@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { Package, LogIn, LogOut } from "lucide-vue-next";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import AuthModal from "@/components/AuthModal.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
 const router = useRouter();
+
+const showAuthModal = ref(false);
 </script>
 
 <template>
@@ -68,7 +72,7 @@ const router = useRouter();
                 authStore.logout();
                 router.push({ name: 'home' });
               "
-              class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+              class="flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               <LogOut class="h-3.5 w-3.5" /> Sign out
             </button>
@@ -76,15 +80,15 @@ const router = useRouter();
           <template v-else-if="authStore.isGuest">
             <span class="font-mono text-xs text-muted-foreground">Guest</span>
             <button
-              @click="router.push({ name: 'orders' })"
-              class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
+              @click="showAuthModal = true"
+              class="flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
             >
               <LogIn class="h-3.5 w-3.5" /> Sign in
             </button>
           </template>
           <button
             v-else
-            @click="router.push({ name: 'orders' })"
+            @click="showAuthModal = true"
             class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
           >
             <LogIn class="h-3.5 w-3.5" /> Sign in
@@ -93,4 +97,11 @@ const router = useRouter();
       </nav>
     </div>
   </header>
+
+  <AuthModal
+    v-if="showAuthModal"
+    @close="showAuthModal = false"
+    @authenticated="showAuthModal = false"
+    @guest="showAuthModal = false"
+  />
 </template>
