@@ -20,9 +20,7 @@ export interface OrderFormData {
 export async function fetchActiveDeliveries(): Promise<Order[]> {
   const result = await api.get<BackendShipment[]>("/shipments");
   if (result.error) throw new Error(result.error);
-  return result.data!
-    .filter((s) => s.status !== "delivered")
-    .map(mapShipmentToOrder);
+  return result.data!.filter((s) => s.status !== "delivered").map(mapShipmentToOrder);
 }
 
 export async function updateShipmentStatus(
@@ -30,10 +28,10 @@ export async function updateShipmentStatus(
   status: ShipmentStatus,
   hubId?: string,
 ): Promise<Order> {
-  const result = await api.patch<BackendShipment>(
-    `/shipments/${orderId}/status`,
-    { status, ...(hubId ? { hubId } : {}) },
-  );
+  const result = await api.patch<BackendShipment>(`/shipments/${orderId}/status`, {
+    status,
+    ...(hubId ? { hubId } : {}),
+  });
   if (result.error) throw new Error(result.error);
   return mapShipmentToOrder(result.data!);
 }
@@ -45,10 +43,7 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
   return mapShipmentToOrder(result.data!);
 }
 
-export async function updateOrder(
-  id: string,
-  data: Partial<OrderFormData>,
-): Promise<Order> {
+export async function updateOrder(id: string, data: Partial<OrderFormData>): Promise<Order> {
   const result = await api.put<BackendShipment>(`/shipments/${id}`, data);
   if (result.error) throw new Error(result.error);
   return mapShipmentToOrder(result.data!);
@@ -65,9 +60,7 @@ export async function fetchOrder(id: string): Promise<Order> {
   return mapShipmentToOrder(result.data!);
 }
 
-export async function fetchOrderEvents(
-  trackingNumber: string,
-): Promise<TrackingEvent[]> {
+export async function fetchOrderEvents(trackingNumber: string): Promise<TrackingEvent[]> {
   const result = await api.get<{
     shipment: BackendShipment;
     events: BackendShipmentEvent[];

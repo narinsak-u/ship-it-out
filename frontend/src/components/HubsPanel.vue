@@ -128,13 +128,17 @@ const hubStatusCounts = computed(() => {
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
       <Table>
         <TableHeader>
-          <TableRow class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50">
+          <TableRow
+            class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50"
+          >
             <TableHead class="hidden md:table-cell">Name</TableHead>
             <TableHead class="hidden md:table-cell">Carrier</TableHead>
             <TableHead class="hidden md:table-cell">Address</TableHead>
             <TableHead class="hidden md:table-cell">Capacity</TableHead>
             <TableHead class="hidden md:table-cell">Status</TableHead>
-            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell text-right">Actions</TableHead>
+            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell text-right"
+              >Actions</TableHead
+            >
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -154,7 +158,9 @@ const hubStatusCounts = computed(() => {
                   <div
                     class="h-full rounded-full transition-all"
                     :class="h.currentUtilization / h.capacity > 0.8 ? 'bg-warning' : 'bg-primary'"
-                    :style="{ width: `${Math.min(100, (h.currentUtilization / h.capacity) * 100)}%` }"
+                    :style="{
+                      width: `${Math.min(100, (h.currentUtilization / h.capacity) * 100)}%`,
+                    }"
                   />
                 </div>
                 <span class="font-mono text-xs text-muted-foreground"

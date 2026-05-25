@@ -149,7 +149,9 @@ function handleUpdate(orderId: string) {
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
       <Table>
         <TableHeader>
-          <TableRow class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50">
+          <TableRow
+            class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50"
+          >
             <TableHead class="hidden md:table-cell">Order ID</TableHead>
             <TableHead class="hidden md:table-cell">Tracking</TableHead>
             <TableHead class="hidden md:table-cell">Customer</TableHead>
@@ -167,16 +169,20 @@ function handleUpdate(orderId: string) {
             class="border-b border-border transition-colors hover:bg-secondary/40"
           >
             <TableCell class="font-mono text-sm text-primary">{{ o.id }}</TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{ o.trackingNumber }}</TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">{{
+              o.trackingNumber
+            }}</TableCell>
             <TableCell class="font-mono text-sm">{{ o.customer.name }}</TableCell>
             <TableCell class="font-mono text-sm text-muted-foreground">{{ o.carrier }}</TableCell>
             <TableCell>
               <Select
                 :model-value="draftStatus[o.id] ?? o.status"
-                @update:model-value="(v) => draftStatus[o.id] = v as ShipmentStatus"
+                @update:model-value="(v) => (draftStatus[o.id] = v as ShipmentStatus)"
                 :disabled="!auth.isAuthenticated"
               >
-                <SelectTrigger class="h-7 rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
+                <SelectTrigger
+                  class="h-7 rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -192,10 +198,12 @@ function handleUpdate(orderId: string) {
               <Select
                 v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
                 :model-value="draftHubId[o.id] ?? o.hubId ?? ''"
-                @update:model-value="(v) => draftHubId[o.id] = (v ?? '') as string"
+                @update:model-value="(v) => (draftHubId[o.id] = (v ?? '') as string)"
                 :disabled="!auth.isAuthenticated"
               >
-                <SelectTrigger class="h-7 w-full rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
+                <SelectTrigger
+                  class="h-7 w-full rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40"
+                >
                   <SelectValue placeholder="Select hub..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -208,7 +216,9 @@ function handleUpdate(orderId: string) {
               </Select>
               <span v-else class="font-mono text-xs text-muted-foreground">&mdash;</span>
             </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{ o.estimatedDelivery }}</TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">{{
+              o.estimatedDelivery
+            }}</TableCell>
             <TableCell class="text-right">
               <RouterLink
                 :to="{ name: 'order-detail', params: { orderId: o.id } }"

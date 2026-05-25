@@ -68,7 +68,9 @@ async function handleSubmit() {
 
 <template>
   <Dialog :open="open" @update:open="(v) => !v && emit('close')">
-    <DialogContent class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant sm:max-w-md">
+    <DialogContent
+      class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant sm:max-w-md"
+    >
       <DialogHeader>
         <DialogTitle class="font-mono text-lg font-semibold">
           {{ isEditing ? "Edit Hub" : "Add Hub" }}
@@ -110,7 +112,9 @@ async function handleSubmit() {
               >Status</label
             >
             <Select v-model="status">
-              <SelectTrigger class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm">
+              <SelectTrigger
+                class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
+              >
                 <SelectValue placeholder="Select status..." />
               </SelectTrigger>
               <SelectContent>
@@ -125,19 +129,13 @@ async function handleSubmit() {
         </div>
       </div>
 
-      <div
-        v-if="submitError"
-        class="mt-3 font-mono text-xs text-destructive"
-      >
+      <div v-if="submitError" class="mt-3 font-mono text-xs text-destructive">
         Failed to save hub. Please try again.
       </div>
 
       <div class="mt-6 flex justify-end gap-3">
         <Button variant="outline" @click="emit('close')">Cancel</Button>
-        <Button
-          :disabled="!name || submitPending"
-          @click="handleSubmit"
-        >
+        <Button :disabled="!name || submitPending" @click="handleSubmit">
           {{ submitPending ? "Saving…" : isEditing ? "Update Hub" : "Create Hub" }}
         </Button>
       </div>

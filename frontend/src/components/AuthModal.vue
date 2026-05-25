@@ -70,7 +70,9 @@ function handleGuest() {
 
 <template>
   <Dialog :open="open" @update:open="(v) => !v && emit('close')">
-    <DialogContent class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant sm:max-w-md">
+    <DialogContent
+      class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant sm:max-w-md"
+    >
       <DialogHeader>
         <DialogTitle class="font-mono text-lg font-semibold">
           {{ activeTab === "login" ? "Sign in" : "Create account" }}

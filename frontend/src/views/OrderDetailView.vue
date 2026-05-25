@@ -118,19 +118,25 @@ const meta = computed(() => {
 
               <div class="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5 sm:grid-cols-3">
                 <div>
-                  <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                  <div
+                    class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
+                  >
                     Progress
                   </div>
                   <div class="font-mono text-sm">{{ order.progress }}%</div>
                 </div>
                 <div>
-                  <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                  <div
+                    class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
+                  >
                     Created
                   </div>
                   <div class="font-mono text-sm">{{ order.createdAt }}</div>
                 </div>
                 <div>
-                  <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                  <div
+                    class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
+                  >
                     ETA
                   </div>
                   <div class="font-mono text-sm text-primary">{{ order.estimatedDelivery }}</div>
@@ -148,14 +154,12 @@ const meta = computed(() => {
 
           <!-- Metadata grid -->
           <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Card
-              v-for="m in meta"
-              :key="m.label"
-              class="rounded-lg shadow-elegant"
-            >
+            <Card v-for="m in meta" :key="m.label" class="rounded-lg shadow-elegant">
               <CardHeader class="flex flex-row items-center gap-2 p-4 pb-0">
                 <component :is="m.icon" class="h-3.5 w-3.5 text-primary" />
-                <CardTitle class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <CardTitle
+                  class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+                >
                   {{ m.label }}
                 </CardTitle>
               </CardHeader>

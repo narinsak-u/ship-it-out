@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import type { AcceptableValue } from "reka-ui";
-import {
-  getSubDistrictNames,
-  getDistrictNames,
-  getProvinceName,
-} from "thai-data";
+import { getSubDistrictNames, getDistrictNames, getProvinceName } from "thai-data";
 import Input from "@/components/ui/Input.vue";
 import {
   Select,
@@ -141,12 +137,7 @@ function onSubDistrictSelected(value: AcceptableValue) {
           maxlength="5"
           inputmode="numeric"
           placeholder="e.g. 10200"
-          @input="
-            patch(
-              'zipcode',
-              ($event.target as HTMLInputElement).value.replace(/\D/g, ''),
-            )
-          "
+          @input="patch('zipcode', ($event.target as HTMLInputElement).value.replace(/\D/g, ''))"
         />
         <p v-if="errors?.zipcode" class="mt-1 font-mono text-xs text-destructive">
           {{ errors.zipcode }}
@@ -161,16 +152,14 @@ function onSubDistrictSelected(value: AcceptableValue) {
           :model-value="modelValue.subDistrict"
           @update:model-value="onSubDistrictSelected"
         >
-          <SelectTrigger class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm">
+          <SelectTrigger
+            class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
+          >
             <SelectValue placeholder="Select sub-district..." />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem
-                v-for="sd in availableSubDistricts"
-                :key="sd"
-                :value="sd"
-              >
+              <SelectItem v-for="sd in availableSubDistricts" :key="sd" :value="sd">
                 {{ sd }}
               </SelectItem>
             </SelectGroup>
@@ -182,12 +171,7 @@ function onSubDistrictSelected(value: AcceptableValue) {
           class="mt-1.5 font-mono text-sm"
           placeholder="No sub-districts found"
         />
-        <Input
-          v-else
-          disabled
-          class="mt-1.5 font-mono text-sm"
-          placeholder="Enter zipcode first"
-        />
+        <Input v-else disabled class="mt-1.5 font-mono text-sm" placeholder="Enter zipcode first" />
         <p v-if="errors?.subDistrict" class="mt-1 font-mono text-xs text-destructive">
           {{ errors.subDistrict }}
         </p>

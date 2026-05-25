@@ -34,7 +34,11 @@ const onTrack = (e: Event) => {
 const stats = computed(() => {
   const all = orders.value ?? [];
   return [
-    { label: "Active shipments", value: all.filter((o) => o.status !== "delivered").length, icon: Truck },
+    {
+      label: "Active shipments",
+      value: all.filter((o) => o.status !== "delivered").length,
+      icon: Truck,
+    },
     { label: "Delivered (30d)", value: 184, icon: Boxes },
     { label: "On-time rate", value: "97.4%", icon: Activity },
     { label: "Countries served", value: 42, icon: Globe2 },
