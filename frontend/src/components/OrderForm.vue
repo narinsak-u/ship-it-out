@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import type { OrderFormData } from "@/lib/api/orders";
 import Input from "@/components/ui/Input.vue";
@@ -61,21 +61,21 @@ function validate(): boolean {
   return Object.keys(e).length === 0;
 }
 
-function senderErrors(errors: Record<string, string>): Record<string, string> {
+const senderErrorMap = computed(() => {
   const result: Record<string, string> = {};
-  for (const key of Object.keys(errors)) {
-    if (key.startsWith("sender.")) result[key.slice(7)] = errors[key];
+  for (const key of Object.keys(errors.value)) {
+    if (key.startsWith("sender.")) result[key.slice(7)] = errors.value[key];
   }
   return result;
-}
+});
 
-function receiverErrors(errors: Record<string, string>): Record<string, string> {
+const receiverErrorMap = computed(() => {
   const result: Record<string, string> = {};
-  for (const key of Object.keys(errors)) {
-    if (key.startsWith("receiver.")) result[key.slice(9)] = errors[key];
+  for (const key of Object.keys(errors.value)) {
+    if (key.startsWith("receiver.")) result[key.slice(9)] = errors.value[key];
   }
   return result;
-}
+});
 
 function handleSubmit() {
   if (!validate()) return;
@@ -110,19 +110,19 @@ function handleSubmit() {
     <ThaiAddressGroup
       label="Sender Info"
       v-model="sender"
-      :errors="senderErrors(errors)"
+      :errors="senderErrorMap"
     />
 
     <ThaiAddressGroup
       label="Receiver Info"
       v-model="receiver"
-      :errors="receiverErrors(errors)"
+      :errors="receiverErrorMap"
     />
 
     <!-- Section 3: Parcel Info -->
     <fieldset class="rounded-xl border border-border p-5">
       <legend class="font-mono text-xs uppercase tracking-widest text-primary px-2">
-        &#x1f4e6; Parcel Info
+        Parcel Info
       </legend>
       <div class="grid gap-5 md:grid-cols-2">
         <div>

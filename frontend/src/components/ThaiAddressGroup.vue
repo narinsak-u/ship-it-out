@@ -7,7 +7,7 @@ import {
 } from "thai-data";
 import Input from "@/components/ui/Input.vue";
 
-export interface ThaiAddress {
+interface ThaiAddress {
   name: string;
   zipcode: string;
   subDistrict: string;
@@ -26,6 +26,13 @@ const emit = defineEmits<{
 }>();
 
 const availableSubDistricts = ref<string[]>([]);
+
+const lookupStatus = computed(() => {
+  const zip = props.modelValue.zipcode;
+  if (zip.length < 5) return "enter-zip";
+  if (zip.length === 5 && availableSubDistricts.value.length === 0) return "no-results";
+  return "has-results";
+});
 
 function patch(field: keyof ThaiAddress, value: string) {
   emit("update:modelValue", { ...props.modelValue, [field]: value });
@@ -60,6 +67,13 @@ watch(
         patch("subDistrict", "");
         patch("district", "");
         patch("province", "");
+      }
+      // Clear stale sub-district if saved value isn't in results
+      if (
+        props.modelValue.subDistrict &&
+        !availableSubDistricts.value.includes(props.modelValue.subDistrict)
+      ) {
+        patch("subDistrict", "");
       }
     } else {
       availableSubDistricts.value = [];
@@ -116,7 +130,12 @@ function onSubDistrictSelected(ev: Event) {
           maxlength="5"
           inputmode="numeric"
           placeholder="e.g. 10200"
-          @input="patch('zipcode', ($event.target as HTMLInputElement).value)"
+          @input="
+            patch(
+              'zipcode',
+              ($event.target as HTMLInputElement).value.replace(/\D/g, ''),
+            )
+          "
         />
         <p v-if="errors?.zipcode" class="mt-1 font-mono text-xs text-destructive">
           {{ errors.zipcode }}
@@ -127,7 +146,7 @@ function onSubDistrictSelected(ev: Event) {
           >Sub-district</label
         >
         <select
-          v-if="availableSubDistricts.length"
+          v-if="lookupStatus === 'has-results'"
           :value="modelValue.subDistrict"
           class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
           @change="onSubDistrictSelected"
@@ -141,6 +160,12 @@ function onSubDistrictSelected(ev: Event) {
             {{ sd }}
           </option>
         </select>
+        <Input
+          v-else-if="lookupStatus === 'no-results'"
+          disabled
+          class="mt-1.5 font-mono text-sm"
+          placeholder="No sub-districts found"
+        />
         <Input
           v-else
           disabled
