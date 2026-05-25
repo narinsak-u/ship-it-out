@@ -42,7 +42,6 @@ type Shipment struct {
 	Destination       string      `gorm:"not null" json:"destination"`
 	Status            string      `gorm:"not null;default:pending" json:"status"`
 	Carrier           string      `json:"carrier"`
-	DriverID          string      `json:"driverId,omitempty"`
 	Weight            string      `json:"weight"`
 	Items             int         `json:"items"`
 	EstimatedDelivery time.Time   `json:"estimatedDelivery"`

@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent } from "vue";
-import { Truck, Warehouse, BarChart3, Package } from "lucide-vue-next";
+import { Warehouse, BarChart3, Package } from "lucide-vue-next";
 import { cn } from "@/lib/utils";
 
-const DriversPanel = defineAsyncComponent(() => import("@/components/DriversPanel.vue"));
 const HubsPanel = defineAsyncComponent(() => import("@/components/HubsPanel.vue"));
 const AnalyticsPanel = defineAsyncComponent(() => import("@/components/AnalyticsPanel.vue"));
 const DeliveriesPanel = defineAsyncComponent(() => import("@/components/DeliveriesPanel.vue"));
 
-type Tab = "drivers" | "hubs" | "analytics" | "deliveries";
+type Tab = "hubs" | "analytics" | "deliveries";
 
-const activeTab = ref<Tab>("drivers");
+const activeTab = ref<Tab>("hubs");
 
-const tabs: Array<{ key: Tab; label: string; icon: typeof Truck }> = [
-  { key: "drivers", label: "Drivers", icon: Truck },
+const tabs: Array<{ key: Tab; label: string; icon: typeof Warehouse }> = [
   { key: "hubs", label: "Hubs", icon: Warehouse },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
   { key: "deliveries", label: "Active Deliveries", icon: Package },
@@ -27,7 +25,7 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Truck }> = [
         <span class="font-mono text-xs uppercase tracking-widest text-primary">/ carriers</span>
         <h1 class="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Carrier operations</h1>
         <p class="mt-3 max-w-2xl text-muted-foreground">
-          Manage carrier drivers, hubs, and monitor active deliveries across the fleet.
+          Manage carrier hubs and monitor active deliveries across the fleet.
         </p>
       </div>
     </section>
@@ -55,8 +53,7 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Truck }> = [
 
       <!-- Tab content -->
       <div class="rounded-b-xl rounded-tr-xl border border-border bg-card p-6">
-        <DriversPanel v-if="activeTab === 'drivers'" />
-        <HubsPanel v-else-if="activeTab === 'hubs'" />
+        <HubsPanel v-if="activeTab === 'hubs'" />
         <AnalyticsPanel v-else-if="activeTab === 'analytics'" />
         <DeliveriesPanel v-else-if="activeTab === 'deliveries'" />
       </div>

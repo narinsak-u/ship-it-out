@@ -3,7 +3,6 @@ import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from "vue
 import { useQuery } from "@tanstack/vue-query";
 import { Search, RefreshCw, Check } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
-import { drivers as driverData } from "@/lib/carriers";
 import { fetchHubs } from "@/lib/api/carriers";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import Input from "@/components/ui/Input.vue";
@@ -54,12 +53,6 @@ const filtered = computed(() => {
 });
 
 const hubOptions = computed(() => hubs.value ?? []);
-
-function getDriverForOrder(orderId: string) {
-  const order = deliveries.value?.find((o) => o.id === orderId);
-  if (!order?.driverId) return null;
-  return driverData.find((d) => d.id === order.driverId) ?? null;
-}
 
 function usesHubSelector(status: ShipmentStatus) {
   return (

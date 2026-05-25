@@ -1,6 +1,5 @@
-import type { Driver, DriverStatus, Hub, HubStatus } from "@/lib/carriers";
-import { carriers, drivers, hubs } from "@/lib/carriers";
-import { orders } from "@/lib/orders";
+import type { Hub, HubStatus } from "@/lib/carriers";
+import { carriers, hubs } from "@/lib/carriers";
 import { api } from "@/lib/api/client";
 import { mapBackendHubToHub, type BackendHub } from "@/lib/api/mappers";
 
@@ -13,24 +12,6 @@ function delay(ms = 200): Promise<void> {
 export async function fetchCarriers() {
   await delay();
   return [...carriers];
-}
-
-// --- Drivers ---
-
-export async function fetchDrivers() {
-  await delay();
-  return [...drivers];
-}
-
-export async function assignDriverToOrder(driverId: string, orderId: string) {
-  await delay(100);
-  const driver = drivers.find((d) => d.id === driverId);
-  if (!driver) throw new Error("Driver not found");
-  const order = orders.find((o) => o.id === orderId);
-  if (!order) throw new Error("Order not found");
-  driver.status = "on_delivery" as DriverStatus;
-  order.driverId = driverId;
-  return { driver: { ...driver }, order: { ...order } };
 }
 
 // --- Hubs ---

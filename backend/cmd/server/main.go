@@ -91,7 +91,6 @@ func main() {
 	// --- WebSocket endpoints for real-time tracking updates ---
 	app.Get("/ws/tracking/:trackingNumber", websocket.HandleWebSocket)
 	app.Get("/ws/admin", websocket.HandleWebSocket)
-	app.Get("/ws/driver", websocket.HandleWebSocket)
 
 	// --- Start the server ---
 	log.Info().Str("port", config.App.Port).Msg("server starting")
