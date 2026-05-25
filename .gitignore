@@ -39,3 +39,4 @@ backend/tmp/
 *.sw?
 
 .superpowers
+.env

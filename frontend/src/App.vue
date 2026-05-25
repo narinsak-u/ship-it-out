@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { RouterView } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import SiteHeader from '@/components/SiteHeader.vue';
-import SiteFooter from '@/components/SiteFooter.vue';
+import { onMounted } from "vue";
+import { RouterView } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import SiteHeader from "@/components/SiteHeader.vue";
+import SiteFooter from "@/components/SiteFooter.vue";
 
 const authStore = useAuthStore();
 

@@ -40,7 +40,12 @@ async function handleLogin() {
 
 async function handleSignup() {
   store.error = "";
-  if (!signupName.value.trim() || !signupEmail.value.trim() || !signupPassword.value.trim() || !signupConfirm.value.trim()) {
+  if (
+    !signupName.value.trim() ||
+    !signupEmail.value.trim() ||
+    !signupPassword.value.trim() ||
+    !signupConfirm.value.trim()
+  ) {
     store.error = "Please fill in all fields";
     return;
   }
@@ -49,11 +54,7 @@ async function handleSignup() {
     return;
   }
   submitting.value = true;
-  const err = await store.signup(
-    signupName.value,
-    signupEmail.value,
-    signupPassword.value,
-  );
+  const err = await store.signup(signupName.value, signupEmail.value, signupPassword.value);
   submitting.value = false;
   if (!err) emit("authenticated");
 }
@@ -69,17 +70,12 @@ function handleGuest() {
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     @click.self="emit('close')"
   >
-    <div
-      class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant"
-    >
+    <div class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-elegant">
       <div class="flex items-center justify-between">
         <h2 class="font-mono text-lg font-semibold">
           {{ activeTab === "login" ? "Sign in" : "Create account" }}
         </h2>
-        <button
-          @click="emit('close')"
-          class="text-muted-foreground hover:text-foreground"
-        >
+        <button @click="emit('close')" class="text-muted-foreground hover:text-foreground">
           <X class="h-5 w-5" />
         </button>
       </div>
@@ -111,14 +107,9 @@ function handleGuest() {
       </div>
 
       <!-- Login form -->
-      <form
-        v-if="activeTab === 'login'"
-        @submit.prevent="handleLogin"
-        class="mt-6 space-y-4"
-      >
+      <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" class="mt-6 space-y-4">
         <div>
-          <label
-            class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Email</label
           >
           <Input
@@ -129,8 +120,7 @@ function handleGuest() {
           />
         </div>
         <div>
-          <label
-            class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Password</label
           >
           <Input
@@ -148,7 +138,7 @@ function handleGuest() {
         <Button type="submit" class="w-full gap-2" :disabled="submitting">
           <LogIn v-if="!submitting" class="h-4 w-4" />
           <Loader2 v-else class="h-4 w-4 animate-spin" />
-          {{ submitting ? 'Signing in...' : 'Sign In' }}
+          {{ submitting ? "Signing in..." : "Sign In" }}
         </Button>
 
         <div class="relative my-4">
@@ -156,9 +146,7 @@ function handleGuest() {
             <span class="w-full border-t border-border" />
           </div>
           <div class="relative flex justify-center text-xs uppercase">
-            <span class="bg-card px-2 font-mono text-muted-foreground"
-              >or</span
-            >
+            <span class="bg-card px-2 font-mono text-muted-foreground">or</span>
           </div>
         </div>
 
@@ -166,15 +154,9 @@ function handleGuest() {
           Continue as Guest
         </Button>
 
-        <p
-          class="text-center font-mono text-xs text-muted-foreground"
-        >
+        <p class="text-center font-mono text-xs text-muted-foreground">
           Don't have an account?
-          <button
-            type="button"
-            @click="switchTab('signup')"
-            class="text-primary hover:underline"
-          >
+          <button type="button" @click="switchTab('signup')" class="text-primary hover:underline">
             Sign up
           </button>
         </p>
@@ -183,19 +165,13 @@ function handleGuest() {
       <!-- Signup form -->
       <form v-else @submit.prevent="handleSignup" class="mt-6 space-y-4">
         <div>
-          <label
-            class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Name</label
           >
-          <Input
-            v-model="signupName"
-            class="mt-1.5 font-mono text-sm"
-            placeholder="Your name"
-          />
+          <Input v-model="signupName" class="mt-1.5 font-mono text-sm" placeholder="Your name" />
         </div>
         <div>
-          <label
-            class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Email</label
           >
           <Input
@@ -206,26 +182,16 @@ function handleGuest() {
           />
         </div>
         <div>
-          <label
-            class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Password</label
           >
-          <Input
-            v-model="signupPassword"
-            type="password"
-            class="mt-1.5 font-mono text-sm"
-          />
+          <Input v-model="signupPassword" type="password" class="mt-1.5 font-mono text-sm" />
         </div>
         <div>
-          <label
-            class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Confirm Password</label
           >
-          <Input
-            v-model="signupConfirm"
-            type="password"
-            class="mt-1.5 font-mono text-sm"
-          />
+          <Input v-model="signupConfirm" type="password" class="mt-1.5 font-mono text-sm" />
         </div>
 
         <p v-if="error" class="font-mono text-xs text-destructive">
@@ -235,7 +201,7 @@ function handleGuest() {
         <Button type="submit" class="w-full gap-2" :disabled="submitting">
           <UserPlus v-if="!submitting" class="h-4 w-4" />
           <Loader2 v-else class="h-4 w-4 animate-spin" />
-          {{ submitting ? 'Creating account...' : 'Create Account' }}
+          {{ submitting ? "Creating account..." : "Create Account" }}
         </Button>
 
         <div class="relative my-4">
@@ -243,9 +209,7 @@ function handleGuest() {
             <span class="w-full border-t border-border" />
           </div>
           <div class="relative flex justify-center text-xs uppercase">
-            <span class="bg-card px-2 font-mono text-muted-foreground"
-              >or</span
-            >
+            <span class="bg-card px-2 font-mono text-muted-foreground">or</span>
           </div>
         </div>
 
@@ -253,15 +217,9 @@ function handleGuest() {
           Continue as Guest
         </Button>
 
-        <p
-          class="text-center font-mono text-xs text-muted-foreground"
-        >
+        <p class="text-center font-mono text-xs text-muted-foreground">
           Already have an account?
-          <button
-            type="button"
-            @click="switchTab('login')"
-            class="text-primary hover:underline"
-          >
+          <button type="button" @click="switchTab('login')" class="text-primary hover:underline">
             Sign in
           </button>
         </p>

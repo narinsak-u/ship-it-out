@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getOrder } from '@/lib/orders'
+import { useQuery } from '@tanstack/vue-query'
 import { useCreateOrder, useUpdateOrder } from '@/hooks/useOrders'
+import { fetchOrder } from '@/lib/api/orders'
 import type { OrderFormData } from '@/lib/api/orders'
 import type { ShipmentStatus } from '@/lib/orders'
 import OrderForm from '@/components/OrderForm.vue'
@@ -15,7 +16,13 @@ const updateOrder = useUpdateOrder()
 
 const isEditing = computed(() => !!route.params.orderId)
 const orderId = computed(() => route.params.orderId as string | undefined)
-const order = computed(() => (orderId.value ? getOrder(orderId.value) : null))
+
+const { data: order } = useQuery({
+  queryKey: ['order', orderId.value],
+  queryFn: () => fetchOrder(orderId.value!),
+  enabled: isEditing,
+})
+
 const isPending = computed(() => createOrder.isPending.value || updateOrder.isPending.value)
 
 async function handleSubmit(data: OrderFormData & { status?: ShipmentStatus }) {
@@ -43,24 +50,22 @@ function handleCancel() {
       <div class="mx-auto max-w-7xl px-6 py-14">
         <span class="font-mono text-xs uppercase tracking-widest text-primary">/ orders</span>
         <h1 class="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-          {{ isEditing ? 'Edit Order' : 'Create Order' }}
+          {{ isEditing ? "Edit Order" : "Create Order" }}
         </h1>
         <p class="mt-3 max-w-2xl text-muted-foreground">
-          {{ isEditing ? 'Update shipment details and status.' : 'Register a new shipment in the system.' }}
+          {{
+            isEditing
+              ? "Update shipment details and status."
+              : "Register a new shipment in the system."
+          }}
         </p>
       </div>
     </section>
 
     <section class="mx-auto max-w-3xl px-6 py-10">
       <div v-if="isEditing && !order" class="py-16 text-center">
-        <p class="font-mono text-lg">Order not found</p>
-        <p class="mt-2 text-sm text-muted-foreground">No order matches ID "{{ orderId }}".</p>
-        <button
-          @click="router.push({ name: 'orders' })"
-          class="mt-6 font-mono text-sm text-primary hover:underline"
-        >
-          &larr; Back to orders
-        </button>
+        <p class="font-mono text-lg">Loading order...</p>
+        <Skeleton class="mt-4 h-96 rounded-xl" />
       </div>
 
       <div v-else-if="isEditing && !order">
@@ -77,7 +82,10 @@ function handleCancel() {
         />
       </div>
 
-      <div v-if="createOrder.isError || updateOrder.isError" class="mt-4 rounded-lg bg-destructive/15 px-4 py-3 font-mono text-sm text-destructive">
+      <div
+        v-if="createOrder.isError || updateOrder.isError"
+        class="mt-4 rounded-lg bg-destructive/15 px-4 py-3 font-mono text-sm text-destructive"
+      >
         Failed to save order. Please try again.
       </div>
     </section>

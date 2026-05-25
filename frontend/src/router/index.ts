@@ -1,37 +1,37 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory } from "vue-router";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/',
-      name: 'home',
-      component: () => import('@/views/HomeView.vue'),
+      path: "/",
+      name: "home",
+      component: () => import("@/views/HomeView.vue"),
     },
     {
-      path: '/orders',
-      name: 'orders',
-      component: () => import('@/views/OrdersView.vue'),
+      path: "/orders",
+      name: "orders",
+      component: () => import("@/views/OrdersView.vue"),
     },
     {
-      path: '/orders/create',
-      name: 'order-create',
-      component: () => import('@/views/OrderFormView.vue'),
+      path: "/orders/create",
+      name: "order-create",
+      component: () => import("@/views/OrderFormView.vue"),
     },
     {
-      path: '/orders/:orderId/edit',
-      name: 'order-edit',
-      component: () => import('@/views/OrderFormView.vue'),
+      path: "/orders/:orderId/edit",
+      name: "order-edit",
+      component: () => import("@/views/OrderFormView.vue"),
     },
     {
-      path: '/orders/:orderId',
-      name: 'order-detail',
-      component: () => import('@/views/OrderDetailView.vue'),
+      path: "/orders/:orderId",
+      name: "order-detail",
+      component: () => import("@/views/OrderDetailView.vue"),
     },
     {
-      path: '/carriers',
-      name: 'carriers',
-      component: () => import('@/views/CarriersView.vue'),
+      path: "/carriers",
+      name: "carriers",
+      component: () => import("@/views/CarriersView.vue"),
     },
   ],
 });
