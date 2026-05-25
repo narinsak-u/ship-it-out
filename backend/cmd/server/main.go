@@ -65,11 +65,11 @@ func main() {
 	authGroup.Get("/me", middleware.AuthRequired(), auth.Me) // GET  /api/auth/me (needs valid JWT cookie)
 	authGroup.Post("/logout", auth.Logout)                   // POST /api/auth/logout
 
-	// --- Shipment routes (auth required) ---
+	// --- Shipment routes (public read, auth required for write) ---
+	api.Get("/shipments", shipment.List)             // GET    /api/shipments (public)
+	api.Get("/shipments/:orderId", shipment.GetByID) // GET    /api/shipments/:orderId (public)
 	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
-	shipmentGroup.Get("/", shipment.List)                          // GET    /api/shipments
 	shipmentGroup.Post("/", shipment.Create)                       // POST   /api/shipments
-	shipmentGroup.Get("/:orderId", shipment.GetByID)               // GET    /api/shipments/:orderId
 	shipmentGroup.Patch("/:orderId/status", shipment.UpdateStatus) // PATCH  /api/shipments/:orderId/status
 	shipmentGroup.Put("/:orderId", shipment.Update)                // PUT    /api/shipments/:orderId
 	shipmentGroup.Delete("/:orderId", shipment.Delete)             // DELETE /api/shipments/:orderId
@@ -77,11 +77,11 @@ func main() {
 	// --- Public tracking (anyone can look up a shipment by tracking number) ---
 	api.Get("/track/:trackingNumber", tracking.Track)
 
-	// --- Hub routes (auth required) ---
+	// --- Hub routes (public read, auth required for write) ---
+	api.Get("/hubs", hub.List)        // GET /api/hubs (public)
+	api.Get("/hubs/:id", hub.GetByID) // GET /api/hubs/:id (public)
 	hubGroup := api.Group("/hubs", middleware.AuthRequired())
-	hubGroup.Get("/", hub.List)
 	hubGroup.Post("/", hub.Create)
-	hubGroup.Get("/:id", hub.GetByID)
 	hubGroup.Put("/:id", hub.Update)
 	hubGroup.Delete("/:id", hub.Delete)
 
