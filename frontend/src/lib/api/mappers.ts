@@ -13,6 +13,7 @@ export interface BackendShipment {
   destination: string;
   status: string;
   carrier: string;
+  hubId?: string;
   weight: string;
   items: number;
   estimatedDelivery: string;
@@ -70,6 +71,7 @@ export function mapShipmentToOrder(s: BackendShipment): Order {
     currentCoords: s.currentCoords,
     status: s.status as ShipmentStatus,
     carrier: s.carrier,
+    ...(s.hubId ? { hubId: s.hubId } : {}),
     weight: s.weight,
     items: s.items,
     estimatedDelivery: formatDate(s.estimatedDelivery),

@@ -44,6 +44,7 @@ export interface Order {
   currentCoords: GeoPoint;
   status: ShipmentStatus;
   carrier: string;
+  hubId?: string;
   weight: string;
   items: number;
   estimatedDelivery: string;

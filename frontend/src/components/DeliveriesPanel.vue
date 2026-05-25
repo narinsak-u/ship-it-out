@@ -164,7 +164,7 @@ function handleUpdate(orderId: string) {
         <div>
           <select
             v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
-            :value="draftHubId[o.id] ?? ''"
+            :value="draftHubId[o.id] ?? o.hubId ?? ''"
             @change="draftHubId[o.id] = ($event.target as HTMLSelectElement).value"
             class="w-full rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs"
           >
@@ -197,7 +197,7 @@ function handleUpdate(orderId: string) {
       class="mt-6 overflow-hidden rounded-xl border border-border"
     >
       <Suspense>
-        <div class="h-[300px] w-full">
+        <div class="h-75 w-full">
           <ShipmentMap
             v-if="filtered[0]"
             :origin="filtered[0].customer.coords"
@@ -210,7 +210,7 @@ function handleUpdate(orderId: string) {
           />
         </div>
         <template #fallback>
-          <div class="flex h-[300px] w-full items-center justify-center bg-gradient-hero">
+          <div class="flex h-75 w-full items-center justify-center bg-gradient-hero">
             <div class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
               Loading geo telemetry…
             </div>

@@ -209,6 +209,9 @@ func UpdateStatus(c *fiber.Ctx) error {
 	}
 
 	shipment.Status = body.Status
+	if body.HubID != "" {
+		shipment.HubID = body.HubID
+	}
 	database.DB.Save(&shipment)
 
 	// Look up hub if provided (for statuses where location = hub address)
