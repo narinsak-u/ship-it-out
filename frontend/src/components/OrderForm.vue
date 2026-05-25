@@ -42,6 +42,24 @@ const status = ref<ShipmentStatus>(props.initial?.status ?? "pending");
 
 const errors = ref<Record<string, string>>({});
 
+const canSubmit = computed(() => {
+  return (
+    sender.value.name.trim() &&
+    sender.value.zipcode.trim() &&
+    sender.value.subDistrict.trim() &&
+    sender.value.district.trim() &&
+    sender.value.province.trim() &&
+    receiver.value.name.trim() &&
+    receiver.value.zipcode.trim() &&
+    receiver.value.subDistrict.trim() &&
+    receiver.value.district.trim() &&
+    receiver.value.province.trim() &&
+    weight.value.trim() &&
+    (items.value ?? 0) >= 1 &&
+    estimatedDelivery.value.trim()
+  );
+});
+
 function validate(): boolean {
   const e: Record<string, string> = {};
   if (!sender.value.name.trim()) e["sender.name"] = "Required";
@@ -184,7 +202,7 @@ function handleSubmit() {
 
     <div class="flex justify-end gap-3 pt-4 border-t border-border">
       <Button variant="outline" type="button" @click="emit('cancel')">Cancel</Button>
-      <Button type="submit" :disabled="pending">
+      <Button type="submit" :disabled="pending || !canSubmit">
         {{ pending ? "Saving\u2026" : isEditing ? "Save Changes" : "Create Order" }}
       </Button>
     </div>

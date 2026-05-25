@@ -38,13 +38,19 @@ function patch(field: keyof ThaiAddress, value: string) {
   emit("update:modelValue", { ...props.modelValue, [field]: value });
 }
 
+function emitAll(updates: Partial<ThaiAddress>) {
+  emit("update:modelValue", { ...props.modelValue, ...updates });
+}
+
 function selectSubDistrict(sub: string) {
   const zip = props.modelValue.zipcode;
-  patch("subDistrict", sub);
   const districts = getDistrictNames(zip);
   const province = getProvinceName(zip);
-  if (districts.length > 0) patch("district", districts[0]);
-  if (province) patch("province", province);
+  emitAll({
+    subDistrict: sub,
+    district: districts.length > 0 ? districts[0] : "",
+    province: province ?? "",
+  });
 }
 
 const districtDisplay = computed(() => {
@@ -63,24 +69,21 @@ watch(
   (zip, oldZip) => {
     if (zip.length === 5) {
       availableSubDistricts.value = getSubDistrictNames(zip);
+      // Clear all address fields when user types a different zipcode
       if (oldZip && zip !== oldZip) {
-        patch("subDistrict", "");
-        patch("district", "");
-        patch("province", "");
+        emitAll({ subDistrict: "", district: "", province: "" });
       }
-      // Clear stale sub-district if saved value isn't in results
+      // Clear stale sub-district if saved value isn't in the results list
       if (
         props.modelValue.subDistrict &&
         !availableSubDistricts.value.includes(props.modelValue.subDistrict)
       ) {
-        patch("subDistrict", "");
+        emitAll({ subDistrict: "", district: "", province: "" });
       }
     } else {
       availableSubDistricts.value = [];
       if (oldZip && oldZip.length === 5) {
-        patch("subDistrict", "");
-        patch("district", "");
-        patch("province", "");
+        emitAll({ subDistrict: "", district: "", province: "" });
       }
     }
   },
