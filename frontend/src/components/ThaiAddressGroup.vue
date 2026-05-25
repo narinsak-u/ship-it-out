@@ -31,6 +31,15 @@ function patch(field: keyof ThaiAddress, value: string) {
   emit("update:modelValue", { ...props.modelValue, [field]: value });
 }
 
+function selectSubDistrict(sub: string) {
+  const zip = props.modelValue.zipcode;
+  patch("subDistrict", sub);
+  const districts = getDistrictNames(zip);
+  const province = getProvinceName(zip);
+  if (districts.length > 0) patch("district", districts[0]);
+  if (province) patch("province", province);
+}
+
 const districtDisplay = computed(() => {
   if (props.modelValue.district) return props.modelValue.district;
   const names = getDistrictNames(props.modelValue.zipcode);
@@ -54,6 +63,11 @@ watch(
       }
     } else {
       availableSubDistricts.value = [];
+      if (oldZip && oldZip.length === 5) {
+        patch("subDistrict", "");
+        patch("district", "");
+        patch("province", "");
+      }
     }
   },
   { immediate: true },
@@ -61,24 +75,14 @@ watch(
 
 watch(availableSubDistricts, (list) => {
   if (list.length === 1 && !props.modelValue.subDistrict) {
-    const zip = props.modelValue.zipcode;
-    patch("subDistrict", list[0]);
-    const districts = getDistrictNames(zip);
-    const province = getProvinceName(zip);
-    if (districts.length > 0) patch("district", districts[0]);
-    if (province) patch("province", province);
+    selectSubDistrict(list[0]);
   }
 });
 
 function onSubDistrictSelected(ev: Event) {
   const sub = (ev.target as HTMLSelectElement).value;
   if (!sub) return;
-  const zip = props.modelValue.zipcode;
-  patch("subDistrict", sub);
-  const districts = getDistrictNames(zip);
-  const province = getProvinceName(zip);
-  if (districts.length > 0) patch("district", districts[0]);
-  if (province) patch("province", province);
+  selectSubDistrict(sub);
 }
 </script>
 
@@ -110,6 +114,7 @@ function onSubDistrictSelected(ev: Event) {
           :value="modelValue.zipcode"
           class="mt-1.5 font-mono text-sm"
           maxlength="5"
+          inputmode="numeric"
           placeholder="e.g. 10200"
           @input="patch('zipcode', ($event.target as HTMLInputElement).value)"
         />
