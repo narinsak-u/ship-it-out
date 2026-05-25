@@ -10,6 +10,8 @@ const props = defineProps<{
 
 const styles: Record<ShipmentStatus, string> = {
   pending: "bg-muted text-muted-foreground border-border",
+  picked_up: "bg-primary/15 text-primary border-primary/30",
+  departed: "bg-warning/15 text-warning border-warning/30",
   in_transit: "bg-info/15 text-info border-info/30",
   out_for_delivery: "bg-primary/15 text-primary border-primary/30",
   delivered: "bg-success/15 text-success border-success/30",

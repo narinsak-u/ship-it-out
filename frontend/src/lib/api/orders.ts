@@ -28,10 +28,11 @@ export async function fetchActiveDeliveries(): Promise<Order[]> {
 export async function updateShipmentStatus(
   orderId: string,
   status: ShipmentStatus,
+  hubId?: string,
 ): Promise<Order> {
   const result = await api.patch<BackendShipment>(
     `/shipments/${orderId}/status`,
-    { status },
+    { status, ...(hubId ? { hubId } : {}) },
   );
   if (result.error) throw new Error(result.error);
   return mapShipmentToOrder(result.data!);

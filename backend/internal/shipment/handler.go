@@ -88,14 +88,14 @@ func Create(c *fiber.Ctx) error {
 
 	// Create the initial tracking event for the new shipment
 	event := models.ShipmentEvent{
-		ShipmentID: shipment.ID,
-		Status:     "Label created",
+		ShipmentID:  shipment.ID,
+		Status:      "Label Created",
+		Description: "Awaiting pickup.",
 		Location: models.Location{
 			Name: composeAddress(req.Customer),
 			Lat:  req.Customer.Coords.Lat,
 			Lng:  req.Customer.Coords.Lng,
 		},
-		Description: "Awaiting pickup.",
 	}
 	database.DB.Create(&event)
 
@@ -114,13 +114,90 @@ func GetByID(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
-// UpdateStatus changes the status of a shipment and records the change
-// as a ShipmentEvent for the tracking timeline.
+// statusToEvent builds the tracking event details (status label, description, location)
+// for a given shipment status. Some statuses require a hub reference for location.
+func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus string) models.ShipmentEvent {
+	var eventStatus, description string
+	var location models.Location
+
+	switch targetStatus {
+	case "pending":
+		eventStatus = "Label Created"
+		description = "Awaiting pickup."
+		location = models.Location{
+			Name: composeAddress(shipment.Customer),
+			Lat:  shipment.CustomerLat,
+			Lng:  shipment.CustomerLng,
+		}
+	case "picked_up":
+		eventStatus = "Picked Up"
+		description = "Parcel collected from sender."
+		location = models.Location{
+			Name: composeAddress(shipment.Customer),
+			Lat:  shipment.CustomerLat,
+			Lng:  shipment.CustomerLng,
+		}
+	case "departed":
+		eventStatus = "Departed"
+		description = "In transit to hub."
+		if hub != nil {
+			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
+		} else {
+			location = models.Location{Name: shipment.Origin, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
+		}
+	case "in_transit":
+		eventStatus = "In Transit"
+		description = "Transit to next hub."
+		if hub != nil {
+			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
+		} else {
+			location = models.Location{Name: shipment.Destination, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
+		}
+	case "out_for_delivery":
+		eventStatus = "Out for Delivery"
+		description = "Out for delivery."
+		if hub != nil {
+			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
+		} else {
+			location = models.Location{Name: shipment.Destination, Lat: shipment.ReceiverLat, Lng: shipment.ReceiverLng}
+		}
+	case "delivered":
+		eventStatus = "Delivered"
+		description = "Delivered to recipient."
+		location = models.Location{
+			Name: composeAddress(shipment.Receiver),
+			Lat:  shipment.ReceiverLat,
+			Lng:  shipment.ReceiverLng,
+		}
+	case "delayed":
+		eventStatus = "Delayed"
+		description = "Unexpected issue encountered."
+		if hub != nil {
+			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
+		} else {
+			location = models.Location{Name: shipment.Destination, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
+		}
+	default:
+		eventStatus = targetStatus
+		description = "Status updated."
+		location = models.Location{Name: shipment.Destination, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
+	}
+
+	return models.ShipmentEvent{
+		Status:      eventStatus,
+		Description: description,
+		Location:    location,
+	}
+}
+
+// UpdateStatus changes the status of a shipment and records a tracking event
+// with context-aware status label, description, and location.
 func UpdateStatus(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
 	var body struct {
 		Status string `json:"status"`
+		HubID  string `json:"hubId,omitempty"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return utils.Error(c, 400, "invalid request body")
@@ -134,16 +211,17 @@ func UpdateStatus(c *fiber.Ctx) error {
 	shipment.Status = body.Status
 	database.DB.Save(&shipment)
 
-	event := models.ShipmentEvent{
-		ShipmentID: shipment.ID,
-		Status:     body.Status,
-		Location: models.Location{
-			Name: shipment.Destination,
-			Lat:  shipment.CurrentCoords.Lat,
-			Lng:  shipment.CurrentCoords.Lng,
-		},
-		Description: fmt.Sprintf("Status updated to %s", body.Status),
+	// Look up hub if provided (for statuses where location = hub address)
+	var hub *models.Hub
+	if body.HubID != "" {
+		var h models.Hub
+		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error == nil {
+			hub = &h
+		}
 	}
+
+	event := statusToEvent(shipment, hub, body.Status)
+	event.ShipmentID = shipment.ID
 	database.DB.Create(&event)
 
 	return utils.Success(c, shipment)

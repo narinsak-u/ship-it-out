@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from "vue";
+import { useQuery } from "@tanstack/vue-query";
 import { Search, RefreshCw, ArrowRight, UserPlus } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
 import { useAssignDriver } from "@/hooks/useDrivers";
 import { drivers as driverData } from "@/lib/carriers";
+import { fetchHubs } from "@/lib/api/carriers";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
@@ -14,6 +16,11 @@ const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.
 const { data: deliveries, isLoading, isError, refetch, dataUpdatedAt } = useActiveDeliveries();
 const updateStatus = useUpdateShipmentStatus();
 const assignDriver = useAssignDriver();
+
+const { data: hubs } = useQuery({
+  queryKey: ["hubs"],
+  queryFn: fetchHubs,
+});
 
 const query = ref("");
 const mounted = ref(false);
@@ -45,6 +52,10 @@ const filtered = computed(() => {
   });
 });
 
+const selectedHubId = ref<Record<string, string>>({});
+
+const hubOptions = computed(() => hubs.value ?? []);
+
 function getDriverForOrder(orderId: string) {
   const order = deliveries.value?.find((o) => o.id === orderId);
   if (!order?.driverId) return null;
@@ -57,6 +68,21 @@ function handleAssign(orderId: string) {
   const available = driverData.filter((d) => d.status === "available");
   if (available.length === 0) return;
   assignDriver.mutate({ driverId: available[0].id, orderId });
+}
+
+function handleStatusChange(orderId: string, status: ShipmentStatus) {
+  const hubId = selectedHubId.value[orderId];
+  updateStatus.mutate({ orderId, status, hubId });
+}
+
+function usesHubSelector(status: ShipmentStatus) {
+  return status === "departed" || status === "in_transit" || status === "out_for_delivery" || status === "delayed";
+}
+
+function hubLabelForStatus(o: { status: ShipmentStatus; origin: string; destination: string; customer: { name: string }; receiver: { name: string } }) {
+  if (o.status === "pending" || o.status === "picked_up") return o.origin || o.customer.name;
+  if (o.status === "delivered") return o.destination || o.receiver.name;
+  return "";
 }
 </script>
 
@@ -120,7 +146,7 @@ function handleAssign(orderId: string) {
       <div
         v-for="o in filtered"
         :key="o.id"
-        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[0.8fr_1fr_1fr_1fr_1fr_1fr_1fr_0.6fr] md:items-center"
+        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[0.8fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr_1fr_0.6fr] md:items-center"
       >
         <div class="font-mono text-sm text-primary">{{ o.id }}</div>
         <div class="font-mono text-xs text-muted-foreground">{{ o.trackingNumber }}</div>
@@ -137,10 +163,7 @@ function handleAssign(orderId: string) {
             :value="o.status"
             @change="
               (e) =>
-                updateStatus.mutate({
-                  orderId: o.id,
-                  status: (e.target as HTMLSelectElement).value as ShipmentStatus,
-                })
+                handleStatusChange(o.id, (e.target as HTMLSelectElement).value as ShipmentStatus)
             "
             class="rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs"
           >
@@ -148,6 +171,23 @@ function handleAssign(orderId: string) {
               {{ label }}
             </option>
           </select>
+        </div>
+        <!-- Hub column -->
+        <div>
+          <select
+            v-if="usesHubSelector(o.status)"
+            :value="selectedHubId[o.id] ?? ''"
+            @change="selectedHubId[o.id] = ($event.target as HTMLSelectElement).value"
+            class="w-full rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs"
+          >
+            <option disabled value="">Select hub...</option>
+            <option v-for="h in hubOptions" :key="h.id" :value="h.id">
+              {{ h.name }}
+            </option>
+          </select>
+          <span v-else class="font-mono text-xs text-muted-foreground">
+            {{ hubLabelForStatus(o) }}
+          </span>
         </div>
         <div class="font-mono text-xs text-muted-foreground">{{ o.estimatedDelivery }}</div>
         <div class="flex justify-end gap-1">

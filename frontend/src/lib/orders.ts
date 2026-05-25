@@ -1,5 +1,7 @@
 export type ShipmentStatus =
   | "pending"
+  | "picked_up"
+  | "departed"
   | "in_transit"
   | "out_for_delivery"
   | "delivered"
@@ -188,6 +190,8 @@ export const orders: Order[] = [
 
 export const statusLabels: Record<ShipmentStatus, string> = {
   pending: "Pending",
+  picked_up: "Picked Up",
+  departed: "Departed",
   in_transit: "In Transit",
   out_for_delivery: "Out for Delivery",
   delivered: "Delivered",

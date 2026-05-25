@@ -13,8 +13,15 @@ export function useActiveDeliveries() {
 export function useUpdateShipmentStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, status }: { orderId: string; status: ShipmentStatus }) =>
-      updateShipmentStatus(orderId, status),
+    mutationFn: ({
+      orderId,
+      status,
+      hubId,
+    }: {
+      orderId: string;
+      status: ShipmentStatus;
+      hubId?: string;
+    }) => updateShipmentStatus(orderId, status, hubId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });
     },
