@@ -86,6 +86,19 @@ func Create(c *fiber.Ctx) error {
 		return utils.Error(c, 500, "failed to create shipment")
 	}
 
+	// Create the initial tracking event for the new shipment
+	event := models.ShipmentEvent{
+		ShipmentID: shipment.ID,
+		Status:     "Label created",
+		Location: models.Location{
+			Name: composeAddress(req.Customer),
+			Lat:  req.Customer.Coords.Lat,
+			Lng:  req.Customer.Coords.Lng,
+		},
+		Description: "Awaiting pickup.",
+	}
+	database.DB.Create(&event)
+
 	return utils.Success(c, shipment)
 }
 
