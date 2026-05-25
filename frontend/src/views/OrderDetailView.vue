@@ -3,6 +3,7 @@ import { ref, computed, onMounted, defineAsyncComponent } from "vue";
 import { useRoute, RouterLink } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
 import { ArrowLeft, MapPin, Truck, Calendar, Hash, User, Weight, Maximize2 } from "lucide-vue-next";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import StatusBadge from "@/components/StatusBadge.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import { fetchOrder, fetchOrderEvents } from "@/lib/api/orders";
@@ -82,82 +83,86 @@ const meta = computed(() => {
           </div>
 
           <!-- Route summary card -->
-          <div class="mt-8 rounded-xl border border-border bg-card p-5 shadow-elegant">
-            <div class="flex items-start gap-4">
-              <div class="mt-1 flex flex-col items-center gap-1">
-                <span class="h-2.5 w-2.5 rounded-full bg-primary" />
-                <span class="h-10 w-px border-l border-dashed border-border" />
-                <span class="h-2.5 w-2.5 rounded-full bg-accent" />
-              </div>
-              <div class="flex-1 space-y-3">
-                <div>
-                  <div
-                    class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
-                  >
-                    From
+          <Card class="mt-8 shadow-elegant">
+            <CardContent class="p-5">
+              <div class="flex items-start gap-4">
+                <div class="mt-1 flex flex-col items-center gap-1">
+                  <span class="h-2.5 w-2.5 rounded-full bg-primary" />
+                  <span class="h-10 w-px border-l border-dashed border-border" />
+                  <span class="h-2.5 w-2.5 rounded-full bg-accent" />
+                </div>
+                <div class="flex-1 space-y-3">
+                  <div>
+                    <div
+                      class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
+                    >
+                      From
+                    </div>
+                    <div class="font-mono text-sm">{{ order.origin }}</div>
                   </div>
-                  <div class="font-mono text-sm">{{ order.origin }}</div>
+                  <div>
+                    <div
+                      class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
+                    >
+                      To
+                    </div>
+                    <div class="font-mono text-sm">{{ order.destination }}</div>
+                  </div>
+                </div>
+                <div
+                  class="rounded-md border border-border bg-secondary px-3 py-1.5 font-mono text-xs text-primary"
+                >
+                  {{ order.carrier }}
+                </div>
+              </div>
+
+              <div class="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5 sm:grid-cols-3">
+                <div>
+                  <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Progress
+                  </div>
+                  <div class="font-mono text-sm">{{ order.progress }}%</div>
                 </div>
                 <div>
-                  <div
-                    class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
-                  >
-                    To
+                  <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Created
                   </div>
-                  <div class="font-mono text-sm">{{ order.destination }}</div>
+                  <div class="font-mono text-sm">{{ order.createdAt }}</div>
+                </div>
+                <div>
+                  <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    ETA
+                  </div>
+                  <div class="font-mono text-sm text-primary">{{ order.estimatedDelivery }}</div>
                 </div>
               </div>
-              <div
-                class="rounded-md border border-border bg-secondary px-3 py-1.5 font-mono text-xs text-primary"
-              >
-                {{ order.carrier }}
-              </div>
-            </div>
 
-            <div class="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5 sm:grid-cols-3">
-              <div>
-                <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                  Progress
-                </div>
-                <div class="font-mono text-sm">{{ order.progress }}%</div>
+              <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
+                <div
+                  class="h-full bg-gradient-accent transition-all"
+                  :style="{ width: `${order.progress}%` }"
+                />
               </div>
-              <div>
-                <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                  Created
-                </div>
-                <div class="font-mono text-sm">{{ order.createdAt }}</div>
-              </div>
-              <div>
-                <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                  ETA
-                </div>
-                <div class="font-mono text-sm text-primary">{{ order.estimatedDelivery }}</div>
-              </div>
-            </div>
-
-            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
-              <div
-                class="h-full bg-gradient-accent transition-all"
-                :style="{ width: `${order.progress}%` }"
-              />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           <!-- Metadata grid -->
           <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div
+            <Card
               v-for="m in meta"
               :key="m.label"
-              class="rounded-lg border border-border bg-card p-4"
+              class="rounded-lg shadow-elegant"
             >
-              <div
-                class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
-              >
+              <CardHeader class="flex flex-row items-center gap-2 p-4 pb-0">
                 <component :is="m.icon" class="h-3.5 w-3.5 text-primary" />
-                {{ m.label }}
-              </div>
-              <div class="mt-1.5 font-mono text-sm">{{ m.value }}</div>
-            </div>
+                <CardTitle class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {{ m.label }}
+                </CardTitle>
+              </CardHeader>
+              <CardContent class="p-4 pt-1.5">
+                <div class="font-mono text-sm">{{ m.value }}</div>
+              </CardContent>
+            </Card>
           </div>
 
           <!-- Timeline -->

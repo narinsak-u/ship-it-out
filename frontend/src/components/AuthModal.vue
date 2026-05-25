@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { LogIn, UserPlus, Loader2 } from "lucide-vue-next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import Separator from "@/components/ui/Separator.vue";
 import { useAuthStore } from "@/stores/auth";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
@@ -139,7 +140,7 @@ function handleGuest() {
 
         <div class="relative my-4">
           <div class="absolute inset-0 flex items-center">
-            <span class="w-full border-t border-border" />
+            <Separator />
           </div>
           <div class="relative flex justify-center text-xs uppercase">
             <span class="bg-card px-2 font-mono text-muted-foreground">or</span>
@@ -202,7 +203,7 @@ function handleGuest() {
 
         <div class="relative my-4">
           <div class="absolute inset-0 flex items-center">
-            <span class="w-full border-t border-border" />
+            <Separator />
           </div>
           <div class="relative flex justify-center text-xs uppercase">
             <span class="bg-card px-2 font-mono text-muted-foreground">or</span>

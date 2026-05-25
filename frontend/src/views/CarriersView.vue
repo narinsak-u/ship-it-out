@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent } from "vue";
 import { Warehouse, BarChart3, Package } from "lucide-vue-next";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const HubsPanel = defineAsyncComponent(() => import("@/components/HubsPanel.vue"));
@@ -52,11 +53,11 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Warehouse }> = [
       </div>
 
       <!-- Tab content -->
-      <div class="rounded-b-xl rounded-tr-xl border border-border bg-card p-6">
+      <Card class="rounded-b-xl rounded-tr-xl p-6 shadow-elegant">
         <HubsPanel v-if="activeTab === 'hubs'" />
         <AnalyticsPanel v-else-if="activeTab === 'analytics'" />
         <DeliveriesPanel v-else-if="activeTab === 'deliveries'" />
-      </div>
+      </Card>
     </section>
   </div>
 </template>

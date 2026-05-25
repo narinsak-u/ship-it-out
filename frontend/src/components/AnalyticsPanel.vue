@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useCarriers } from "@/hooks/useCarriers";
 import { orders, statusLabels } from "@/lib/orders";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
 
@@ -67,30 +68,46 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
   <div v-else>
     <!-- KPI cards -->
     <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Total Shipments
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold">{{ kpis.total }}</div>
-      </div>
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          On-Time Rate
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-success">{{ kpis.onTime }}%</div>
-      </div>
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Active Carriers
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-info">{{ kpis.activeCarriers }}</div>
-      </div>
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Avg Delivery
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold">{{ kpis.avgDeliveryTime }}</div>
-      </div>
+      <Card class="shadow-elegant">
+        <CardHeader class="flex flex-row items-center justify-between pb-2">
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Total Shipments
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="font-mono text-3xl font-semibold">{{ kpis.total }}</div>
+        </CardContent>
+      </Card>
+      <Card class="shadow-elegant">
+        <CardHeader class="flex flex-row items-center justify-between pb-2">
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            On-Time Rate
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="font-mono text-3xl font-semibold text-success">{{ kpis.onTime }}%</div>
+        </CardContent>
+      </Card>
+      <Card class="shadow-elegant">
+        <CardHeader class="flex flex-row items-center justify-between pb-2">
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Active Carriers
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="font-mono text-3xl font-semibold text-info">{{ kpis.activeCarriers }}</div>
+        </CardContent>
+      </Card>
+      <Card class="shadow-elegant">
+        <CardHeader class="flex flex-row items-center justify-between pb-2">
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Avg Delivery
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="font-mono text-3xl font-semibold">{{ kpis.avgDeliveryTime }}</div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Carrier Performance -->
