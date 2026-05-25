@@ -9,6 +9,14 @@ import { useAuthStore } from "@/stores/auth";
 import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.vue"));
 
@@ -161,31 +169,42 @@ function handleUpdate(orderId: string) {
         <div class="font-mono text-sm">{{ o.customer.name }}</div>
         <div class="font-mono text-sm text-muted-foreground">{{ o.carrier }}</div>
         <div>
-          <select
-            :value="draftStatus[o.id] ?? o.status"
-            @change="draftStatus[o.id] = ($event.target as HTMLSelectElement).value as ShipmentStatus"
+          <Select
+            :model-value="draftStatus[o.id] ?? o.status"
+            @update:model-value="(v) => draftStatus[o.id] = v as ShipmentStatus"
             :disabled="!auth.isAuthenticated"
-            class="rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs disabled:opacity-40"
           >
-            <option v-for="(label, key) in statusLabels" :key="key" :value="key">
-              {{ label }}
-            </option>
-          </select>
+            <SelectTrigger class="h-7 rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem v-for="(label, key) in statusLabels" :key="key" :value="key">
+                  {{ label }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <!-- Hub column -->
         <div>
-          <select
+          <Select
             v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
-            :value="draftHubId[o.id] ?? o.hubId ?? ''"
-            @change="draftHubId[o.id] = ($event.target as HTMLSelectElement).value"
+            :model-value="draftHubId[o.id] ?? o.hubId ?? ''"
+            @update:model-value="(v) => draftHubId[o.id] = (v ?? '') as string"
             :disabled="!auth.isAuthenticated"
-            class="w-full rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs disabled:opacity-40"
           >
-            <option disabled value="">Select hub...</option>
-            <option v-for="h in hubOptions" :key="h.id" :value="h.id">
-              {{ h.name }}
-            </option>
-          </select>
+            <SelectTrigger class="h-7 w-full rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40">
+              <SelectValue placeholder="Select hub..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem v-for="h in hubOptions" :key="h.id" :value="h.id">
+                  {{ h.name }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
           <span v-else class="font-mono text-xs text-muted-foreground">&mdash;</span>
         </div>
         <div class="font-mono text-xs text-muted-foreground">{{ o.estimatedDelivery }}</div>

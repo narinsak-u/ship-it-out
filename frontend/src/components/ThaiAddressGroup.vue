@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
+import type { AcceptableValue } from "reka-ui";
 import {
   getSubDistrictNames,
   getDistrictNames,
   getProvinceName,
 } from "thai-data";
 import Input from "@/components/ui/Input.vue";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ThaiAddress {
   name: string;
@@ -96,10 +105,9 @@ watch(availableSubDistricts, (list) => {
   }
 });
 
-function onSubDistrictSelected(ev: Event) {
-  const sub = (ev.target as HTMLSelectElement).value;
-  if (!sub) return;
-  selectSubDistrict(sub);
+function onSubDistrictSelected(value: AcceptableValue) {
+  if (!value || typeof value !== "string") return;
+  selectSubDistrict(value);
 }
 </script>
 
@@ -148,21 +156,26 @@ function onSubDistrictSelected(ev: Event) {
         <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
           >Sub-district</label
         >
-        <select
+        <Select
           v-if="lookupStatus === 'has-results'"
-          :value="modelValue.subDistrict"
-          class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
-          @change="onSubDistrictSelected"
+          :model-value="modelValue.subDistrict"
+          @update:model-value="onSubDistrictSelected"
         >
-          <option disabled value="">Select sub-district...</option>
-          <option
-            v-for="sd in availableSubDistricts"
-            :key="sd"
-            :value="sd"
-          >
-            {{ sd }}
-          </option>
-        </select>
+          <SelectTrigger class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm">
+            <SelectValue placeholder="Select sub-district..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem
+                v-for="sd in availableSubDistricts"
+                :key="sd"
+                :value="sd"
+              >
+                {{ sd }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Input
           v-else-if="lookupStatus === 'no-results'"
           disabled

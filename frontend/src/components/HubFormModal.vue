@@ -5,6 +5,14 @@ import { useHubs, useCreateHub, useUpdateHub } from "@/hooks/useHubs";
 import { hubStatusLabels, type HubStatus } from "@/lib/carriers";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const props = defineProps<{ hubId?: string | null; open?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -101,14 +109,18 @@ async function handleSubmit() {
             <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
               >Status</label
             >
-            <select
-              v-model="status"
-              class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
-            >
-              <option v-for="(label, key) in hubStatusLabels" :key="key" :value="key">
-                {{ label }}
-              </option>
-            </select>
+            <Select v-model="status">
+              <SelectTrigger class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm">
+                <SelectValue placeholder="Select status..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem v-for="(label, key) in hubStatusLabels" :key="key" :value="key">
+                    {{ label }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
