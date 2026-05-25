@@ -5,6 +5,7 @@ import { useHubs, useDeleteHub } from "@/hooks/useHubs";
 import { getCarrier, hubStatusLabels } from "@/lib/carriers";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
+import Badge from "@/components/ui/Badge.vue";
 import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
@@ -162,21 +163,20 @@ const hubStatusCounts = computed(() => {
               </div>
             </TableCell>
             <TableCell>
-              <span
+              <Badge
+                variant="outline"
+                class="gap-1.5 font-mono text-xs uppercase tracking-wider"
                 :class="
-                  cn(
-                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider',
-                    h.status === 'active' ? 'bg-success/15 text-success border-success/30' : '',
-                    h.status === 'maintenance' ? 'bg-warning/15 text-warning border-warning/30' : '',
-                    h.status === 'closed'
-                      ? 'bg-destructive/15 text-destructive border-destructive/30'
-                      : '',
-                  )
+                  h.status === 'active'
+                    ? 'border-success/30 bg-success/15 text-success'
+                    : h.status === 'maintenance'
+                      ? 'border-warning/30 bg-warning/15 text-warning'
+                      : 'border-destructive/30 bg-destructive/15 text-destructive'
                 "
               >
                 <span class="h-1.5 w-1.5 rounded-full bg-current" />
                 {{ hubStatusLabels[h.status] }}
-              </span>
+              </Badge>
             </TableCell>
             <TableCell v-if="auth.isAuthenticated" class="text-right">
               <button
