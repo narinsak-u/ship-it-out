@@ -40,3 +40,4 @@ backend/tmp/
 
 .superpowers
 .env
+.playwright-cli
