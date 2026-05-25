@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import { useQuery } from "@tanstack/vue-query";
-import { Search, RefreshCw, ArrowRight, UserPlus } from "lucide-vue-next";
+import { Search, RefreshCw, Check } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
-import { useAssignDriver } from "@/hooks/useDrivers";
 import { drivers as driverData } from "@/lib/carriers";
 import { fetchHubs } from "@/lib/api/carriers";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
@@ -15,7 +14,6 @@ const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.
 
 const { data: deliveries, isLoading, isError, refetch, dataUpdatedAt } = useActiveDeliveries();
 const updateStatus = useUpdateShipmentStatus();
-const assignDriver = useAssignDriver();
 
 const { data: hubs } = useQuery({
   queryKey: ["hubs"],
@@ -26,6 +24,9 @@ const query = ref("");
 const mounted = ref(false);
 const secondsSinceUpdate = ref(0);
 let interval: ReturnType<typeof setInterval> | undefined;
+
+const draftStatus = ref<Record<string, ShipmentStatus>>({});
+const draftHubId = ref<Record<string, string>>({});
 
 onMounted(() => {
   mounted.value = true;
@@ -52,8 +53,6 @@ const filtered = computed(() => {
   });
 });
 
-const selectedHubId = ref<Record<string, string>>({});
-
 const hubOptions = computed(() => hubs.value ?? []);
 
 function getDriverForOrder(orderId: string) {
@@ -62,27 +61,32 @@ function getDriverForOrder(orderId: string) {
   return driverData.find((d) => d.id === order.driverId) ?? null;
 }
 
-function handleAssign(orderId: string) {
-  const order = deliveries.value?.find((o) => o.id === orderId);
-  if (!order) return;
-  const available = driverData.filter((d) => d.status === "available");
-  if (available.length === 0) return;
-  assignDriver.mutate({ driverId: available[0].id, orderId });
-}
-
-function handleStatusChange(orderId: string, status: ShipmentStatus) {
-  const hubId = selectedHubId.value[orderId];
-  updateStatus.mutate({ orderId, status, hubId });
-}
-
 function usesHubSelector(status: ShipmentStatus) {
-  return status === "departed" || status === "in_transit" || status === "out_for_delivery" || status === "delayed";
+  return (
+    status === "departed" ||
+    status === "in_transit" ||
+    status === "out_for_delivery" ||
+    status === "delayed"
+  );
 }
 
-function hubLabelForStatus(o: { status: ShipmentStatus; origin: string; destination: string; customer: { name: string }; receiver: { name: string } }) {
-  if (o.status === "pending" || o.status === "picked_up") return o.origin || o.customer.name;
-  if (o.status === "delivered") return o.destination || o.receiver.name;
-  return "";
+function canUpdate(orderId: string) {
+  const o = deliveries.value?.find((d) => d.id === orderId);
+  if (!o) return false;
+  const ds = draftStatus.value[orderId] ?? o.status;
+  const dh = draftHubId.value[orderId] ?? "";
+  const changed = ds !== o.status || (usesHubSelector(ds) && dh !== "");
+  if (!changed) return false;
+  if (usesHubSelector(ds) && !dh) return false;
+  return true;
+}
+
+function handleUpdate(orderId: string) {
+  const o = deliveries.value?.find((d) => d.id === orderId);
+  if (!o) return;
+  const status = draftStatus.value[orderId] ?? o.status;
+  if (usesHubSelector(status) && !draftHubId.value[orderId]) return;
+  updateStatus.mutate({ orderId, status, hubId: draftHubId.value[orderId] });
 }
 </script>
 
@@ -124,14 +128,14 @@ function hubLabelForStatus(o: { status: ShipmentStatus; origin: string; destinat
     <!-- Table -->
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
       <div
-        class="hidden grid-cols-[0.8fr_1fr_1fr_1fr_1fr_1fr_1fr_0.6fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
+        class="hidden grid-cols-[0.8fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr_1fr_0.5fr] gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"
       >
         <span>Order ID</span>
         <span>Tracking</span>
         <span>Customer</span>
         <span>Carrier</span>
-        <span>Driver</span>
         <span>Status</span>
+        <span>Hub</span>
         <span>ETA</span>
         <span class="text-right">Actions</span>
       </div>
@@ -146,25 +150,16 @@ function hubLabelForStatus(o: { status: ShipmentStatus; origin: string; destinat
       <div
         v-for="o in filtered"
         :key="o.id"
-        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[0.8fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr_1fr_0.6fr] md:items-center"
+        class="group grid grid-cols-1 gap-2 border-b border-border px-6 py-4 transition-colors last:border-0 hover:bg-secondary/40 md:grid-cols-[0.8fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr_1fr_0.5fr] md:items-center"
       >
         <div class="font-mono text-sm text-primary">{{ o.id }}</div>
         <div class="font-mono text-xs text-muted-foreground">{{ o.trackingNumber }}</div>
         <div class="font-mono text-sm">{{ o.customer.name }}</div>
         <div class="font-mono text-sm text-muted-foreground">{{ o.carrier }}</div>
         <div>
-          <div v-if="getDriverForOrder(o.id)" class="font-mono text-sm">
-            {{ getDriverForOrder(o.id)?.name }}
-          </div>
-          <div v-else class="font-mono text-xs text-muted-foreground">Unassigned</div>
-        </div>
-        <div>
           <select
-            :value="o.status"
-            @change="
-              (e) =>
-                handleStatusChange(o.id, (e.target as HTMLSelectElement).value as ShipmentStatus)
-            "
+            :value="draftStatus[o.id] ?? o.status"
+            @change="draftStatus[o.id] = ($event.target as HTMLSelectElement).value as ShipmentStatus"
             class="rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs"
           >
             <option v-for="(label, key) in statusLabels" :key="key" :value="key">
@@ -175,9 +170,9 @@ function hubLabelForStatus(o: { status: ShipmentStatus; origin: string; destinat
         <!-- Hub column -->
         <div>
           <select
-            v-if="usesHubSelector(o.status)"
-            :value="selectedHubId[o.id] ?? ''"
-            @change="selectedHubId[o.id] = ($event.target as HTMLSelectElement).value"
+            v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
+            :value="draftHubId[o.id] ?? ''"
+            @change="draftHubId[o.id] = ($event.target as HTMLSelectElement).value"
             class="w-full rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs"
           >
             <option disabled value="">Select hub...</option>
@@ -185,26 +180,20 @@ function hubLabelForStatus(o: { status: ShipmentStatus; origin: string; destinat
               {{ h.name }}
             </option>
           </select>
-          <span v-else class="font-mono text-xs text-muted-foreground">
-            {{ hubLabelForStatus(o) }}
-          </span>
+          <span v-else class="font-mono text-xs text-muted-foreground">&mdash;</span>
         </div>
         <div class="font-mono text-xs text-muted-foreground">{{ o.estimatedDelivery }}</div>
+
+        <!-- Actions: update button -->
         <div class="flex justify-end gap-1">
           <button
-            v-if="!o.driverId"
-            @click="handleAssign(o.id)"
-            class="rounded p-1.5 text-muted-foreground hover:text-primary"
-            title="Assign driver"
+            @click="handleUpdate(o.id)"
+            :disabled="!canUpdate(o.id)"
+            class="rounded p-1.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
+            title="Update"
           >
-            <UserPlus class="h-4 w-4" />
+            <Check class="h-4 w-4" />
           </button>
-          <RouterLink
-            :to="{ name: 'order-detail', params: { orderId: o.id } }"
-            class="rounded p-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowRight class="h-4 w-4" />
-          </RouterLink>
         </div>
       </div>
     </div>
