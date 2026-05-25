@@ -26,6 +26,14 @@ const status = ref<HubStatus>(existing.value?.status ?? "active");
 
 const isEditing = computed(() => !!props.hubId);
 
+const submitPending = computed(() =>
+  isEditing.value ? updateHub.isPending.value : createHub.isPending.value,
+);
+
+const submitError = computed(() =>
+  isEditing.value ? updateHub.isError.value : createHub.isError.value,
+);
+
 async function handleSubmit() {
   const data = {
     name: name.value,
@@ -37,12 +45,16 @@ async function handleSubmit() {
     status: status.value,
   };
 
-  if (isEditing.value && props.hubId) {
-    await updateHub.mutateAsync({ id: props.hubId, data });
-  } else {
-    await createHub.mutateAsync(data);
+  try {
+    if (isEditing.value && props.hubId) {
+      await updateHub.mutateAsync({ id: props.hubId, data });
+    } else {
+      await createHub.mutateAsync(data);
+    }
+    emit("close");
+  } catch {
+    // Mutation error is surfaced via submitError; modal stays open
   }
-  emit("close");
 }
 </script>
 
@@ -107,7 +119,7 @@ async function handleSubmit() {
       </div>
 
       <div
-        v-if="createHub.isError || updateHub.isError"
+        v-if="submitError"
         class="mt-3 font-mono text-xs text-destructive"
       >
         Failed to save hub. Please try again.
@@ -116,16 +128,10 @@ async function handleSubmit() {
       <div class="mt-6 flex justify-end gap-3">
         <Button variant="outline" @click="emit('close')">Cancel</Button>
         <Button
-          :disabled="!name || createHub.isPending || updateHub.isPending"
+          :disabled="!name || submitPending"
           @click="handleSubmit"
         >
-          {{
-            createHub.isPending || updateHub.isPending
-              ? "Saving…"
-              : isEditing
-                ? "Update Hub"
-                : "Create Hub"
-          }}
+          {{ submitPending ? "Saving…" : isEditing ? "Update Hub" : "Create Hub" }}
         </Button>
       </div>
     </div>
