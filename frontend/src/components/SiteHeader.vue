@@ -89,7 +89,7 @@ const showAuthModal = ref(false);
           <button
             v-else
             @click="showAuthModal = true"
-            class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
+            class="flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
           >
             <LogIn class="h-3.5 w-3.5" /> Sign in
           </button>

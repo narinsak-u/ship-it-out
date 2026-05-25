@@ -1,45 +1,45 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useQuery } from '@tanstack/vue-query'
-import { useCreateOrder, useUpdateOrder } from '@/hooks/useOrders'
-import { fetchOrder } from '@/lib/api/orders'
-import type { OrderFormData } from '@/lib/api/orders'
-import type { ShipmentStatus } from '@/lib/orders'
-import OrderForm from '@/components/OrderForm.vue'
-import Skeleton from '@/components/ui/Skeleton.vue'
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useQuery } from "@tanstack/vue-query";
+import { useCreateOrder, useUpdateOrder } from "@/hooks/useOrders";
+import { fetchOrder } from "@/lib/api/orders";
+import type { OrderFormData } from "@/lib/api/orders";
+import OrderForm from "@/components/OrderForm.vue";
+import Skeleton from "@/components/ui/Skeleton.vue";
 
-const route = useRoute()
-const router = useRouter()
-const createOrder = useCreateOrder()
-const updateOrder = useUpdateOrder()
+const route = useRoute();
+const router = useRouter();
+const createOrder = useCreateOrder();
+const updateOrder = useUpdateOrder();
+const hasSaveError = computed(() => createOrder.isError.value || updateOrder.isError.value);
 
-const isEditing = computed(() => !!route.params.orderId)
-const orderId = computed(() => route.params.orderId as string | undefined)
+const isEditing = computed(() => !!route.params.orderId);
+const orderId = computed(() => route.params.orderId as string | undefined);
 
 const { data: order } = useQuery({
-  queryKey: ['order', orderId.value],
+  queryKey: ["order", orderId.value],
   queryFn: () => fetchOrder(orderId.value!),
   enabled: isEditing,
-})
+});
 
-const isPending = computed(() => createOrder.isPending.value || updateOrder.isPending.value)
+const isPending = computed(() => createOrder.isPending.value || updateOrder.isPending.value);
 
-async function handleSubmit(data: OrderFormData & { status?: ShipmentStatus }) {
+async function handleSubmit(data: OrderFormData) {
   if (isEditing.value && orderId.value) {
-    await updateOrder.mutateAsync({ id: orderId.value, data })
-    router.push({ name: 'order-detail', params: { orderId: orderId.value } })
+    await updateOrder.mutateAsync({ id: orderId.value, data });
+    router.push({ name: "order-detail", params: { orderId: orderId.value } });
   } else {
-    const created = await createOrder.mutateAsync(data)
-    router.push({ name: 'orders' })
+    const created = await createOrder.mutateAsync(data);
+    router.push({ name: "orders" });
   }
 }
 
 function handleCancel() {
   if (isEditing.value && orderId.value) {
-    router.push({ name: 'order-detail', params: { orderId: orderId.value } })
+    router.push({ name: "order-detail", params: { orderId: orderId.value } });
   } else {
-    router.push({ name: 'orders' })
+    router.push({ name: "orders" });
   }
 }
 </script>
@@ -83,7 +83,7 @@ function handleCancel() {
       </div>
 
       <div
-        v-if="createOrder.isError || updateOrder.isError"
+        v-if="hasSaveError"
         class="mt-4 rounded-lg bg-destructive/15 px-4 py-3 font-mono text-sm text-destructive"
       >
         Failed to save order. Please try again.

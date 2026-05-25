@@ -30,7 +30,7 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Warehouse }> = [
       </div>
     </section>
 
-    <section class="mx-auto max-w-7xl px-6 pt-0">
+    <section class="mx-auto max-w-7xl p-6">
       <!-- Tab bar -->
       <div class="flex gap-1 -mt-px">
         <button

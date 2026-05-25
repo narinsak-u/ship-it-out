@@ -48,6 +48,7 @@ export interface Order {
   weight: string;
   items: number;
   estimatedDelivery: string;
+  estimatedDeliveryRaw?: string;
   createdAt: string;
   progress: number;
   events: TrackingEvent[];

@@ -115,6 +115,7 @@ const hubStatusCounts = computed(() => {
       </Button>
     </div>
 
+    <!-- table -->
     <div class="mt-4 overflow-hidden rounded-xl border border-border">
       <div
         class="hidden gap-4 border-b border-border bg-secondary/50 px-6 py-3 font-mono text-[11px] uppercase tracking-widest text-muted-foreground md:grid"

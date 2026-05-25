@@ -55,7 +55,7 @@ const filtered = computed(() => {
   });
 });
 
-const hubOptions = computed(() => hubs.value ?? []);
+const hubOptions = computed(() => (hubs.value ?? []).filter((h) => h.status === "active"));
 
 function usesHubSelector(status: ShipmentStatus) {
   return (
@@ -82,7 +82,15 @@ function handleUpdate(orderId: string) {
   if (!o) return;
   const status = draftStatus.value[orderId] ?? o.status;
   if (usesHubSelector(status) && !draftHubId.value[orderId]) return;
-  updateStatus.mutate({ orderId, status, hubId: draftHubId.value[orderId] });
+  updateStatus.mutate(
+    { orderId, status, hubId: draftHubId.value[orderId] },
+    {
+      onSuccess: () => {
+        delete draftStatus.value[orderId];
+        delete draftHubId.value[orderId];
+      },
+    },
+  );
 }
 </script>
 

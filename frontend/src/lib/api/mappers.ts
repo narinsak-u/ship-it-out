@@ -75,6 +75,7 @@ export function mapShipmentToOrder(s: BackendShipment): Order {
     weight: s.weight,
     items: s.items,
     estimatedDelivery: formatDate(s.estimatedDelivery),
+    estimatedDeliveryRaw: s.estimatedDelivery,
     createdAt: formatDate(s.createdAt),
     progress: s.progress,
     events: [],

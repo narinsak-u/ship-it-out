@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { statusLabels, type ShipmentStatus } from "@/lib/orders";
+
 import type { OrderFormData } from "@/lib/api/orders";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
 import ThaiAddressGroup from "./ThaiAddressGroup.vue";
 
 const props = defineProps<{
-  initial?: Partial<OrderFormData & { status?: ShipmentStatus }>;
+  initial?: Partial<OrderFormData> & { estimatedDeliveryRaw?: string };
   isEditing?: boolean;
   pending?: boolean;
 }>();
 
 const emit = defineEmits<{
-  submit: [data: OrderFormData & { status?: ShipmentStatus }];
+  submit: [data: OrderFormData];
   cancel: [];
 }>();
 
@@ -38,11 +38,11 @@ const carrier = ref(props.initial?.carrier ?? "Thun-u-der Express");
 const weight = ref(props.initial?.weight ?? "");
 const items = ref(props.initial?.items ?? 1);
 const estimatedDelivery = ref(props.initial?.estimatedDelivery ?? "");
-const status = ref<ShipmentStatus>(props.initial?.status ?? "pending");
+const estimatedDeliveryRaw = ref(props.initial?.estimatedDeliveryRaw ?? "");
 
 const errors = ref<Record<string, string>>({});
 
-const canSubmit = computed(() => {
+const filled = computed(() => {
   return (
     sender.value.name.trim() &&
     sender.value.zipcode.trim() &&
@@ -56,9 +56,30 @@ const canSubmit = computed(() => {
     receiver.value.province.trim() &&
     weight.value.trim() &&
     (items.value ?? 0) >= 1 &&
-    estimatedDelivery.value.trim()
+    (!props.isEditing || estimatedDelivery.value.trim())
   );
 });
+
+const formChanged = computed(() => {
+  if (!props.isEditing || !props.initial) return true;
+  return (
+    sender.value.name !== (props.initial.customer?.name ?? "") ||
+    sender.value.zipcode !== (props.initial.customer?.zipcode ?? "") ||
+    sender.value.subDistrict !== (props.initial.customer?.subDistrict ?? "") ||
+    sender.value.district !== (props.initial.customer?.district ?? "") ||
+    sender.value.province !== (props.initial.customer?.province ?? "") ||
+    receiver.value.name !== (props.initial.receiver?.name ?? "") ||
+    receiver.value.zipcode !== (props.initial.receiver?.zipcode ?? "") ||
+    receiver.value.subDistrict !== (props.initial.receiver?.subDistrict ?? "") ||
+    receiver.value.district !== (props.initial.receiver?.district ?? "") ||
+    receiver.value.province !== (props.initial.receiver?.province ?? "") ||
+    weight.value !== (props.initial.weight ?? "") ||
+    (items.value ?? 0) !== (props.initial.items ?? 1) ||
+    estimatedDelivery.value !== (props.initial.estimatedDelivery ?? "")
+  );
+});
+
+const canSubmit = computed(() => filled.value && formChanged.value);
 
 function validate(): boolean {
   const e: Record<string, string> = {};
@@ -74,7 +95,7 @@ function validate(): boolean {
   if (!receiver.value.province.trim()) e["receiver.province"] = "Required";
   if (!weight.value.trim()) e.weight = "Required";
   if (!items.value || items.value < 1) e.items = "Must be at least 1";
-  if (!estimatedDelivery.value.trim()) e.estimatedDelivery = "Required";
+  if (props.isEditing && !estimatedDelivery.value.trim()) e.estimatedDelivery = "Required";
   errors.value = e;
   return Object.keys(e).length === 0;
 }
@@ -117,25 +138,16 @@ function handleSubmit() {
     carrier: carrier.value,
     weight: weight.value,
     items: items.value,
-    estimatedDelivery: estimatedDelivery.value,
-    ...(props.isEditing ? { status: status.value } : {}),
+    estimatedDelivery: estimatedDeliveryRaw.value || "",
   });
 }
 </script>
 
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-8">
-    <ThaiAddressGroup
-      label="Sender Info"
-      v-model="sender"
-      :errors="senderErrorMap"
-    />
+    <ThaiAddressGroup label="Sender Info" v-model="sender" :errors="senderErrorMap" />
 
-    <ThaiAddressGroup
-      label="Receiver Info"
-      v-model="receiver"
-      :errors="receiverErrorMap"
-    />
+    <ThaiAddressGroup label="Receiver Info" v-model="receiver" :errors="receiverErrorMap" />
 
     <!-- Section 3: Parcel Info -->
     <fieldset class="rounded-xl border border-border p-5">
@@ -171,7 +183,7 @@ function handleSubmit() {
             {{ errors.items }}
           </p>
         </div>
-        <div>
+        <div v-if="isEditing">
           <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Estimated Delivery</label
           >
@@ -184,23 +196,10 @@ function handleSubmit() {
             {{ errors.estimatedDelivery }}
           </p>
         </div>
-        <div v-if="isEditing">
-          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
-            >Status</label
-          >
-          <select
-            v-model="status"
-            class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
-          >
-            <option v-for="(label, key) in statusLabels" :key="key" :value="key">
-              {{ label }}
-            </option>
-          </select>
-        </div>
       </div>
     </fieldset>
 
-    <div class="flex justify-end gap-3 pt-4 border-t border-border">
+    <div class="flex justify-end gap-3 pt-4">
       <Button variant="outline" type="button" @click="emit('cancel')">Cancel</Button>
       <Button type="submit" :disabled="pending || !canSubmit">
         {{ pending ? "Saving\u2026" : isEditing ? "Save Changes" : "Create Order" }}
