@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import { useQuery } from "@tanstack/vue-query";
-import { Search, RefreshCw, Check } from "lucide-vue-next";
+import { Search, RefreshCw, Check, Eye } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
 import { fetchHubs } from "@/lib/api/carriers";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
+import { useAuthStore } from "@/stores/auth";
 import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
 
 const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.vue"));
+
+const auth = useAuthStore();
 
 const { data: deliveries, isLoading, isError, refetch, dataUpdatedAt } = useActiveDeliveries();
 const updateStatus = useUpdateShipmentStatus();
@@ -153,7 +156,8 @@ function handleUpdate(orderId: string) {
           <select
             :value="draftStatus[o.id] ?? o.status"
             @change="draftStatus[o.id] = ($event.target as HTMLSelectElement).value as ShipmentStatus"
-            class="rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs"
+            :disabled="!auth.isAuthenticated"
+            class="rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs disabled:opacity-40"
           >
             <option v-for="(label, key) in statusLabels" :key="key" :value="key">
               {{ label }}
@@ -166,7 +170,8 @@ function handleUpdate(orderId: string) {
             v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
             :value="draftHubId[o.id] ?? o.hubId ?? ''"
             @change="draftHubId[o.id] = ($event.target as HTMLSelectElement).value"
-            class="w-full rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs"
+            :disabled="!auth.isAuthenticated"
+            class="w-full rounded-lg border border-border bg-background px-2 py-1 font-mono text-xs disabled:opacity-40"
           >
             <option disabled value="">Select hub...</option>
             <option v-for="h in hubOptions" :key="h.id" :value="h.id">
@@ -177,11 +182,18 @@ function handleUpdate(orderId: string) {
         </div>
         <div class="font-mono text-xs text-muted-foreground">{{ o.estimatedDelivery }}</div>
 
-        <!-- Actions: update button -->
+        <!-- Actions -->
         <div class="flex justify-end gap-1">
+          <RouterLink
+            :to="{ name: 'order-detail', params: { orderId: o.id } }"
+            class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+            title="View details"
+          >
+            <Eye class="h-4 w-4" />
+          </RouterLink>
           <button
             @click="handleUpdate(o.id)"
-            :disabled="!canUpdate(o.id)"
+            :disabled="!auth.isAuthenticated || !canUpdate(o.id)"
             class="rounded p-1.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
             title="Update"
           >
