@@ -25,6 +25,8 @@ export async function geocodeAddress(
     throw new Error("Could not resolve this address. Check the fields and try again.");
   }
 
-  const { lat, lng } = data.results[0].geometry;
+  if (!data.results || data.results.length === 0 || !data.results[0].geometry) {
+    throw new Error("Could not resolve this address. Check the fields and try again.");
+  }
   return { lat, lng };
 }
