@@ -21,6 +21,6 @@ onMounted(() => {
       <RouterView />
     </main>
     <SiteFooter />
-    <Toaster rich-colors close-button />
+    <Toaster />
   </div>
 </template>

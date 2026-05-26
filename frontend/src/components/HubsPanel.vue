@@ -20,11 +20,13 @@ import {
 import HubFormModal from "@/components/HubFormModal.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagination } from "@/composables/usePagination";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 const auth = useAuthStore();
 
 const { data: hubs, isLoading, isError, refetch } = useHubs();
 const deleteHub = useDeleteHub();
+const deleteTarget = ref<string | null>(null);
 
 const query = ref("");
 
@@ -196,7 +198,7 @@ const hubStatusCounts = computed(() => {
                 <Pencil class="h-4 w-4" />
               </button>
               <button
-                @click="deleteHub.mutate(h.id)"
+                @click="deleteTarget = h.id"
                 class="rounded p-1.5 text-muted-foreground hover:text-destructive"
               >
                 <Trash2 class="h-4 w-4" />
@@ -221,6 +223,15 @@ const hubStatusCounts = computed(() => {
         No hubs match your filters.
       </div>
     </div>
+
+    <ConfirmDialog
+      :open="!!deleteTarget"
+      title="Delete Hub"
+      description="Are you sure you want to delete this hub? This action cannot be undone."
+      :pending="deleteHub.isPending.value"
+      @confirm="deleteTarget && deleteHub.mutate(deleteTarget, { onSuccess: () => { deleteTarget = null } })"
+      @cancel="deleteTarget = null"
+    />
 
     <HubFormModal :open="showForm" :hub-id="editingHubId" @close="showForm = false" />
   </div>

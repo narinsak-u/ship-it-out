@@ -33,6 +33,13 @@ const address = ref("");
 const capacity = ref(1000);
 const status = ref<HubStatus>("active");
 
+function resetForm() {
+  name.value = "";
+  address.value = "";
+  capacity.value = 1000;
+  status.value = "active";
+}
+
 watch(existing, (hub) => {
   if (hub) {
     name.value = hub.name;
@@ -41,6 +48,15 @@ watch(existing, (hub) => {
     status.value = hub.status;
   }
 });
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen && !props.hubId) {
+      resetForm();
+    }
+  },
+);
 
 const isEditing = computed(() => !!props.hubId);
 

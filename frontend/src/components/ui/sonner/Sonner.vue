@@ -2,9 +2,9 @@
 import type { ToasterProps } from "vue-sonner";
 import {
   CircleCheckIcon,
+  CircleXIcon,
   InfoIcon,
   Loader2Icon,
-  OctagonXIcon,
   TriangleAlertIcon,
   XIcon,
 } from "@lucide/vue";
@@ -18,16 +18,16 @@ const props = defineProps<ToasterProps>();
   <Sonner
     :class="cn('toaster group', props.class)"
     :style="{
-      '--normal-bg': 'var(--card)',
+      '--normal-bg': 'var(--toast-bg)',
       '--normal-text': 'var(--card-foreground)',
       '--normal-border': 'var(--border)',
-      '--success-bg': 'var(--success)',
+      '--success-bg': 'var(--toast-bg)',
       '--success-text': 'var(--card-foreground)',
-      '--error-bg': 'var(--destructive)',
-      '--error-text': 'var(--destructive-foreground)',
-      '--warning-bg': 'var(--warning)',
+      '--error-bg': 'var(--toast-bg)',
+      '--error-text': 'var(--card-foreground)',
+      '--warning-bg': 'var(--toast-bg)',
       '--warning-text': 'var(--card-foreground)',
-      '--info-bg': 'var(--info)',
+      '--info-bg': 'var(--toast-bg)',
       '--info-text': 'var(--card-foreground)',
       '--border-radius': 'var(--radius)',
     }"
@@ -37,13 +37,13 @@ const props = defineProps<ToasterProps>();
       <CircleCheckIcon class="size-4" />
     </template>
     <template #info-icon>
-      <InfoIcon class="size-4" />
-    </template>
-    <template #warning-icon>
       <TriangleAlertIcon class="size-4" />
     </template>
+    <template #warning-icon>
+      <InfoIcon class="size-4" />
+    </template>
     <template #error-icon>
-      <OctagonXIcon class="size-4" />
+      <CircleXIcon class="size-4" />
     </template>
     <template #loading-icon>
       <div>
