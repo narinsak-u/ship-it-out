@@ -254,7 +254,13 @@ func UpdateStatus(c *fiber.Ctx) error {
 		var h models.Hub
 		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error == nil {
 			hub = &h
-			shipment.CurrentCoords.Lat = h.Lat
+		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error != nil {
+			return utils.Error(c, 400, "invalid hub ID")
+		}
+		hub = &h
+		shipment.HubID = body.HubID
+		shipment.CurrentCoords.Lat = h.Lat
+		shipment.CurrentCoords.Lng = h.Lng
 			shipment.CurrentCoords.Lng = h.Lng
 		}
 	}
