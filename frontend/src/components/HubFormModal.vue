@@ -79,7 +79,7 @@ async function handleSubmit() {
   let coords: { lat: number; lng: number };
   try {
     coords = await geocodeAddress(address.value, "", "");
-  } catch (e) {
+    coords = await geocodeAddress(address.value, "", "");
     geocodeError.value = e instanceof Error ? e.message : "Could not resolve address.";
     geocoding.value = false;
     return;
