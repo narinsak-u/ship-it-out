@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import { Search, Filter, ArrowRight, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
-import { fetchActiveDeliveries, deleteOrder } from "@/lib/api/orders";
+import { fetchOrdersPaginated, deleteOrder } from "@/lib/api/orders";
 import Button from "@/components/ui/Button.vue";
 import {
   Table,
@@ -20,16 +20,49 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 import AuthModal from "@/components/AuthModal.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
+import Pagination from "@/components/Pagination.vue";
 
 const authStore = useAuthStore();
 const showAuthModal = ref(false);
 const router = useRouter();
 const queryClient = useQueryClient();
 
-const { data: orders, isLoading } = useQuery({
-  queryKey: ["orders"],
-  queryFn: fetchActiveDeliveries,
+const currentPage = ref(1);
+const searchInput = ref("");
+const debouncedSearch = ref("");
+const filter = ref<ShipmentStatus | "all">("all");
+
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+watch(searchInput, (v) => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    debouncedSearch.value = v;
+    currentPage.value = 1;
+  }, 300);
 });
+
+watch(filter, () => {
+  currentPage.value = 1;
+});
+
+const { data: pageData, isLoading } = useQuery({
+  queryKey: ["orders", currentPage, debouncedSearch, filter],
+  queryFn: () =>
+    fetchOrdersPaginated({
+      page: currentPage.value,
+      limit: 10,
+      search: debouncedSearch.value || undefined,
+      status: filter.value === "all" ? undefined : filter.value,
+    }),
+});
+
+const pageItems = computed(() => pageData.value?.data ?? []);
+const totalPages = computed(() => pageData.value?.pagination.totalPages ?? 1);
+const totalItems = computed(() => pageData.value?.pagination.total ?? 0);
+
+function setPage(page: number) {
+  currentPage.value = page;
+}
 
 const deleteMutation = useMutation({
   mutationFn: (id: string) => deleteOrder(id),
@@ -46,23 +79,6 @@ const FILTERS: Array<{ key: ShipmentStatus | "all"; label: string }> = [
   { key: "delivered", label: "Delivered" },
   { key: "delayed", label: "Delayed" },
 ];
-
-const filter = ref<ShipmentStatus | "all">("all");
-const query = ref("");
-
-const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase();
-  return (orders.value ?? []).filter((o) => {
-    if (filter.value !== "all" && o.status !== filter.value) return false;
-    if (!q) return true;
-    return (
-      o.id.toLowerCase().includes(q) ||
-      o.trackingNumber.toLowerCase().includes(q) ||
-      o.customer.name.toLowerCase().includes(q) ||
-      o.destination.toLowerCase().includes(q)
-    );
-  });
-});
 
 function onAuthenticated() {
   showAuthModal.value = false;
@@ -92,7 +108,7 @@ function onGuest() {
                 Shipment manifest
               </h1>
               <p class="mt-3 max-w-2xl text-muted-foreground">
-                {{ orders?.length ?? 0 }} total shipments tracked across all carriers.
+                {{ totalItems }} total shipments tracked across all carriers.
               </p>
             </div>
             <div v-if="authStore.user" class="shrink-0">
@@ -115,7 +131,7 @@ function onGuest() {
           <div class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 md:w-96">
             <Search class="h-4 w-4 text-muted-foreground" />
             <Input
-              v-model="query"
+              v-model="searchInput"
               placeholder="Search by ID, tracking, customer, destination"
               class="h-11 border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
             />
@@ -152,15 +168,15 @@ function onGuest() {
                 <TableHead class="hidden md:table-cell">Customer</TableHead>
                 <TableHead class="hidden md:table-cell">Route</TableHead>
                 <TableHead class="hidden md:table-cell">Status</TableHead>
-                <TableHead class="hidden md:table-cell text-right">ETA</TableHead>
-                <TableHead v-if="authStore.user" class="hidden md:table-cell text-right"
-                  >Actions</TableHead
-                >
+                <TableHead class="hidden md:table-cell">ETA</TableHead>
+                <TableHead v-if="authStore.user" class="hidden md:table-cell text-right">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow
-                v-for="o in filtered"
+                v-for="o in pageItems"
                 :key="o.id"
                 class="border-b border-border transition-colors hover:bg-secondary/40"
               >
@@ -172,9 +188,9 @@ function onGuest() {
                     {{ o.id }}
                   </RouterLink>
                 </TableCell>
-                <TableCell class="font-mono text-sm text-muted-foreground">{{
-                  o.trackingNumber
-                }}</TableCell>
+                <TableCell class="font-mono text-sm text-muted-foreground">
+                  {{ o.trackingNumber }}
+                </TableCell>
                 <TableCell class="text-sm">{{ o.customer.name }}</TableCell>
                 <TableCell>
                   <span class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
@@ -184,9 +200,9 @@ function onGuest() {
                   </span>
                 </TableCell>
                 <TableCell><StatusBadge :status="o.status" /></TableCell>
-                <TableCell class="font-mono text-xs text-muted-foreground text-right">{{
-                  o.estimatedDelivery
-                }}</TableCell>
+                <TableCell class="font-mono text-xs text-muted-foreground text-right">
+                  {{ o.estimatedDelivery }}
+                </TableCell>
                 <TableCell v-if="authStore.user" class="text-right">
                   <button
                     @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
@@ -205,8 +221,16 @@ function onGuest() {
             </TableBody>
           </Table>
 
+          <Pagination
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :total-items="totalItems"
+            :page-size="10"
+            @update:current-page="setPage"
+          />
+
           <div
-            v-if="filtered.length === 0"
+            v-if="pageItems.length === 0"
             class="px-6 py-16 text-center font-mono text-sm text-muted-foreground"
           >
             No shipments match your filters.
@@ -214,8 +238,7 @@ function onGuest() {
         </div>
 
         <div class="mt-4 font-mono text-xs text-muted-foreground">
-          Showing {{ filtered.length }} of {{ orders?.length ?? 0 }} · Status:
-          {{ filter === "all" ? "All" : statusLabels[filter] }}
+          Status: {{ filter === "all" ? "All" : statusLabels[filter] }}
         </div>
       </section>
 

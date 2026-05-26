@@ -18,6 +18,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import HubFormModal from "@/components/HubFormModal.vue";
+import Pagination from "@/components/Pagination.vue";
+import { usePagination } from "@/composables/usePagination";
 
 const auth = useAuthStore();
 
@@ -38,6 +40,8 @@ const filtered = computed(() => {
     );
   });
 });
+
+const { currentPage, totalPages, pageItems, setPage } = usePagination(filtered, 10);
 
 const showForm = ref(false);
 const editingHubId = ref<string | null>(null);
@@ -136,14 +140,14 @@ const hubStatusCounts = computed(() => {
             <TableHead class="hidden md:table-cell">Address</TableHead>
             <TableHead class="hidden md:table-cell">Capacity</TableHead>
             <TableHead class="hidden md:table-cell">Status</TableHead>
-            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell text-right"
-              >Actions</TableHead
-            >
+            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell text-right">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="h in filtered"
+            v-for="h in pageItems"
             :key="h.id"
             class="border-b border-border transition-colors hover:bg-secondary/40"
           >
@@ -201,6 +205,14 @@ const hubStatusCounts = computed(() => {
           </TableRow>
         </TableBody>
       </Table>
+
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filtered.length"
+        :page-size="10"
+        @update:current-page="setPage"
+      />
 
       <div
         v-if="filtered.length === 0"

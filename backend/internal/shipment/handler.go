@@ -35,11 +35,46 @@ func composeAddress(c models.ContactInfo) string {
 	return fmt.Sprintf("%s, %s, %s", c.SubDistrict, c.District, c.Province)
 }
 
-// List returns all shipments from the database.
+// List returns shipments from the database with optional pagination and filtering.
+// Query params: page (default 1), limit (default 10, use -1 for all), search, status, exclude_status.
 func List(c *fiber.Ctx) error {
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	search := c.Query("search", "")
+	status := c.Query("status", "")
+	excludeStatus := c.Query("exclude_status", "")
+
+	if page < 1 {
+		page = 1
+	}
+
+	var total int64
+	query := database.DB.Model(&models.Shipment{})
+
+	if status != "" && status != "all" {
+		query = query.Where("status = ?", status)
+	}
+	if excludeStatus != "" {
+		query = query.Where("status != ?", excludeStatus)
+	}
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where(
+			"order_id ILIKE ? OR tracking_number ILIKE ? OR customer_name ILIKE ? OR destination ILIKE ?",
+			like, like, like, like,
+		)
+	}
+
+	query.Count(&total)
+
 	var shipments []models.Shipment
-	database.DB.Find(&shipments)
-	return utils.Success(c, shipments)
+	if limit > 0 {
+		offset := (page - 1) * limit
+		query = query.Offset(offset).Limit(limit)
+	}
+	query.Find(&shipments)
+
+	return utils.SuccessWithPagination(c, shipments, page, limit, int(total))
 }
 
 // generateOrderID creates a human-readable order ID like "ORD-10251".

@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import Pagination from "@/components/Pagination.vue";
+import { usePagination } from "@/composables/usePagination";
 
 const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.vue"));
 
@@ -70,6 +72,8 @@ const filtered = computed(() => {
     );
   });
 });
+
+const { currentPage, totalPages, pageItems, setPage } = usePagination(filtered, 10);
 
 const hubOptions = computed(() => (hubs.value ?? []).filter((h) => h.status === "active"));
 
@@ -164,7 +168,7 @@ function handleUpdate(orderId: string) {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="o in filtered"
+            v-for="o in pageItems"
             :key="o.id"
             class="border-b border-border transition-colors hover:bg-secondary/40"
           >
@@ -219,7 +223,7 @@ function handleUpdate(orderId: string) {
             <TableCell class="font-mono text-xs text-muted-foreground">{{
               o.estimatedDelivery
             }}</TableCell>
-            <TableCell class="text-right">
+            <TableCell class="flex gap-1">
               <RouterLink
                 :to="{ name: 'order-detail', params: { orderId: o.id } }"
                 class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
@@ -239,6 +243,14 @@ function handleUpdate(orderId: string) {
           </TableRow>
         </TableBody>
       </Table>
+
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="filtered.length"
+        :page-size="10"
+        @update:current-page="setPage"
+      />
 
       <div
         v-if="filtered.length === 0"

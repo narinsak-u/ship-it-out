@@ -53,7 +53,7 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Warehouse }> = [
       </div>
 
       <!-- Tab content -->
-      <Card class="rounded-b-xl rounded-tr-xl p-6 shadow-elegant">
+      <Card class="rounded-tl-none rounded-b-xl rounded-tr-xl p-6 shadow-elegant">
         <HubsPanel v-if="activeTab === 'hubs'" />
         <AnalyticsPanel v-else-if="activeTab === 'analytics'" />
         <DeliveriesPanel v-else-if="activeTab === 'deliveries'" />

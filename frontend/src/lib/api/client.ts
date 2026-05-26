@@ -29,6 +29,7 @@ async function request<T = unknown>(path: string, options?: RequestInit): Promis
 
 export const api = {
   get: <T = unknown>(path: string) => request<T>(path),
+  getRaw: <T = unknown>(path: string) => requestRaw<T>(path),
   post: <T = unknown>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   del: <T = unknown>(path: string) => request<T>(path, { method: "DELETE" }),
@@ -37,3 +38,18 @@ export const api = {
   patch: <T = unknown>(path: string, body?: unknown) =>
     request<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
 };
+
+async function requestRaw<T = unknown>(path: string, options?: RequestInit): Promise<ApiResult<T>> {
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      ...options,
+    });
+    const json = await res.json();
+    if (!res.ok) return { error: json.error || `Request failed (${res.status})` };
+    return { data: json as T };
+  } catch {
+    return { error: "Network error -- is the backend running?" };
+  }
+}

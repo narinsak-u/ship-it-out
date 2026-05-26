@@ -5,7 +5,13 @@ import {
   type BackendShipment,
   type BackendShipmentEvent,
 } from "@/lib/api/mappers";
-import type { Order, ShipmentStatus, TrackingEvent, ContactInfo } from "@/lib/orders";
+import type {
+  Order,
+  ShipmentStatus,
+  TrackingEvent,
+  ContactInfo,
+  PaginatedResponse,
+} from "@/lib/orders";
 
 export interface OrderFormData {
   customer: ContactInfo;
@@ -17,10 +23,39 @@ export interface OrderFormData {
   status?: ShipmentStatus;
 }
 
+export interface ShipmentsQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  exclude_status?: string;
+}
+
 export async function fetchActiveDeliveries(): Promise<Order[]> {
-  const result = await api.get<BackendShipment[]>("/shipments");
+  const result = await api.get<BackendShipment[]>("/shipments?limit=-1&exclude_status=delivered");
   if (result.error) throw new Error(result.error);
-  return result.data!.filter((s) => s.status !== "delivered").map(mapShipmentToOrder);
+  return result.data!.map(mapShipmentToOrder);
+}
+
+export async function fetchOrdersPaginated(
+  query: ShipmentsQuery = {},
+): Promise<PaginatedResponse<Order>> {
+  const params = new URLSearchParams();
+  if (query.page) params.set("page", String(query.page));
+  if (query.limit) params.set("limit", String(query.limit));
+  if (query.search) params.set("search", query.search);
+  if (query.status && query.status !== "all") params.set("status", query.status);
+  if (query.exclude_status) params.set("exclude_status", query.exclude_status);
+  const qs = params.toString();
+  const result = await api.getRaw<{
+    data: BackendShipment[];
+    pagination: PaginatedResponse<Order>["pagination"];
+  }>(`/shipments${qs ? `?${qs}` : ""}`);
+  if (result.error) throw new Error(result.error);
+  return {
+    data: result.data!.data.map(mapShipmentToOrder),
+    pagination: result.data!.pagination,
+  };
 }
 
 export async function updateShipmentStatus(
