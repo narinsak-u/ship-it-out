@@ -144,7 +144,37 @@ async function handleSubmit() {
         zipcode: sender.value.zipcode,
         subDistrict: sender.value.subDistrict,
         district: sender.value.district,
-        province: sender.value.province,
+  try {
+    const [senderRes, receiverRes] = await Promise.allSettled([
+      geocodeAddress(sender.value.subDistrict, sender.value.district, sender.value.province),
+      geocodeAddress(receiver.value.subDistrict, receiver.value.district, receiver.value.province),
+    ]);
+
+    if (senderRes.status === "rejected") {
+      geocodeErrors.value.sender = senderRes.reason.message;
+    }
+    if (receiverRes.status === "rejected") {
+      geocodeErrors.value.receiver = receiverRes.reason.message;
+    }
+
+    if (senderRes.status === "rejected" || receiverRes.status === "rejected") {
+      return;
+    }
+
+    emit("submit", {
+      customer: { ...sender.value, coords: senderRes.value },
+      receiver: { ...receiver.value, coords: receiverRes.value },
+      carrier: carrier.value,
+      weight: weight.value,
+      items: items.value,
+      estimatedDelivery: estimatedDeliveryRaw.value || "",
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Could not resolve address.";
+    geocodeErrors.value = { sender: msg, receiver: msg };
+  } finally {
+    geocoding.value = false;
+  }
         coords: senderCoords,
       },
       receiver: {
