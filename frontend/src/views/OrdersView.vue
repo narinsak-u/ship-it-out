@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
+import { toast } from "vue-sonner";
 import { Search, Filter, ArrowRight, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
@@ -21,12 +22,14 @@ import { useAuthStore } from "@/stores/auth";
 import AuthModal from "@/components/AuthModal.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Pagination from "@/components/Pagination.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 const authStore = useAuthStore();
 const showAuthModal = ref(false);
 const router = useRouter();
 const queryClient = useQueryClient();
 
+const deleteTarget = ref<string | null>(null);
 const currentPage = ref(1);
 const searchInput = ref("");
 const debouncedSearch = ref("");
@@ -67,6 +70,8 @@ function setPage(page: number) {
 const deleteMutation = useMutation({
   mutationFn: (id: string) => deleteOrder(id),
   onSuccess: () => {
+    toast.success("Order deleted");
+    deleteTarget.value = null;
     queryClient.invalidateQueries({ queryKey: ["orders"] });
   },
 });
@@ -211,7 +216,7 @@ function onGuest() {
                     <Pencil class="h-4 w-4" />
                   </button>
                   <button
-                    @click.stop="deleteMutation.mutate(o.id)"
+                    @click.stop="deleteTarget = o.id"
                     class="rounded p-1.5 text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 class="h-4 w-4" />
@@ -241,6 +246,15 @@ function onGuest() {
           Status: {{ filter === "all" ? "All" : statusLabels[filter] }}
         </div>
       </section>
+
+      <ConfirmDialog
+        :open="!!deleteTarget"
+        title="Delete Order"
+        description="Are you sure you want to delete this order? This action cannot be undone."
+        :pending="deleteMutation.isPending.value"
+        @confirm="deleteTarget && deleteMutation.mutate(deleteTarget)"
+        @cancel="deleteTarget = null"
+      />
 
       <AuthModal
         v-if="showAuthModal"

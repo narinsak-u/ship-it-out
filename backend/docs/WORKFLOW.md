@@ -103,88 +103,190 @@ Request arrives at protected route
 
 ---
 
-## 2. Shipment CRUD Workflow
+## 2. Shipment Workflows
 
 ### 2.1 List (`GET /api/shipments`)
 
-**Purpose:** Return all shipments from the database.
+**Purpose:** Return shipments with pagination, search, and status filtering. Public (no auth required).
+
+**Query params:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | int | 1 | Page number |
+| `limit` | int | 10 | Items per page (use `-1` for all) |
+| `search` | string | "" | ILIKE search on order_id, tracking_number, customer_name, destination |
+| `status` | string | "" | Filter by status (e.g. "in_transit") |
+| `exclude_status` | string | "" | Exclude by status (e.g. "delivered") |
 
 **Flow:**
 ```
-Client → GET /api/shipments (JWT required)
+Client → GET /api/shipments?page=1&limit=10&search=bangkok&status=in_transit
          │
-         ├─ 1. Query all Shipment rows via GORM Find()
-         └─ 2. Return [] → 200
+         ├─ 1. Parse query params (page defaults 1, limit defaults 10)
+         ├─ 2. Build GORM query with optional WHERE filters
+         │     ├─ status filter: WHERE status = ?
+         │     ├─ exclude_status: WHERE status != ?
+         │     └─ search: WHERE (order_id ILIKE ? OR tracking_number ILIKE ? OR ...)
+         ├─ 3. Count total matching rows
+         ├─ 4. Apply OFFSET = (page-1) * limit, LIMIT = limit
+         ├─ 5. ORDER BY created_at DESC
+         ├─ 6. AfterFind fires → reconstructs Coords for each shipment
+         └─ 7. Return { data: [...], pagination: { page, limit, total, totalPages } } → 200
 ```
 
-**Note:** No pagination, filtering, or sorting yet. Returns all rows.
+### 2.2 GetByID (`GET /api/shipments/:orderId`)
 
-### 2.2 Create (`POST /api/shipments`)
+**Purpose:** Fetch a single shipment by its OrderID (e.g. `ORD-10245`). Public.
+
+**Flow:**
+```
+Client → GET /api/shipments/ORD-10245
+         │
+         ├─ 1. Extract orderId from URL param
+         ├─ 2. Query Shipment WHERE order_id = ?
+         │     └─ If not found → 404 "shipment not found"
+         ├─ 3. AfterFind fires → reconstructs Coords
+         └─ 4. Return Shipment → 200
+```
+
+### 2.3 Create (`POST /api/shipments`)
 
 **Purpose:** Register a new shipment and generate a tracking number.
+
+**Request body:**
+```json
+{
+  "customer": { "name": "...", "zipcode": "...", "subDistrict": "...", "district": "...", "province": "...", "coords": { "lat": 0, "lng": 0 } },
+  "receiver": { "name": "...", "zipcode": "...", "subDistrict": "...", "district": "...", "province": "...", "coords": { "lat": 0, "lng": 0 } },
+  "carrier": "Thun-u-der Express",
+  "weight": "12.4 kg",
+  "items": 3
+}
+```
 
 **Flow:**
 ```
 Client → POST /api/shipments (JWT required)
-         { customer: { name, zipcode, subDistrict, district, province, coords },
-           receiver: { name, zipcode, subDistrict, district, province, coords },
-           carrier, weight, items }
          │
          ├─ 1. Parse JSON into CreateRequest
          ├─ 2. Build Shipment model:
+         │     ├─ OrderID = "ORD-" + max suffix + 1 (e.g. "ORD-10261")
          │     ├─ TrackingNumber = "TH" + year + 5-digit ms hash
-         │     ├─ Customer/Receiver from request
+         │     ├─ Customer/Receiver from request body
          │     ├─ Origin = "subDistrict, district, province" (customer)
          │     ├─ Destination = "subDistrict, district, province" (receiver)
          │     ├─ CurrentCoords = customer's coords
          │     ├─ Status = "pending"
          │     ├─ EstimatedDelivery = now + 72h
          │     └─ Progress = 0
-         ├─ 3. GORM BeforeSave hook fires → copies Coords → flat _lat/_lng columns
-         ├─ 4. Insert into Postgres
-         │     └─ If error → 500
-         └─ 5. Return Shipment → 200
+         ├─ 3. GORM BeforeSave hook → copies Coords to flat columns
+         ├─ 4. Insert Shipment into Postgres
+         │     └─ If error → 500 "failed to create shipment"
+         ├─ 5. Create initial tracking event:
+         │     ├─ Status = "Label Created"
+         │     ├─ Description = "Awaiting pickup."
+         │     └─ Location = customer address + coords
+         └─ 6. Return Shipment → 200
 ```
 
-### 2.3 GetByID (`GET /api/shipments/:id`)
+### 2.4 Update (`PUT /api/shipments/:orderId`)
 
-**Purpose:** Fetch a single shipment by its database ID.
+**Purpose:** Partially update an existing shipment's fields.
+
+**Request body (all fields optional):**
+```json
+{
+  "customer": { ... },
+  "receiver": { ... },
+  "carrier": "Pacific Freight",
+  "weight": "15.0 kg",
+  "items": 5,
+  "estimatedDelivery": "2026-06-01T00:00:00Z"
+}
+```
 
 **Flow:**
 ```
-Client → GET /api/shipments/42 (JWT required)
+Client → PUT /api/shipments/ORD-10245 (JWT required)
          │
-         ├─ 1. Parse :id param as uint
-         │     └─ If not a number → 400
-         ├─ 2. Query Shipment by primary key
-         │     └─ If not found → 404
-         ├─ 3. GORM AfterFind hook fires → reconstructs Coords from flat columns
-         └─ 4. Return Shipment → 200
-```
-
-### 2.4 UpdateStatus (`PATCH /api/shipments/:id/status`)
-
-**Purpose:** Change a shipment's status and log a tracking event.
-
-**Flow:**
-```
-Client → PATCH /api/shipments/42/status (JWT required)
-         { status: "in_transit" }
-         │
-         ├─ 1. Parse :id param + JSON body { status }
-         ├─ 2. Find Shipment by ID → 404 if missing
-         ├─ 3. Update shipment.Status
-         ├─ 4. Save shipment (BeforeSave fires → syncs coords)
-         │
-         ├─ 5. Create ShipmentEvent:
-         │     ├─ ShipmentID = shipment.ID
-         │     ├─ Status = body.status
-         │     ├─ Location = { name: shipment.Destination,
-         │     │               lat: shipment.CurrentCoords.Lat,
-         │     │               lng: shipment.CurrentCoords.Lng }
-         │     └─ Description = "Status updated to <status>"
-         ├─ 6. Insert event into Postgres
+         ├─ 1. Extract orderId from URL param
+         ├─ 2. Parse JSON body into UpdateRequest (all pointer fields)
+         ├─ 3. Find existing Shipment by OrderID
+         │     └─ If not found → 404 "shipment not found"
+         ├─ 4. Update only provided fields:
+         │     ├─ Customer → updates Customer + Origin + CurrentCoords
+         │     ├─ Receiver → updates Receiver + Destination
+         │     ├─ Carrier, Weight, Items, EstimatedDelivery → direct update
+         ├─ 5. BeforeSave fires → syncs coords
+         ├─ 6. Save shipment
          └─ 7. Return updated Shipment → 200
+```
+
+### 2.5 UpdateStatus (`PATCH /api/shipments/:orderId/status`)
+
+**Purpose:** Change a shipment's status and log a tracking event with context-aware location. If a hubId is provided and the hub is found, sets the shipment's currentCoords to the hub's location.
+
+**Request body:**
+```json
+{
+  "status": "in_transit",
+  "hubId": "HUB-003"
+}
+```
+
+**Flow:**
+```
+Client → PATCH /api/shipments/ORD-10245/status (JWT required)
+         │
+         ├─ 1. Extract orderId from URL param
+         ├─ 2. Parse JSON body { status, hubId? }
+         ├─ 3. Find Shipment by OrderID → 404 if missing
+         ├─ 4. Update shipment.Status
+         ├─ 5. If hubId provided:
+         │     ├─ Look up Hub by ID in Postgres
+         │     └─ If found:
+         │          ├─ Set shipment.HubID = body.hubId
+         │          └─ Set shipment.CurrentCoords = hub.Lat/Lng
+         ├─ 6. Save shipment (BeforeSave fires → syncs coords)
+         ├─ 7. Build ShipmentEvent via statusToEvent():
+         │     ├─ Status changed to a hub-based status (departed, in_transit,
+         │       out_for_delivery, delayed):
+         │       Location = hub's name, address, lat, lng (if hub provided)
+         │       Falls back to shipment's current coords / origin / destination
+         │     ├─ Status = "pending" → location = customer address
+         │     ├─ Status = "picked_up" → location = customer address
+         │     ├─ Status = "delivered" → location = receiver address
+         │     └─ Each status maps to a human-readable label + description
+         ├─ 8. Insert event (ShipmentID = shipment.ID)
+         └─ 9. Return updated Shipment → 200
+```
+
+**Status-to-event mapping:**
+
+| Status | Event label | Description | Location source |
+|--------|-------------|-------------|-----------------|
+| `pending` | "Label Created" | "Awaiting pickup." | Customer address |
+| `picked_up` | "Picked Up" | "Parcel collected from sender." | Customer address |
+| `departed` | "Departed" | "In transit to hub." | Hub or origin |
+| `in_transit` | "In Transit" | "Transit to next hub." | Hub or destination |
+| `out_for_delivery` | "Out for Delivery" | "Out for delivery." | Hub or destination |
+| `delivered` | "Delivered" | "Delivered to recipient." | Receiver address |
+| `delayed` | "Delayed" | "Unexpected issue encountered." | Hub or destination |
+
+### 2.6 Delete (`DELETE /api/shipments/:orderId`)
+
+**Purpose:** Remove a shipment and all its tracking events from the database.
+
+**Flow:**
+```
+Client → DELETE /api/shipments/ORD-10245 (JWT required)
+         │
+         ├─ 1. Extract orderId from URL param
+         ├─ 2. Find Shipment by OrderID → 404 if missing
+         ├─ 3. Delete all ShipmentEvents WHERE shipment_id = shipment.ID
+         ├─ 4. Delete the Shipment itself
+         └─ 5. Return { message: "shipment deleted" } → 200
 ```
 
 ---
@@ -202,17 +304,102 @@ Client → GET /api/track/TH202612345
          ├─ 1. Extract trackingNumber from URL param
          ├─ 2. Query Shipment by tracking_number column
          │     └─ If not found → 404
-         ├─ 3. GORM AfterFind fires → reconstructs Coords
-         ├─ 4. Query ShipmentEvents where shipment_id = shipment.ID
+         ├─ 3. AfterFind fires → reconstructs Coords
+         ├─ 4. Query ShipmentEvents WHERE shipment_id = shipment.ID
          │     ordered by created_at asc
          └─ 5. Return { shipment, events } → 200
 ```
 
 ---
 
-## 4. Analytics Workflow
+## 4. Hub Workflows
 
-### 4.1 Overview (`GET /api/analytics/overview`)
+### 4.1 List (`GET /api/hubs`)
+
+**Purpose:** Return all hubs. Public (no auth required).
+
+**Flow:**
+```
+Client → GET /api/hubs
+         ├─ Query all Hub rows
+         ├─ AfterFind fires → reconstruct Coords for each
+         └─ Return [...] → 200
+```
+
+### 4.2 GetByID (`GET /api/hubs/:id`)
+
+**Purpose:** Fetch a single hub by its string ID (e.g. HUB-001). Public.
+
+**Flow:**
+```
+Client → GET /api/hubs/HUB-001
+         ├─ 1. Query Hub by ID (string PK, not uint)
+         │     └─ If not found → 404
+         ├─ 2. AfterFind fires → reconstruct Coords
+         └─ 3. Return Hub → 200
+```
+
+### 4.3 Create (`POST /api/hubs`)
+
+**Purpose:** Add a new logistics hub. Auto-generates "HUB-NNN" ID if not provided.
+
+**Request body:**
+```json
+{
+  "name": "Rayong Hub",
+  "carrierId": "CAR-001",
+  "address": "Industrial Estate, Rayong",
+  "coords": { "lat": 12.6814, "lng": 101.2817 },
+  "capacity": 5000,
+  "currentUtilization": 1200,
+  "status": "active"
+}
+```
+
+**Flow:**
+```
+Client → POST /api/hubs (JWT required)
+         │
+         ├─ 1. Parse JSON body into Hub
+         ├─ 2. If ID not provided, generate "HUB-NNN" (max suffix + 1)
+         ├─ 3. BeforeSave fires → Coords → Lat/Lng
+         ├─ 4. Insert into Postgres
+         │     └─ If error → 500
+         └─ 5. Return Hub → 200
+```
+
+### 4.4 Update (`PUT /api/hubs/:id`)
+
+**Purpose:** Modify an existing hub's fields.
+
+**Flow:**
+```
+Client → PUT /api/hubs/HUB-001 (JWT required)
+         │
+         ├─ 1. Find existing Hub by ID → 404 if missing
+         ├─ 2. Parse JSON body into existing Hub (BodyParser overwrites fields)
+         ├─ 3. Re-set Hub.ID (BodyParser clears the PK field)
+         ├─ 4. Save (BeforeSave fires → syncs coords)
+         └─ 5. Return updated Hub → 200
+```
+
+### 4.5 Delete (`DELETE /api/hubs/:id`)
+
+**Purpose:** Remove a hub from the database.
+
+**Flow:**
+```
+Client → DELETE /api/hubs/HUB-001 (JWT required)
+         ├─ 1. Delete Hub by ID
+         │     └─ If error → 500
+         └─ 2. Return { message: "hub deleted" } → 200
+```
+
+---
+
+## 5. Analytics Workflow
+
+### 5.1 Overview (`GET /api/analytics/overview`)
 
 **Purpose:** Return aggregate statistics for the dashboard.
 
@@ -227,15 +414,32 @@ Client → GET /api/analytics/overview (JWT required)
          └─ 5. Return { total, active, delivered, by_status } → 200
 ```
 
-**Note:** The `by_status` array is a raw SQL `GROUP BY` via GORM's `Select().Group().Scan()`.
+**Note:** The `by_status` array is a GROUP BY via GORM's `Select().Group().Scan()`.
+
+**Response shape:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 12,
+    "active": 8,
+    "delivered": 3,
+    "by_status": [
+      { "status": "in_transit", "count": 4 },
+      { "status": "pending", "count": 2 },
+      ...
+    ]
+  }
+}
+```
 
 ---
 
-## 5. WebSocket Workflow
+## 6. WebSocket Workflow
 
 **Purpose:** Provide real-time tracking updates to connected clients.
 
-### 5.1 Connection
+### 6.1 Connection
 
 ```
 Client → GET /ws/tracking/TH202612345 (WebSocket upgrade)
@@ -244,8 +448,7 @@ Client → GET /ws/tracking/TH202612345 (WebSocket upgrade)
          │     └─ If not a WS request → 400
          ├─ 2. Determine room:
          │     ├─ /ws/tracking/:trackingNumber → room = the tracking number
-         │     ├─ /ws/admin → room = "global"
-         │     └─ /ws/driver → room = "global"
+         │     └─ /ws/admin → room = "global"
          ├─ 3. Create Client struct: { Room, Conn, Send (buffered chan, 256) }
          ├─ 4. Register client in DefaultHub
          │     (adds to map[Client]bool under a mutex)
@@ -255,7 +458,7 @@ Client → GET /ws/tracking/TH202612345 (WebSocket upgrade)
          └─ 7. On read error → break → Unregister client → close conn
 ```
 
-### 5.2 Broadcasting
+### 6.2 Broadcasting
 
 ```
 External trigger (not yet implemented)
@@ -270,67 +473,7 @@ External trigger (not yet implemented)
               └─ 3. Release lock
 ```
 
-**Current state:** The WebSocket infrastructure (connection upgrade, room registration, broadcasting) is fully wired. What's missing is the trigger that calls `BroadcastToRoom()` when a shipment status changes.
-
----
-
-## 6. Hub Management Workflow
-
-**Purpose:** Manage logistics hubs (warehouses/sorting centers).
-
-### 6.1 List (`GET /api/hubs`)
-
-```
-Client → GET /api/hubs (JWT required)
-         ├─ Query all Hub rows
-         ├─ AfterFind fires → reconstruct Coords for each
-         └─ Return [] → 200
-```
-
-### 6.2 Create (`POST /api/hubs`)
-
-```
-Client → POST /api/hubs (JWT required)
-         { id, name, carrierId, address, coords, capacity, currentUtilization, status }
-         │
-         ├─ 1. Parse JSON body into Hub
-         ├─ 2. BeforeSave fires → Coords → Lat/Lng
-         ├─ 3. Insert into Postgres
-         │     └─ If error → 500
-         └─ 4. Return Hub → 200
-```
-
-### 6.3 GetByID (`GET /api/hubs/:id`)
-
-```
-Client → GET /api/hubs/HUB-001 (JWT required)
-         ├─ 1. Query Hub by string ID (not uint)
-         │     └─ If not found → 404
-         ├─ 2. AfterFind fires → reconstruct Coords
-         └─ 3. Return Hub → 200
-```
-
-### 6.4 Update (`PUT /api/hubs/:id`)
-
-```
-Client → PUT /api/hubs/HUB-001 (JWT required)
-         { name, address, coords, ... }
-         │
-         ├─ 1. Find existing Hub by ID → 404 if missing
-         ├─ 2. Parse JSON body into existing Hub (BodyParser overwrites fields)
-         ├─ 3. Re-set ID (BodyParser clears the PK)
-         ├─ 4. Save (BeforeSave fires → syncs coords)
-         └─ 5. Return updated Hub → 200
-```
-
-### 6.5 Delete (`DELETE /api/hubs/:id`)
-
-```
-Client → DELETE /api/hubs/HUB-001 (JWT required)
-         ├─ 1. Delete Hub by ID
-         │     └─ If error → 500
-         └─ 2. Return { message: "hub deleted" } → 200
-```
+**Current state:** The WebSocket infrastructure (connection upgrade, room registration, broadcasting) is fully wired. What's missing is the trigger that calls `BroadcastToRoom()` when a shipment status changes (e.g., in `UpdateStatus`).
 
 ---
 
@@ -349,44 +492,17 @@ seed.SeedShipments(database.DB)
 
 ### 7.1 SeedHubs
 
-```
-SeedHubs(db)
-  ├─ 1. Count Hub rows
-  ├─ 2. If count > 0 → return (already seeded, skip)
-  └─ 3. Insert 6 hubs one by one:
-       ├─ Laem Chabang Port Hub (HUB-001, ชลบุรี, active)
-       ├─ Pattaya Hub (HUB-002, ชลบุรี, active)
-       ├─ Rayong Hub (HUB-003, ระยอง, active)
-       ├─ Chanthaburi Hub (HUB-004, จันทบุรี, active)
-       ├─ Chachoengsao Hub (HUB-005, ฉะเชิงเทรา, active)
-       └─ Trat Hub (HUB-006, ตราด, maintenance)
-```
+Inserts 6 hubs in Eastern Thailand (idempotent — skips if rows exist):
+
+| ID | Hub | Lat | Lng | Status |
+|----|-----|-----|-----|--------|
+| HUB-001 | Laem Chabang Port Hub | 13.0833 | 100.8833 | active |
+| HUB-002 | Pattaya Hub | 12.9236 | 100.8825 | active |
+| HUB-003 | Rayong Hub | 12.6814 | 101.2817 | active |
+| HUB-004 | Chanthaburi Hub | 12.6096 | 102.1041 | active |
+| HUB-005 | Chachoengsao Hub | 13.6883 | 101.0719 | active |
+| HUB-006 | Trat Hub | 12.2417 | 102.5125 | maintenance |
 
 ### 7.2 SeedShipments
 
-```
-SeedShipments(db)
-  ├─ 1. Count Shipment rows
-  ├─ 2. If count > 0 → return (already seeded, skip)
-  └─ 3. Insert 3 shipments + their events:
-       │
-       ├─ Shipment 1: TRK-9F2A-44B1
-       │   Customer: สมชาย วงศ์เจริญ (แหลมฉบัง, ศรีราชา, ชลบุรี)
-       │   Receiver: มาลี ทองดี (จันทนิมิต, เมือง, จันทบุรี)
-       │   Status: in_transit | Carrier: Thun-u-der Express
-       │   Events: Picked up (Laem Chabang Port Hub) → Departed (Laem Chabang) → In transit (Ban Bueng)
-       │
-       ├─ Shipment 2: TRK-FF02-1188
-       │   Customer: วิมล ศรีสุวรรณ (หน้าเมือง, เมือง, ฉะเชิงเทรา)
-       │   Receiver: กิตติพงศ์ แก้ววิเศษ (หนองปรือ, บางละมุง, ชลบุรี)
-       │   Status: pending | Carrier: Thun-u-der Express
-       │   Events: Label created (Chachoengsao Hub)
-       │
-       └─ Shipment 3: TRK-5E73-220B
-           Customer: วิชัย สมบูรณ์ (ท่าประดู่, เมือง, ระยอง)
-           Receiver: ประภาสิริ วัฒนา (บางพระ, เมือง, ตราด)
-           Status: in_transit | Carrier: Thun-u-der Express
-           Events: Picked up (Rayong Hub) → Departed (Rayong) → In transit (Klaeng)
-```
-
-Each shipment is created first via `db.Create()`, then its events are inserted with the auto-assigned `ShipmentID` foreign key.
+Inserts 12 shipments (ORD-10245 through ORD-10260) with full contact info for customer/receiver (Thai names and addresses), tracking numbers in TH2026xxxxx format, and 1-6 tracking events each spanning a plausible status lifecycle. Idempotent — skips if rows exist.

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { RouterView } from "vue-router";
+import "vue-sonner/style.css";
+import { Toaster } from "@/components/ui/sonner";
 import { useAuthStore } from "@/stores/auth";
 import SiteHeader from "@/components/SiteHeader.vue";
 import SiteFooter from "@/components/SiteFooter.vue";
@@ -19,5 +21,6 @@ onMounted(() => {
       <RouterView />
     </main>
     <SiteFooter />
+    <Toaster />
   </div>
 </template>

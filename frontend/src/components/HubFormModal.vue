@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
+import { toast } from "vue-sonner";
+import { geocodeAddress } from "@/lib/geocode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useHubs, useCreateHub, useUpdateHub } from "@/hooks/useHubs";
 import { hubStatusLabels, type HubStatus } from "@/lib/carriers";
@@ -26,11 +28,36 @@ const existing = computed(() => {
   return hubsData.value.find((h) => h.id === props.hubId) ?? null;
 });
 
-const name = ref(existing.value?.name ?? "");
+const name = ref("");
 const carrierId = "THUN";
-const address = ref(existing.value?.address ?? "");
-const capacity = ref(existing.value?.capacity ?? 1000);
-const status = ref<HubStatus>(existing.value?.status ?? "active");
+const address = ref("");
+const capacity = ref(1000);
+const status = ref<HubStatus>("active");
+
+function resetForm() {
+  name.value = "";
+  address.value = "";
+  capacity.value = 1000;
+  status.value = "active";
+}
+
+watch(existing, (hub) => {
+  if (hub) {
+    name.value = hub.name;
+    address.value = hub.address;
+    capacity.value = hub.capacity;
+    status.value = hub.status;
+  }
+});
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen && !props.hubId) {
+      resetForm();
+    }
+  },
+);
 
 const isEditing = computed(() => !!props.hubId);
 
@@ -42,12 +69,27 @@ const submitError = computed(() =>
   isEditing.value ? updateHub.isError.value : createHub.isError.value,
 );
 
+const geocodeError = ref("");
+const geocoding = ref(false);
+
 async function handleSubmit() {
+  geocodeError.value = "";
+  geocoding.value = true;
+
+  let coords: { lat: number; lng: number };
+  try {
+    coords = await geocodeAddress(address.value, "", "");
+    coords = await geocodeAddress(address.value, "", "");
+    geocodeError.value = e instanceof Error ? e.message : "Could not resolve address.";
+    geocoding.value = false;
+    return;
+  }
+
   const data = {
     name: name.value,
     carrierId,
     address: address.value,
-    coords: { lat: 0, lng: 0 },
+    coords,
     capacity: capacity.value,
     currentUtilization: existing.value?.currentUtilization ?? 0,
     status: status.value,
@@ -56,12 +98,16 @@ async function handleSubmit() {
   try {
     if (isEditing.value && props.hubId) {
       await updateHub.mutateAsync({ id: props.hubId, data });
+      toast.success("Hub updated");
     } else {
       await createHub.mutateAsync(data);
+      toast.success("Hub created");
     }
     emit("close");
   } catch {
     // Mutation error is surfaced via submitError; modal stays open
+  } finally {
+    geocoding.value = false;
   }
 }
 </script>
@@ -99,6 +145,12 @@ async function handleSubmit() {
             >Address</label
           >
           <Input v-model="address" class="mt-1.5 font-mono text-sm" placeholder="Full address" />
+          <p
+            v-if="geocodeError"
+            class="mt-1.5 rounded-md bg-destructive/15 px-3 py-2 font-mono text-xs text-destructive"
+          >
+            {{ geocodeError }}
+          </p>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -135,8 +187,16 @@ async function handleSubmit() {
 
       <div class="mt-6 flex justify-end gap-3">
         <Button variant="outline" @click="emit('close')">Cancel</Button>
-        <Button :disabled="!name || submitPending" @click="handleSubmit">
-          {{ submitPending ? "Saving…" : isEditing ? "Update Hub" : "Create Hub" }}
+        <Button :disabled="!name || submitPending || geocoding" @click="handleSubmit">
+          {{
+            geocoding
+              ? "Resolving address\u2026"
+              : submitPending
+                ? "Saving\u2026"
+                : isEditing
+                  ? "Update Hub"
+                  : "Create Hub"
+          }}
         </Button>
       </div>
     </DialogContent>

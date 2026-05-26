@@ -72,7 +72,7 @@ func List(c *fiber.Ctx) error {
 		offset := (page - 1) * limit
 		query = query.Offset(offset).Limit(limit)
 	}
-	query.Find(&shipments)
+	query.Order("created_at DESC").Find(&shipments)
 
 	return utils.SuccessWithPagination(c, shipments, page, limit, int(total))
 }
@@ -247,7 +247,6 @@ func UpdateStatus(c *fiber.Ctx) error {
 	if body.HubID != "" {
 		shipment.HubID = body.HubID
 	}
-	database.DB.Save(&shipment)
 
 	// Look up hub if provided (for statuses where location = hub address)
 	var hub *models.Hub
@@ -255,8 +254,18 @@ func UpdateStatus(c *fiber.Ctx) error {
 		var h models.Hub
 		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error == nil {
 			hub = &h
+		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error != nil {
+			return utils.Error(c, 400, "invalid hub ID")
+		}
+		hub = &h
+		shipment.HubID = body.HubID
+		shipment.CurrentCoords.Lat = h.Lat
+		shipment.CurrentCoords.Lng = h.Lng
+			shipment.CurrentCoords.Lng = h.Lng
 		}
 	}
+
+	database.DB.Save(&shipment)
 
 	event := statusToEvent(shipment, hub, body.Status)
 	event.ShipmentID = shipment.ID

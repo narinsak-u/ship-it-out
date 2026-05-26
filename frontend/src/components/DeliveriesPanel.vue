@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import { useQuery } from "@tanstack/vue-query";
+import { toast } from "vue-sonner";
 import { Search, RefreshCw, Check, Eye } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
 import { fetchHubs } from "@/lib/api/carriers";
@@ -106,6 +107,7 @@ function handleUpdate(orderId: string) {
     { orderId, status, hubId: draftHubId.value[orderId] },
     {
       onSuccess: () => {
+        toast.success("Delivery status updated");
         delete draftStatus.value[orderId];
         delete draftHubId.value[orderId];
       },

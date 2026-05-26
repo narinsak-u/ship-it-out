@@ -5,6 +5,7 @@ import type { OrderFormData } from "@/lib/api/orders";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
 import ThaiAddressGroup from "./ThaiAddressGroup.vue";
+import { geocodeAddress } from "@/lib/geocode";
 
 const props = defineProps<{
   initial?: Partial<OrderFormData> & { estimatedDeliveryRaw?: string };
@@ -41,6 +42,8 @@ const estimatedDelivery = ref(props.initial?.estimatedDelivery ?? "");
 const estimatedDeliveryRaw = ref(props.initial?.estimatedDeliveryRaw ?? "");
 
 const errors = ref<Record<string, string>>({});
+const geocodeErrors = ref<Record<string, string>>({});
+const geocoding = ref(false);
 
 const filled = computed(() => {
   return (
@@ -116,38 +119,103 @@ const receiverErrorMap = computed(() => {
   return result;
 });
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!validate()) return;
-  emit("submit", {
-    customer: {
-      name: sender.value.name,
-      zipcode: sender.value.zipcode,
-      subDistrict: sender.value.subDistrict,
-      district: sender.value.district,
-      province: sender.value.province,
-      coords: { lat: 0, lng: 0 },
-    },
-    receiver: {
-      name: receiver.value.name,
-      zipcode: receiver.value.zipcode,
-      subDistrict: receiver.value.subDistrict,
-      district: receiver.value.district,
-      province: receiver.value.province,
-      coords: { lat: 0, lng: 0 },
-    },
-    carrier: carrier.value,
-    weight: weight.value,
-    items: items.value,
-    estimatedDelivery: estimatedDeliveryRaw.value || "",
-  });
+  geocodeErrors.value = {};
+  geocoding.value = true;
+
+  try {
+    const [senderCoords, receiverCoords] = await Promise.all([
+      geocodeAddress(
+        sender.value.subDistrict,
+        sender.value.district,
+        sender.value.province,
+      ),
+      geocodeAddress(
+        receiver.value.subDistrict,
+        receiver.value.district,
+        receiver.value.province,
+      ),
+    ]);
+
+    emit("submit", {
+      customer: {
+        name: sender.value.name,
+        zipcode: sender.value.zipcode,
+        subDistrict: sender.value.subDistrict,
+        district: sender.value.district,
+  try {
+    const [senderRes, receiverRes] = await Promise.allSettled([
+      geocodeAddress(sender.value.subDistrict, sender.value.district, sender.value.province),
+      geocodeAddress(receiver.value.subDistrict, receiver.value.district, receiver.value.province),
+    ]);
+
+    if (senderRes.status === "rejected") {
+      geocodeErrors.value.sender = senderRes.reason.message;
+    }
+    if (receiverRes.status === "rejected") {
+      geocodeErrors.value.receiver = receiverRes.reason.message;
+    }
+
+    if (senderRes.status === "rejected" || receiverRes.status === "rejected") {
+      return;
+    }
+
+    emit("submit", {
+      customer: { ...sender.value, coords: senderRes.value },
+      receiver: { ...receiver.value, coords: receiverRes.value },
+      carrier: carrier.value,
+      weight: weight.value,
+      items: items.value,
+      estimatedDelivery: estimatedDeliveryRaw.value || "",
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Could not resolve address.";
+    geocodeErrors.value = { sender: msg, receiver: msg };
+  } finally {
+    geocoding.value = false;
+  }
+        coords: senderCoords,
+      },
+      receiver: {
+        name: receiver.value.name,
+        zipcode: receiver.value.zipcode,
+        subDistrict: receiver.value.subDistrict,
+        district: receiver.value.district,
+        province: receiver.value.province,
+        coords: receiverCoords,
+      },
+      carrier: carrier.value,
+      weight: weight.value,
+      items: items.value,
+      estimatedDelivery: estimatedDeliveryRaw.value || "",
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Could not resolve address.";
+    geocodeErrors.value = { sender: msg, receiver: msg };
+  } finally {
+    geocoding.value = false;
+  }
 }
 </script>
 
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-8">
     <ThaiAddressGroup label="Sender Info" v-model="sender" :errors="senderErrorMap" />
+    <p
+      v-if="geocodeErrors.sender"
+      class="mt-2 rounded-md bg-destructive/15 px-3 py-2 font-mono text-xs text-destructive"
+    >
+      {{ geocodeErrors.sender }}
+    </p>
 
     <ThaiAddressGroup label="Receiver Info" v-model="receiver" :errors="receiverErrorMap" />
+    <p
+      v-if="geocodeErrors.receiver"
+      class="mt-2 rounded-md bg-destructive/15 px-3 py-2 font-mono text-xs text-destructive"
+    >
+      {{ geocodeErrors.receiver }}
+    </p>
 
     <!-- Section 3: Parcel Info -->
     <fieldset class="rounded-xl border border-border p-5">
@@ -201,8 +269,16 @@ function handleSubmit() {
 
     <div class="flex justify-end gap-3 pt-4">
       <Button variant="outline" type="button" @click="emit('cancel')">Cancel</Button>
-      <Button type="submit" :disabled="pending || !canSubmit">
-        {{ pending ? "Saving\u2026" : isEditing ? "Save Changes" : "Create Order" }}
+      <Button type="submit" :disabled="pending || !canSubmit || geocoding">
+        {{
+          geocoding
+            ? "Resolving addresses\u2026"
+            : pending
+              ? "Saving\u2026"
+              : isEditing
+                ? "Save Changes"
+                : "Create Order"
+        }}
       </Button>
     </div>
   </form>

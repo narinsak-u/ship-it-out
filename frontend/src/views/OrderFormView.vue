@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
+import { toast } from "vue-sonner";
 import { useCreateOrder, useUpdateOrder } from "@/hooks/useOrders";
 import { fetchOrder } from "@/lib/api/orders";
 import type { OrderFormData } from "@/lib/api/orders";
@@ -28,9 +29,11 @@ const isPending = computed(() => createOrder.isPending.value || updateOrder.isPe
 async function handleSubmit(data: OrderFormData) {
   if (isEditing.value && orderId.value) {
     await updateOrder.mutateAsync({ id: orderId.value, data });
+    toast.success("Order updated");
     router.push({ name: "order-detail", params: { orderId: orderId.value } });
   } else {
     const created = await createOrder.mutateAsync(data);
+    toast.success("Order created");
     router.push({ name: "orders" });
   }
 }

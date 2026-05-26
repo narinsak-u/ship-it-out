@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { toast } from "vue-sonner";
 import { Package, LogIn, LogOut } from "lucide-vue-next";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
@@ -70,6 +71,7 @@ const showAuthModal = ref(false);
             <button
               @click="
                 authStore.logout();
+                toast.success('Signed out');
                 router.push({ name: 'home' });
               "
               class="flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
