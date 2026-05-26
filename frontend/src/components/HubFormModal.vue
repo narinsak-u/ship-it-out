@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
+import { toast } from "vue-sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useHubs, useCreateHub, useUpdateHub } from "@/hooks/useHubs";
 import { hubStatusLabels, type HubStatus } from "@/lib/carriers";
@@ -26,11 +27,20 @@ const existing = computed(() => {
   return hubsData.value.find((h) => h.id === props.hubId) ?? null;
 });
 
-const name = ref(existing.value?.name ?? "");
+const name = ref("");
 const carrierId = "THUN";
-const address = ref(existing.value?.address ?? "");
-const capacity = ref(existing.value?.capacity ?? 1000);
-const status = ref<HubStatus>(existing.value?.status ?? "active");
+const address = ref("");
+const capacity = ref(1000);
+const status = ref<HubStatus>("active");
+
+watch(existing, (hub) => {
+  if (hub) {
+    name.value = hub.name;
+    address.value = hub.address;
+    capacity.value = hub.capacity;
+    status.value = hub.status;
+  }
+});
 
 const isEditing = computed(() => !!props.hubId);
 
@@ -56,8 +66,10 @@ async function handleSubmit() {
   try {
     if (isEditing.value && props.hubId) {
       await updateHub.mutateAsync({ id: props.hubId, data });
+      toast.success("Hub updated");
     } else {
       await createHub.mutateAsync(data);
+      toast.success("Hub created");
     }
     emit("close");
   } catch {

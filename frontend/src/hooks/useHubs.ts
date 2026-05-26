@@ -1,3 +1,4 @@
+import { toast } from "vue-sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import { fetchHubs, createHub, updateHub, deleteHub } from "@/lib/api/carriers";
 import type { Hub } from "@/lib/carriers";
@@ -34,6 +35,7 @@ export function useDeleteHub() {
   return useMutation({
     mutationFn: (id: string) => deleteHub(id),
     onSuccess: () => {
+      toast.success("Hub deleted");
       queryClient.invalidateQueries({ queryKey: ["hubs"] });
     },
   });

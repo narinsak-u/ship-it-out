@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
+import { toast } from "vue-sonner";
 import { Search, Filter, ArrowRight, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
@@ -67,6 +68,7 @@ function setPage(page: number) {
 const deleteMutation = useMutation({
   mutationFn: (id: string) => deleteOrder(id),
   onSuccess: () => {
+    toast.success("Order deleted");
     queryClient.invalidateQueries({ queryKey: ["orders"] });
   },
 });

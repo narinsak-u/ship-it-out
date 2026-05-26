@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { toast } from "vue-sonner";
 import { LogIn, UserPlus, Loader2 } from "lucide-vue-next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Separator from "@/components/ui/Separator.vue";
@@ -38,7 +39,10 @@ async function handleLogin() {
   store.error = "";
   const err = await store.login(loginEmail.value, loginPassword.value);
   submitting.value = false;
-  if (!err) emit("authenticated");
+  if (!err) {
+    toast.success("Signed in successfully");
+    emit("authenticated");
+  }
 }
 
 async function handleSignup() {
@@ -59,7 +63,10 @@ async function handleSignup() {
   submitting.value = true;
   const err = await store.signup(signupName.value, signupEmail.value, signupPassword.value);
   submitting.value = false;
-  if (!err) emit("authenticated");
+  if (!err) {
+    toast.success("Account created");
+    emit("authenticated");
+  }
 }
 
 function handleGuest() {

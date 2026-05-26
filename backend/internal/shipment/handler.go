@@ -72,7 +72,7 @@ func List(c *fiber.Ctx) error {
 		offset := (page - 1) * limit
 		query = query.Offset(offset).Limit(limit)
 	}
-	query.Find(&shipments)
+	query.Order("created_at DESC").Find(&shipments)
 
 	return utils.SuccessWithPagination(c, shipments, page, limit, int(total))
 }
