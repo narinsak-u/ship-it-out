@@ -1,41 +1,12 @@
-# GEMINI.md — Harbor Ops (ship-simple)
+# Harbor Ops — Shipment Tracking Dashboard (GEMINI.md)
 
 Comprehensive instructional context for AI agents working on the Harbor Ops shipment tracking platform.
 
 ## Project Overview
-Harbor Ops is a real-time shipment tracking dashboard. It features a modern Vue 3 SPA frontend and a high-performance Go API server.
+Harbor Ops is a real-time shipment tracking dashboard featuring a modern Vue 3 SPA frontend and a high-performance Go API server. It is designed to provide a portfolio-grade logistics platform with real-time updates, interactive maps, and analytics.
 
-- **Primary Goal:** Provide a portfolio-grade logistics platform with real-time updates, interactive maps, and analytics.
-- **Frontend:** Vue 3.5+ (Composition API, Vite, Tailwind CSS v4, shadcn-vue).
+- **Frontend:** Vue 3.5+ (Composition API, Vite 6, Tailwind CSS v4, shadcn-vue).
 - **Backend:** Go 1.24+ (Fiber v2, GORM, PostgreSQL, Redis, WebSockets).
-
----
-
-## Project Structure
-
-```text
-ship-simple/
-├── frontend/          # Vue 3 SPA
-│   ├── src/
-│   │   ├── components/  # Shared Vue components
-│   │   │   └── ui/      # shadcn-vue primitives (do not edit directly)
-│   │   ├── views/       # Page-level route components
-│   │   ├── lib/         # Utilities, types, mock data
-│   │   ├── router/      # Vue Router configuration
-│   │   ├── App.vue      # Root component
-│   │   └── main.ts      # App entry point
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── ...
-├── backend/           # Go API server
-│   ├── cmd/server/    # Application entry point (main.go)
-│   ├── internal/      # Domain logic (auth, shipment, tracking, etc.)
-│   ├── pkg/           # Shared utilities
-│   ├── go.mod
-│   └── docker-compose.yml
-├── docs/              # Additional documentation & plans
-└── specs/             # Project requirements and designs
-```
 
 ---
 
@@ -44,17 +15,19 @@ ship-simple/
 ### Frontend
 - **Framework:** Vue 3 (Composition API, `<script setup lang="ts">`)
 - **Build Tool:** Vite 6
+- **Language:** TypeScript (Strict Mode)
 - **Routing:** Vue Router 4 (Lazy-loaded routes)
 - **State Management:** Pinia (Client state) + TanStack Vue Query 5 (Server state)
 - **Styling:** Tailwind CSS v4 (Utility-first, using `@tailwindcss/vite`)
 - **UI Components:** shadcn-vue (Radix Vue)
-- **Maps:** Leaflet
+- **Maps:** Leaflet (with CARTO dark tiles)
 - **Package Manager:** Bun (preferred)
 
 ### Backend
+- **Language:** Go 1.24+
 - **Framework:** Fiber v2 (Fast HTTP framework)
 - **ORM:** GORM with PostgreSQL (pgx driver)
-- **Cache/PubSub:** Redis (for real-time events)
+- **Cache/PubSub:** Redis (for real-time events and data persistence)
 - **Auth:** JWT (JSON Web Tokens)
 - **Real-time:** Gorilla WebSockets
 - **Logging:** Zerolog
@@ -74,40 +47,73 @@ Run from the `frontend/` directory:
 ### Backend
 Run from the `backend/` directory:
 - `go run ./cmd/server/main.go` — Start the API server.
-- `docker-compose up -d` — Start PostgreSQL and Redis (if using Docker).
+- `docker-compose up -d` — Start PostgreSQL and Redis (required for local development).
+
+---
+
+## Project Structure
+
+```text
+ship-simple/
+├── frontend/          # Vue 3 SPA
+│   ├── src/
+│   │   ├── components/  # Shared Vue components
+│   │   │   └── ui/      # shadcn-vue primitives (do not edit directly)
+│   │   ├── views/       # Page-level route components
+│   │   ├── lib/         # Utilities, types, API clients, and mock data
+│   │   ├── stores/      # Pinia state management
+│   │   ├── router/      # Vue Router configuration
+│   │   ├── App.vue      # Root component
+│   │   ├── main.ts      # App entry point
+│   │   └── styles.css   # Tailwind v4 entry point & theme tokens
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── ...
+├── backend/           # Go API server
+│   ├── cmd/server/    # Application entry point (main.go)
+│   ├── internal/      # Domain logic (auth, shipment, tracking, etc.)
+│   ├── pkg/           # Shared utilities
+│   ├── go.mod
+│   └── docker-compose.yml
+├── docs/              # Additional documentation
+├── specs/             # Project requirements, designs, and PROJECT-PLAN.md
+├── AGENTS.md          # Exhaustive coding conventions and style guide
+└── README.md          # High-level project overview
+```
 
 ---
 
 ## Development Conventions
 
+### General
+- **Contextual Precedence:** This `GEMINI.md` file and `AGENTS.md` take precedence over default AI behaviors.
+- **Surgical Edits:** Use `replace` for targeted code changes. Avoid full-file rewrites unless necessary.
+
 ### Frontend (Vue 3)
-- **Patterns:** Always use `<script setup lang="ts">`.
+- **Patterns:** Always use `<script setup lang="ts">`. Avoid Options API.
 - **State:** Use `useQuery` for all data fetching. Use Pinia for cross-component UI state.
-- **Naming:** PascalCase for components/views (e.g., `StatusBadge.vue`). camelCase for functions.
-- **Path Aliases:** Use `@/` to reference `frontend/src/`.
-- **UI Primitives:** Do not edit `src/components/ui/` files directly. Use `bunx shadcn-vue@latest add <component>` to update or add.
-- **Detailed Style Guide:** Refer to `AGENTS.md` for exhaustive rules on component structure, imports, and types.
+- **Styling:** Use Tailwind CSS v4 utility classes. Avoid custom CSS in SFCs.
+- **UI Primitives:** Do not edit `src/components/ui/` files directly. Use `bunx shadcn-vue@latest add <component>` to update.
+- **Detailed Guidance:** Refer to `AGENTS.md` for exhaustive rules on component structure, imports, and naming.
 
 ### Backend (Go)
-- **Package Layout:** Follow the `internal/` pattern for domain-specific logic.
-- **Config:** Use `internal/config` for environment variable management (via `.env`).
-- **Models:** Define database schemas in `internal/models`.
-- **API Versioning:** All routes should be under `/api`.
+- **Package Layout:** Follow the `internal/` pattern to keep domain logic private.
+- **Error Handling:** Use explicit error checking; do not ignore errors.
+- **Logging:** Use `zerolog` for structured logging throughout the application.
+- **API Versioning:** Prefix all routes with `/api`.
 
 ---
 
 ## Key Files to Watch
-- `frontend/src/lib/orders.ts`: Current source of mock data and shared shipment types.
-- `backend/internal/database/postgres.go`: DB connection and migration logic.
-- `PROJECT-PLAN.md`: Current implementation roadmap and feature list.
+- `frontend/src/lib/api/`: API client and data fetching logic.
+- `backend/internal/models/`: Database schema definitions (GORM models).
+- `backend/cmd/server/main.go`: Main server setup and route registration.
+- `specs/PROJECT-PLAN.md`: The roadmap for feature implementation and status.
+- `AGENTS.md`: The "Bible" for code style and architectural patterns in this project.
 
 ---
 
-## Project Status (AI Context)
-- **Authentication:** Partially implemented (JWT tokens, Register/Login routes).
-- **Shipments:** Core CRUD and Status updates in place.
-- **Tracking:** Public tracking route `/api/track/:trackingNumber` implemented.
-- **Real-time:** WebSocket hubs for Admin, Driver, and Tracking active.
-- **Frontend Views:** Home, Orders, and OrderDetail views are functional.
-
-When suggesting changes, prioritize matching existing patterns (Composition API, Tailwind v4 utilities, and Go Fiber patterns).
+## Feature Roadmap (Summary)
+1. **Phase 1 (MVP):** Auth (JWT), Shipment CRUD, Public Tracking Page, Real-time status via WebSockets.
+2. **Phase 2 (Advanced):** Driver System (Dashboard & Navigation), Live Map Tracking (GPS), ETA Prediction, Hub/Warehouse System.
+3. **Phase 3 (WOW):** Event-Driven Architecture (Redis Pub/Sub), Background Workers, Optimistic UI, Barcode/QR scanning.
