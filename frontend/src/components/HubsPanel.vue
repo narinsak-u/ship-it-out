@@ -137,12 +137,13 @@ const hubStatusCounts = computed(() => {
           <TableRow
             class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50"
           >
+            <TableHead class="hidden md:table-cell">ID</TableHead>
             <TableHead class="hidden md:table-cell">Name</TableHead>
             <TableHead class="hidden md:table-cell">Carrier</TableHead>
             <TableHead class="hidden md:table-cell">Address</TableHead>
             <TableHead class="hidden md:table-cell">Capacity</TableHead>
             <TableHead class="hidden md:table-cell">Status</TableHead>
-            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell text-right">
+            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell">
               Actions
             </TableHead>
           </TableRow>
@@ -153,6 +154,7 @@ const hubStatusCounts = computed(() => {
             :key="h.id"
             class="border-b border-border transition-colors hover:bg-secondary/40"
           >
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ h.id }}</TableCell>
             <TableCell class="font-mono text-sm">{{ h.name }}</TableCell>
             <TableCell class="font-mono text-sm text-muted-foreground">
               {{ getCarrier(h.carrierId)?.name ?? h.carrierId }}
@@ -190,16 +192,16 @@ const hubStatusCounts = computed(() => {
                 {{ hubStatusLabels[h.status] }}
               </Badge>
             </TableCell>
-            <TableCell v-if="auth.isAuthenticated" class="text-right">
+            <TableCell v-if="auth.isAuthenticated">
               <button
                 @click="openEdit(h.id)"
-                class="rounded p-1.5 text-muted-foreground hover:text-foreground"
+                class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-foreground"
               >
                 <Pencil class="h-4 w-4" />
               </button>
               <button
                 @click="deleteTarget = h.id"
-                class="rounded p-1.5 text-muted-foreground hover:text-destructive"
+                class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-destructive"
               >
                 <Trash2 class="h-4 w-4" />
               </button>
@@ -229,7 +231,14 @@ const hubStatusCounts = computed(() => {
       title="Delete Hub"
       description="Are you sure you want to delete this hub? This action cannot be undone."
       :pending="deleteHub.isPending.value"
-      @confirm="deleteTarget && deleteHub.mutate(deleteTarget, { onSuccess: () => { deleteTarget = null } })"
+      @confirm="
+        deleteTarget &&
+        deleteHub.mutate(deleteTarget, {
+          onSuccess: () => {
+            deleteTarget = null;
+          },
+        })
+      "
       @cancel="deleteTarget = null"
     />
 

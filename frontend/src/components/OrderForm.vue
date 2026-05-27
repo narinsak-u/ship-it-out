@@ -36,7 +36,7 @@ const receiver = ref({
 
 // Parcel
 const carrier = ref(props.initial?.carrier ?? "Thun-u-der Express");
-const weight = ref(props.initial?.weight ?? "");
+const weight = ref(props.initial?.weight ?? 0);
 const items = ref(props.initial?.items ?? 1);
 const estimatedDelivery = ref(props.initial?.estimatedDelivery ?? "");
 const estimatedDeliveryRaw = ref(props.initial?.estimatedDeliveryRaw ?? "");
@@ -57,7 +57,7 @@ const filled = computed(() => {
     receiver.value.subDistrict.trim() &&
     receiver.value.district.trim() &&
     receiver.value.province.trim() &&
-    weight.value.trim() &&
+    weight.value > 0 &&
     (items.value ?? 0) >= 1 &&
     (!props.isEditing || estimatedDelivery.value.trim())
   );
@@ -76,7 +76,7 @@ const formChanged = computed(() => {
     receiver.value.subDistrict !== (props.initial.receiver?.subDistrict ?? "") ||
     receiver.value.district !== (props.initial.receiver?.district ?? "") ||
     receiver.value.province !== (props.initial.receiver?.province ?? "") ||
-    weight.value !== (props.initial.weight ?? "") ||
+    weight.value !== (props.initial.weight ?? 0) ||
     (items.value ?? 0) !== (props.initial.items ?? 1) ||
     estimatedDelivery.value !== (props.initial.estimatedDelivery ?? "")
   );
@@ -96,7 +96,7 @@ function validate(): boolean {
   if (!receiver.value.subDistrict.trim()) e["receiver.subDistrict"] = "Required";
   if (!receiver.value.district.trim()) e["receiver.district"] = "Required";
   if (!receiver.value.province.trim()) e["receiver.province"] = "Required";
-  if (!weight.value.trim()) e.weight = "Required";
+  if (weight.value <= 0) e.weight = "Required";
   if (!items.value || items.value < 1) e.items = "Must be at least 1";
   if (props.isEditing && !estimatedDelivery.value.trim()) e.estimatedDelivery = "Required";
   errors.value = e;
@@ -125,26 +125,6 @@ async function handleSubmit() {
   geocoding.value = true;
 
   try {
-    const [senderCoords, receiverCoords] = await Promise.all([
-      geocodeAddress(
-        sender.value.subDistrict,
-        sender.value.district,
-        sender.value.province,
-      ),
-      geocodeAddress(
-        receiver.value.subDistrict,
-        receiver.value.district,
-        receiver.value.province,
-      ),
-    ]);
-
-    emit("submit", {
-      customer: {
-        name: sender.value.name,
-        zipcode: sender.value.zipcode,
-        subDistrict: sender.value.subDistrict,
-        district: sender.value.district,
-  try {
     const [senderRes, receiverRes] = await Promise.allSettled([
       geocodeAddress(sender.value.subDistrict, sender.value.district, sender.value.province),
       geocodeAddress(receiver.value.subDistrict, receiver.value.district, receiver.value.province),
@@ -164,27 +144,6 @@ async function handleSubmit() {
     emit("submit", {
       customer: { ...sender.value, coords: senderRes.value },
       receiver: { ...receiver.value, coords: receiverRes.value },
-      carrier: carrier.value,
-      weight: weight.value,
-      items: items.value,
-      estimatedDelivery: estimatedDeliveryRaw.value || "",
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Could not resolve address.";
-    geocodeErrors.value = { sender: msg, receiver: msg };
-  } finally {
-    geocoding.value = false;
-  }
-        coords: senderCoords,
-      },
-      receiver: {
-        name: receiver.value.name,
-        zipcode: receiver.value.zipcode,
-        subDistrict: receiver.value.subDistrict,
-        district: receiver.value.district,
-        province: receiver.value.province,
-        coords: receiverCoords,
-      },
       carrier: carrier.value,
       weight: weight.value,
       items: items.value,
@@ -235,9 +194,9 @@ async function handleSubmit() {
         </div>
         <div>
           <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
-            >Weight</label
+            >Weight/Kg</label
           >
-          <Input v-model="weight" class="mt-1.5 font-mono text-sm" placeholder="e.g. 12.4 kg" />
+          <Input v-model.number="weight" type="number" step="0.1" min="0" class="mt-1.5 font-mono text-sm" placeholder="e.g. 12.4" />
           <p v-if="errors.weight" class="mt-1 font-mono text-xs text-destructive">
             {{ errors.weight }}
           </p>

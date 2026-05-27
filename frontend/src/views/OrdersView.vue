@@ -3,7 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import { toast } from "vue-sonner";
-import { Search, Filter, ArrowRight, Plus, Pencil, Trash2 } from "lucide-vue-next";
+import { Search, Filter, ArrowRight, Plus, Pencil, Trash2, Eye } from "lucide-vue-next";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
@@ -149,7 +149,7 @@ function onGuest() {
               @click="filter = f.key"
               :class="
                 cn(
-                  'rounded-full border px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition-colors',
+                  'rounded-full border cursor-pointer px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition-colors',
                   filter === f.key
                     ? 'border-primary bg-primary/15 text-primary'
                     : 'border-border text-muted-foreground hover:text-foreground',
@@ -174,9 +174,7 @@ function onGuest() {
                 <TableHead class="hidden md:table-cell">Route</TableHead>
                 <TableHead class="hidden md:table-cell">Status</TableHead>
                 <TableHead class="hidden md:table-cell">ETA</TableHead>
-                <TableHead v-if="authStore.user" class="hidden md:table-cell text-right">
-                  Actions
-                </TableHead>
+                <TableHead class="hidden md:table-cell"> Actions </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -205,22 +203,31 @@ function onGuest() {
                   </span>
                 </TableCell>
                 <TableCell><StatusBadge :status="o.status" /></TableCell>
-                <TableCell class="font-mono text-xs text-muted-foreground text-right">
+                <TableCell class="font-mono text-xs text-muted-foreground">
                   {{ o.estimatedDelivery }}
                 </TableCell>
-                <TableCell v-if="authStore.user" class="text-right">
-                  <button
-                    @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
-                    class="rounded p-1.5 text-muted-foreground hover:text-primary"
+                <TableCell class="flex">
+                  <RouterLink
+                    :to="{ name: 'order-detail', params: { orderId: o.id } }"
+                    class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                    title="View details"
                   >
-                    <Pencil class="h-4 w-4" />
-                  </button>
-                  <button
-                    @click.stop="deleteTarget = o.id"
-                    class="rounded p-1.5 text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 class="h-4 w-4" />
-                  </button>
+                    <Eye class="h-4 w-4" />
+                  </RouterLink>
+                  <div v-if="authStore.user">
+                    <button
+                      @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
+                      class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-primary"
+                    >
+                      <Pencil class="h-4 w-4" />
+                    </button>
+                    <button
+                      @click.stop="deleteTarget = o.id"
+                      class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 class="h-4 w-4" />
+                    </button>
+                  </div>
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -257,7 +264,7 @@ function onGuest() {
       />
 
       <AuthModal
-        v-if="showAuthModal"
+        :open="showAuthModal"
         @close="showAuthModal = false"
         @authenticated="onAuthenticated"
         @guest="onGuest"

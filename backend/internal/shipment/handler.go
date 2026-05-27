@@ -19,7 +19,7 @@ type CreateRequest struct {
 	Customer models.ContactInfo `json:"customer"`
 	Receiver models.ContactInfo `json:"receiver"`
 	Carrier  string             `json:"carrier"`
-	Weight   string             `json:"weight"`
+	Weight   float64            `json:"weight"`
 	Items    int                `json:"items"`
 }
 
@@ -254,13 +254,13 @@ func UpdateStatus(c *fiber.Ctx) error {
 		var h models.Hub
 		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error == nil {
 			hub = &h
-		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error != nil {
-			return utils.Error(c, 400, "invalid hub ID")
-		}
-		hub = &h
-		shipment.HubID = body.HubID
-		shipment.CurrentCoords.Lat = h.Lat
-		shipment.CurrentCoords.Lng = h.Lng
+			if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error != nil {
+				return utils.Error(c, 400, "invalid hub ID")
+			}
+			hub = &h
+			shipment.HubID = body.HubID
+			shipment.CurrentCoords.Lat = h.Lat
+			shipment.CurrentCoords.Lng = h.Lng
 			shipment.CurrentCoords.Lng = h.Lng
 		}
 	}
@@ -279,7 +279,7 @@ type UpdateRequest struct {
 	Customer          *models.ContactInfo `json:"customer,omitempty"`
 	Receiver          *models.ContactInfo `json:"receiver,omitempty"`
 	Carrier           *string             `json:"carrier,omitempty"`
-	Weight            *string             `json:"weight,omitempty"`
+	Weight            *float64            `json:"weight,omitempty"`
 	Items             *int                `json:"items,omitempty"`
 	EstimatedDelivery *time.Time          `json:"estimatedDelivery,omitempty"`
 }

@@ -14,7 +14,7 @@ export interface BackendShipment {
   status: string;
   carrier: string;
   hubId?: string;
-  weight: string;
+  weight: number;
   items: number;
   estimatedDelivery: string;
   createdAt: string;

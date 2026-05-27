@@ -41,7 +41,7 @@ const meta = computed(() => {
     { icon: Hash, label: "Tracking #", value: o.trackingNumber },
     { icon: User, label: "Customer", value: o.customer.name },
     { icon: Truck, label: "Carrier", value: o.carrier },
-    { icon: Weight, label: "Weight", value: o.weight },
+    { icon: Weight, label: "Weight/Kg", value: `${o.weight} kg` },
     { icon: Calendar, label: "Created", value: o.createdAt },
   ];
 });

@@ -16,17 +16,15 @@ export async function geocodeAddress(
   try {
     data = await geocode({ q, key });
   } catch {
-    throw new Error(
-      "Location lookup failed. Please try again later.",
-    );
+    throw new Error("Location lookup failed. Please try again later.");
   }
 
   if (!data.results || data.results.length === 0) {
     throw new Error("Could not resolve this address. Check the fields and try again.");
   }
 
-  if (!data.results || data.results.length === 0 || !data.results[0].geometry) {
+  if (!data.results[0].geometry) {
     throw new Error("Could not resolve this address. Check the fields and try again.");
   }
-  return { lat, lng };
+  return data.results[0].geometry;
 }

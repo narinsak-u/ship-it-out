@@ -16,6 +16,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const PROVINCES = [
+  "Amnat Charoen",
+  "Bueng Kan",
+  "Chaiyaphum",
+  "Kalasin",
+  "Loei",
+  "Maha Sarakham",
+  "Mukdahan",
+  "Nakhon Phanom",
+  "Nong Bua Lamphu",
+  "Nong Khai",
+  "Roi Et",
+  "Sakon Nakhon",
+  "Sisaket",
+  "Surin",
+  "Yasothon",
+] as const;
+
 const props = defineProps<{ hubId?: string | null; open?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
@@ -30,21 +48,24 @@ const existing = computed(() => {
 
 const name = ref("");
 const carrierId = "THUN";
-const address = ref("");
+const location = ref("");
 const capacity = ref(1000);
 const status = ref<HubStatus>("active");
+const geocodeError = ref("");
+const geocoding = ref(false);
 
 function resetForm() {
   name.value = "";
-  address.value = "";
+  location.value = "";
   capacity.value = 1000;
   status.value = "active";
+  geocodeError.value = "";
 }
 
 watch(existing, (hub) => {
   if (hub) {
     name.value = hub.name;
-    address.value = hub.address;
+    location.value = hub.address;
     capacity.value = hub.capacity;
     status.value = hub.status;
   }
@@ -69,26 +90,28 @@ const submitError = computed(() =>
   isEditing.value ? updateHub.isError.value : createHub.isError.value,
 );
 
-const geocodeError = ref("");
-const geocoding = ref(false);
-
 async function handleSubmit() {
   geocodeError.value = "";
   geocoding.value = true;
 
   let coords: { lat: number; lng: number };
-  try {
-    coords = await geocodeAddress(address.value, "", "");
-    coords = await geocodeAddress(address.value, "", "");
-    geocodeError.value = e instanceof Error ? e.message : "Could not resolve address.";
+  if (isEditing.value && existing.value) {
+    coords = existing.value.coords;
     geocoding.value = false;
-    return;
+  } else {
+    try {
+      coords = await geocodeAddress("", "", location.value);
+    } catch (e) {
+      geocodeError.value = e instanceof Error ? e.message : "Could not resolve location.";
+      geocoding.value = false;
+      return;
+    }
   }
 
   const data = {
     name: name.value,
     carrierId,
-    address: address.value,
+    address: location.value,
     coords,
     capacity: capacity.value,
     currentUtilization: existing.value?.currentUtilization ?? 0,
@@ -141,10 +164,32 @@ async function handleSubmit() {
           </div>
         </div>
         <div>
-          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
-            >Address</label
-          >
-          <Input v-model="address" class="mt-1.5 font-mono text-sm" placeholder="Full address" />
+          <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Location
+          </label>
+          <div v-if="isEditing">
+            <div
+              class="mt-1.5 flex h-10 w-full items-center rounded-lg border border-border bg-background px-3 font-mono text-sm text-muted-foreground"
+            >
+              {{ location || "Not set" }}
+            </div>
+          </div>
+          <div v-else>
+            <Select v-model="location">
+              <SelectTrigger
+                class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
+              >
+                <SelectValue placeholder="Select province..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem v-for="p in PROVINCES" :key="p" :value="p">
+                    {{ p }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
           <p
             v-if="geocodeError"
             class="mt-1.5 rounded-md bg-destructive/15 px-3 py-2 font-mono text-xs text-destructive"
@@ -160,9 +205,9 @@ async function handleSubmit() {
             <Input v-model.number="capacity" type="number" class="mt-1.5 font-mono text-sm" />
           </div>
           <div>
-            <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
-              >Status</label
-            >
+            <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              Status
+            </label>
             <Select v-model="status">
               <SelectTrigger
                 class="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm"
@@ -187,10 +232,10 @@ async function handleSubmit() {
 
       <div class="mt-6 flex justify-end gap-3">
         <Button variant="outline" @click="emit('close')">Cancel</Button>
-        <Button :disabled="!name || submitPending || geocoding" @click="handleSubmit">
+        <Button :disabled="!name || !location || submitPending || geocoding" @click="handleSubmit">
           {{
             geocoding
-              ? "Resolving address\u2026"
+              ? "Resolving location\u2026"
               : submitPending
                 ? "Saving\u2026"
                 : isEditing

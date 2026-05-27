@@ -165,7 +165,7 @@ function handleUpdate(orderId: string) {
             <TableHead class="hidden md:table-cell">Status</TableHead>
             <TableHead class="hidden md:table-cell">Hub</TableHead>
             <TableHead class="hidden md:table-cell">ETA</TableHead>
-            <TableHead class="hidden md:table-cell text-right">Actions</TableHead>
+            <TableHead class="hidden md:table-cell">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -222,9 +222,9 @@ function handleUpdate(orderId: string) {
               </Select>
               <span v-else class="font-mono text-xs text-muted-foreground">&mdash;</span>
             </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{
-              o.estimatedDelivery
-            }}</TableCell>
+            <TableCell class="font-mono text-xs text-muted-foreground">
+              {{ o.estimatedDelivery }}
+            </TableCell>
             <TableCell class="flex gap-1">
               <RouterLink
                 :to="{ name: 'order-detail', params: { orderId: o.id } }"
@@ -236,7 +236,7 @@ function handleUpdate(orderId: string) {
               <button
                 @click="handleUpdate(o.id)"
                 :disabled="!auth.isAuthenticated || !canUpdate(o.id)"
-                class="rounded p-1.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
+                class="rounded cursor-pointer p-1.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
                 title="Update"
               >
                 <Check class="h-4 w-4" />
