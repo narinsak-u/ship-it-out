@@ -1,20 +1,6 @@
-import type { Hub, HubStatus } from "@/lib/carriers";
-import { carriers, hubs } from "@/lib/carriers";
+import type { Hub } from "@/lib/hubs";
 import { api } from "@/lib/api/client";
 import { mapBackendHubToHub, type BackendHub } from "@/lib/api/mappers";
-
-function delay(ms = 200): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// --- Carriers ---
-
-export async function fetchCarriers() {
-  await delay();
-  return [...carriers];
-}
-
-// --- Hubs ---
 
 export async function fetchHubs(): Promise<Hub[]> {
   const result = await api.get<BackendHub[]>("/hubs");

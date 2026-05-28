@@ -4,7 +4,7 @@ import { toast } from "vue-sonner";
 import { geocodeAddress } from "@/lib/geocode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useHubs, useCreateHub, useUpdateHub } from "@/hooks/useHubs";
-import { hubStatusLabels, type HubStatus } from "@/lib/carriers";
+import { hubStatusLabels, type HubStatus } from "@/lib/hubs";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
 import {

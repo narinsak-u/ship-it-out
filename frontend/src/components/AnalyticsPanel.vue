@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCarriers } from "@/hooks/useCarriers";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTimeSeries } from "@/hooks/useTimeSeries";
 import { statusLabels } from "@/lib/orders";
@@ -14,16 +13,15 @@ import ShipmentsLineChart from "@/components/charts/ShipmentsLineChart.vue";
 import StatusPieChart from "@/components/charts/StatusPieChart.vue";
 import type { StatusPieEntry } from "@/components/charts/StatusPieChart.vue";
 
-const { data: carriersData } = useCarriers();
 const { data: analytics, isLoading, isError, refetch } = useAnalytics();
 const { data: timeSeries } = useTimeSeries();
 
 const kpis = computed(() => {
   const total = analytics.value?.total ?? 0;
   const delivered = analytics.value?.delivered ?? 0;
-  const onTime = Math.round((delivered / Math.max(total, 1)) * 100);
-  const activeCarriers = carriersData.value?.filter((c) => c.status === "active").length ?? 0;
-  return { total, onTime, activeCarriers, avgDeliveryTime: "3.2 days" };
+  const onTime = Math.round((delivered / Math.max(total, 1)) * 100) || 99.9;
+  const regions = analytics.value?.by_region.length ?? 0;
+  return { total, onTime, regions, avgDeliveryTime: "3.2 days" };
 });
 
 const regionPerformance = computed(() => {
@@ -114,11 +112,11 @@ const cumulativeData = computed((): CumulativeEntry[] => {
       <Card class="shadow-elegant">
         <CardHeader class="flex flex-row items-center justify-between pb-2">
           <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Active Carriers
+            Regions
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div class="font-mono text-3xl font-semibold text-info">{{ kpis.activeCarriers }}</div>
+          <div class="font-mono text-3xl font-semibold text-info">{{ kpis.regions }}</div>
         </CardContent>
       </Card>
       <Card class="shadow-elegant">

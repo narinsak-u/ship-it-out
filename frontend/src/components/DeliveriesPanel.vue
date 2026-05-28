@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { toast } from "vue-sonner";
 import { Search, RefreshCw, Check, Eye } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
-import { fetchHubs } from "@/lib/api/carriers";
+import { fetchHubs } from "@/lib/api/hubs";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import { useAuthStore } from "@/stores/auth";
 import Input from "@/components/ui/Input.vue";

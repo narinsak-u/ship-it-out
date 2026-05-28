@@ -77,7 +77,14 @@ const svgDefs = `
       <VisAxis type="y" :tick-line="false" :domain-line="false" :grid-line="true" />
       <ChartTooltip />
       <ChartCrosshair
-        :template="componentToString(chartConfig, ChartTooltipContent)"
+        :template="
+          componentToString(chartConfig, ChartTooltipContent, {
+            labelFormatter: (v: number | Date) => {
+              const date = new Date(v);
+              return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            },
+          })
+        "
         :color="['var(--color-count)']"
       />
     </VisXYContainer>

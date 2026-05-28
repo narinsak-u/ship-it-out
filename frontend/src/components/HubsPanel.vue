@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { Search, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import { useHubs, useDeleteHub } from "@/hooks/useHubs";
-import { getCarrier, hubStatusLabels } from "@/lib/carriers";
+import { hubStatusLabels } from "@/lib/hubs";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 import Badge from "@/components/ui/Badge.vue";
@@ -35,11 +35,7 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase();
   return hubs.value.filter((h) => {
     if (!q) return true;
-    return (
-      h.name.toLowerCase().includes(q) ||
-      h.address.toLowerCase().includes(q) ||
-      getCarrier(h.carrierId)?.name.toLowerCase().includes(q)
-    );
+    return h.name.toLowerCase().includes(q) || h.address.toLowerCase().includes(q);
   });
 });
 
@@ -166,7 +162,7 @@ const hubStatusCounts = computed(() => {
             <TableCell class="font-mono text-xs text-muted-foreground">{{ h.id }}</TableCell>
             <TableCell class="font-mono text-sm">{{ h.name }}</TableCell>
             <TableCell class="font-mono text-sm text-muted-foreground">
-              {{ getCarrier(h.carrierId)?.name ?? h.carrierId }}
+              {{ h.carrierId }}
             </TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{{ h.address }}</TableCell>
             <TableCell>
@@ -180,9 +176,9 @@ const hubStatusCounts = computed(() => {
                     }"
                   />
                 </div>
-                <span class="font-mono text-xs text-muted-foreground"
-                  >{{ Math.round((h.currentUtilization / h.capacity) * 100) }}%</span
-                >
+                <span class="font-mono text-xs text-muted-foreground">
+                  {{ Math.round((h.currentUtilization / h.capacity) * 100) }}%
+                </span>
               </div>
             </TableCell>
             <TableCell>

@@ -11,7 +11,15 @@ import {
 } from "@/components/ui/chart";
 import type { DayOfWeekCount } from "@/lib/api/analytics";
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
+const DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
 
 const props = defineProps<{
   data: DayOfWeekCount[];
@@ -31,6 +39,17 @@ const mappedData = computed<DataPoint[]>(() => {
   }));
 });
 
+const yMax = computed(() => Math.max(...mappedData.value.map((d) => d.count), 0));
+
+const yTicks = computed(() => {
+  const ticks: number[] = [];
+  const max = yMax.value % 2 === 0 ? yMax.value : yMax.value + 1;
+  for (let i = 0; i <= max; i += 2) {
+    ticks.push(i);
+  }
+  return ticks;
+});
+
 const chartConfig = {
   count: {
     label: "Shipments",
@@ -46,11 +65,7 @@ const chartConfig = {
   >
     No data
   </div>
-  <ChartContainer
-    v-else
-    :config="chartConfig"
-    :class="props.class"
-  >
+  <ChartContainer v-else :config="chartConfig" :class="props.class">
     <VisXYContainer :data="mappedData">
       <VisGroupedBar
         :x="(d: DataPoint) => d.dayIndex"
@@ -74,6 +89,7 @@ const chartConfig = {
         :tick-line="false"
         :domain-line="false"
         :grid-line="true"
+        :tick-values="yTicks"
       />
       <ChartTooltip />
       <ChartCrosshair
