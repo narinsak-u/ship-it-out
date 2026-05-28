@@ -23,3 +23,24 @@ export async function fetchAnalytics(): Promise<AnalyticsOverview> {
   if (result.error) throw new Error(result.error);
   return result.data!;
 }
+
+export interface MonthlyCount {
+  month: string;
+  count: number;
+}
+
+export interface DayOfWeekCount {
+  day: string;
+  count: number;
+}
+
+export interface TimeSeriesData {
+  by_month: MonthlyCount[];
+  by_day_of_week: DayOfWeekCount[];
+}
+
+export async function fetchTimeSeries(): Promise<TimeSeriesData> {
+  const result = await api.get<TimeSeriesData>("/analytics/timeseries");
+  if (result.error) throw new Error(result.error);
+  return result.data!;
+}
