@@ -39,15 +39,13 @@ var provinceRegion = map[string]string{
 }
 
 type provinceCount struct {
-	Province  string
-	Total     int64
-	Delivered int64
+	Province string
+	Total    int64
 }
 
 type regionCount struct {
-	Name      string `json:"name"`
-	Total     int64  `json:"total"`
-	Delivered int64  `json:"delivered"`
+	Name  string `json:"name"`
+	Total int64  `json:"total"`
 }
 
 func Overview(c *fiber.Ctx) error {
@@ -69,7 +67,7 @@ func Overview(c *fiber.Ctx) error {
 
 	var byProvince []provinceCount
 	database.DB.Model(&models.Shipment{}).
-		Select("receiver_province as province, count(*) as total, sum(case when status = 'DELIVERED' then 1 else 0 end) as delivered").
+		Select("receiver_province as province, count(*) as total").
 		Group("receiver_province").
 		Scan(&byProvince)
 
@@ -88,7 +86,6 @@ func Overview(c *fiber.Ctx) error {
 		}
 		r := regionMap[region]
 		r.Total += p.Total
-		r.Delivered += p.Delivered
 	}
 
 	byRegion := make([]regionCount, 0, len(regionMap))

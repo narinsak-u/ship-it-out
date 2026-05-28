@@ -3,7 +3,6 @@ import { api } from "@/lib/api/client";
 export interface RegionCount {
   name: string;
   total: number;
-  delivered: number;
 }
 
 export interface StatusCount {
