@@ -1,54 +1,51 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useCarriers } from "@/hooks/useCarriers";
-import { orders, statusLabels } from "@/lib/orders";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { statusLabels } from "@/lib/orders";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
 
-const { data: carriersData, isLoading, isError, refetch } = useCarriers();
+const { data: carriersData } = useCarriers();
+const { data: analytics, isLoading, isError, refetch } = useAnalytics();
 
 const kpis = computed(() => {
-  const total = orders.length;
-  const delivered = orders.filter((o) => o.status === "delivered").length;
+  const total = analytics.value?.total ?? 0;
+  const delivered = analytics.value?.delivered ?? 0;
   const onTime = Math.round((delivered / Math.max(total, 1)) * 100);
   const activeCarriers = carriersData.value?.filter((c) => c.status === "active").length ?? 0;
   return { total, onTime, activeCarriers, avgDeliveryTime: "3.2 days" };
 });
 
-const carrierPerformance = computed(() => {
-  if (!carriersData.value) return [];
-  return carriersData.value.map((c) => {
-    const carrierOrders = orders.filter((o) => o.carrier === c.name);
-    const delivered = carrierOrders.filter((o) => o.status === "delivered").length;
-    return {
-      name: c.name,
-      total: carrierOrders.length,
-      delivered,
-      onTimeRate:
-        carrierOrders.length > 0 ? Math.round((delivered / carrierOrders.length) * 100) : 0,
-    };
-  });
+const regionPerformance = computed(() => {
+  if (!analytics.value) return [];
+  return analytics.value.by_region
+    .map((r) => ({
+      ...r,
+      onTimeRate: r.total > 0 ? Math.round((r.delivered / r.total) * 100) : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
 });
 
 const statusDistribution = computed(() => {
-  const counts: Record<string, number> = {};
-  for (const o of orders) {
-    counts[o.status] = (counts[o.status] || 0) + 1;
-  }
-  return Object.entries(counts).map(([status, count]) => ({
-    status,
-    label: statusLabels[status as keyof typeof statusLabels] ?? status,
-    count,
-    pct: Math.round((count / orders.length) * 100),
+  if (!analytics.value) return [];
+  const total = analytics.value.total;
+  return analytics.value.by_status.map((s) => ({
+    status: s.status.toLowerCase(),
+    label: (statusLabels as Record<string, string>)[s.status.toLowerCase()] ?? s.status,
+    count: s.count,
+    pct: Math.round((s.count / Math.max(total, 1)) * 100),
   }));
 });
 
-const maxCarrierOrders = computed(() =>
-  Math.max(...carrierPerformance.value.map((c) => c.total), 1),
+const maxRegionOrders = computed(() =>
+  Math.max(...regionPerformance.value.map((r) => r.total), 1),
 );
 
-const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((s) => s.count), 1));
+const maxStatusCount = computed(() =>
+  Math.max(...statusDistribution.value.map((s) => s.count), 1),
+);
 </script>
 
 <template>
@@ -110,33 +107,33 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
       </Card>
     </div>
 
-    <!-- Carrier Performance -->
+    <!-- Shipments by Region -->
     <div class="mt-8">
-      <h3 class="font-mono text-sm font-semibold">Carrier Performance</h3>
+      <h3 class="font-mono text-sm font-semibold">Shipments by Region</h3>
       <div class="mt-4 space-y-3">
         <div
-          v-for="c in carrierPerformance"
-          :key="c.name"
+          v-for="r in regionPerformance"
+          :key="r.name"
           class="rounded-lg border border-border bg-card p-4"
         >
           <div class="flex items-center justify-between">
-            <span class="font-mono text-sm">{{ c.name }}</span>
+            <span class="font-mono text-sm">{{ r.name }}</span>
             <span class="font-mono text-xs text-muted-foreground"
-              >{{ c.delivered }}/{{ c.total }} delivered</span
+              >{{ r.delivered }}/{{ r.total }} delivered</span
             >
           </div>
           <div class="mt-2 flex items-center gap-3">
             <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
               <div
                 class="h-full rounded-full bg-gradient-accent transition-all"
-                :style="{ width: `${(c.total / maxCarrierOrders) * 100}%` }"
+                :style="{ width: `${(r.total / maxRegionOrders) * 100}%` }"
               />
             </div>
             <span
               class="font-mono text-xs"
-              :class="c.onTimeRate >= 80 ? 'text-success' : 'text-warning'"
+              :class="r.onTimeRate >= 80 ? 'text-success' : 'text-warning'"
             >
-              {{ c.onTimeRate }}%
+              {{ r.onTimeRate }}%
             </span>
           </div>
         </div>
