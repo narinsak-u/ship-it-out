@@ -106,6 +106,25 @@
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
+  .animate-running {
+    animation: run 0.8s ease-in-out infinite;
+  }
+}
+
+@keyframes run {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-2px) rotate(1deg);
+  }
 }
 
 @layer base {
