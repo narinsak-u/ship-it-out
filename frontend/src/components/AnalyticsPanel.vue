@@ -116,19 +116,17 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
           <div class="flex items-center justify-between">
             <span class="font-mono text-sm">{{ r.name }}</span>
             <span class="font-mono text-xs text-muted-foreground">
-              {{ r.total }}/{{ analytics?.total ?? 0 }} ({{ r.pct }}%)
+              {{ r.total }}/{{ analytics?.total ?? 0 }} shipments
             </span>
           </div>
           <div class="mt-2 flex items-center gap-3">
             <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
               <div
                 class="h-full rounded-full bg-gradient-accent transition-all"
-                :style="{ width: `${(r.total / maxRegionOrders) * 100}%` }"
+                :style="{ width: `${(r.total / analytics?.total) * 100}%` }"
               />
             </div>
-            <span class="font-mono text-xs text-muted-foreground">
-              {{ r.total }} shipments
-            </span>
+            <span class="font-mono text-xs text-muted-foreground"> {{ r.pct }}% </span>
           </div>
         </div>
       </div>
@@ -140,9 +138,9 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
       <div class="mt-4 space-y-2">
         <div v-for="s in statusDistribution" :key="s.status" class="flex items-center gap-3">
           <span class="w-32 font-mono text-xs text-muted-foreground">{{ s.label }}</span>
-          <div class="h-5 flex-1 overflow-hidden rounded-full bg-secondary">
+          <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
             <div
-              class="h-full rounded-full transition-all"
+              class="h-2 rounded-full transition-all"
               :class="
                 s.status === 'delivered'
                   ? 'bg-success'
@@ -154,12 +152,12 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
                         ? 'bg-primary'
                         : 'bg-muted-foreground/40'
               "
-              :style="{ width: `${(s.count / maxStatusCount) * 100}%` }"
+              :style="{ width: `${(s.count / analytics?.total) * 100}%` }"
             />
           </div>
-          <span class="w-16 text-right font-mono text-xs text-muted-foreground"
-            >{{ s.count }} ({{ s.pct }}%)</span
-          >
+          <span class="w-fit text-right font-mono text-xs text-muted-foreground">
+            {{ s.count }}/{{ analytics?.total ?? 0 }} ({{ s.pct }}%)
+          </span>
         </div>
       </div>
     </div>
