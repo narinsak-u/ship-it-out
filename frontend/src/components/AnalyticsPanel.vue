@@ -20,10 +20,11 @@ const kpis = computed(() => {
 
 const regionPerformance = computed(() => {
   if (!analytics.value) return [];
+  const total = analytics.value.total;
   return analytics.value.by_region
     .map((r) => ({
       ...r,
-      onTimeRate: r.total > 0 ? Math.round((r.delivered / r.total) * 100) : 0,
+      pct: total > 0 ? Math.round((r.total / total) * 100) : 0,
     }))
     .sort((a, b) => b.total - a.total);
 });
@@ -39,13 +40,9 @@ const statusDistribution = computed(() => {
   }));
 });
 
-const maxRegionOrders = computed(() =>
-  Math.max(...regionPerformance.value.map((r) => r.total), 1),
-);
+const maxRegionOrders = computed(() => Math.max(...regionPerformance.value.map((r) => r.total), 1));
 
-const maxStatusCount = computed(() =>
-  Math.max(...statusDistribution.value.map((s) => s.count), 1),
-);
+const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((s) => s.count), 1));
 </script>
 
 <template>
@@ -118,9 +115,9 @@ const maxStatusCount = computed(() =>
         >
           <div class="flex items-center justify-between">
             <span class="font-mono text-sm">{{ r.name }}</span>
-            <span class="font-mono text-xs text-muted-foreground"
-              >{{ r.delivered }}/{{ r.total }} delivered</span
-            >
+            <span class="font-mono text-xs text-muted-foreground">
+              {{ r.total }}/{{ analytics?.total ?? 0 }} ({{ r.pct }}%)
+            </span>
           </div>
           <div class="mt-2 flex items-center gap-3">
             <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
@@ -129,11 +126,8 @@ const maxStatusCount = computed(() =>
                 :style="{ width: `${(r.total / maxRegionOrders) * 100}%` }"
               />
             </div>
-            <span
-              class="font-mono text-xs"
-              :class="r.onTimeRate >= 80 ? 'text-success' : 'text-warning'"
-            >
-              {{ r.onTimeRate }}%
+            <span class="font-mono text-xs text-muted-foreground">
+              {{ r.total }} shipments
             </span>
           </div>
         </div>

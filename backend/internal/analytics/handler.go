@@ -73,17 +73,20 @@ func Overview(c *fiber.Ctx) error {
 		Group("receiver_province").
 		Scan(&byProvince)
 
-	regionMap := make(map[string]*regionCount)
+	regionMap := map[string]*regionCount{
+		"Central":    {Name: "Central"},
+		"East":       {Name: "East"},
+		"North":      {Name: "North"},
+		"West":       {Name: "West"},
+		"North-east": {Name: "North-east"},
+		"South":      {Name: "South"},
+	}
 	for _, p := range byProvince {
 		region := provinceRegion[p.Province]
 		if region == "" {
-			region = "Other"
+			continue
 		}
-		r, ok := regionMap[region]
-		if !ok {
-			r = &regionCount{Name: region}
-			regionMap[region] = r
-		}
+		r := regionMap[region]
 		r.Total += p.Total
 		r.Delivered += p.Delivered
 	}
