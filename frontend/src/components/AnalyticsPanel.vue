@@ -123,7 +123,7 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
             <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
               <div
                 class="h-full rounded-full bg-gradient-accent transition-all"
-                :style="{ width: `${(r.total / analytics?.total) * 100}%` }"
+                :style="{ width: `${r.pct}%` }"
               />
             </div>
             <span class="font-mono text-xs text-muted-foreground"> {{ r.pct }}% </span>
@@ -131,6 +131,14 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
         </div>
       </div>
     </div>
+
+    <!-- TODO: Area Chart here to show time series form the first shipment to the last shipment (month) : full width -->
+
+    <!-- TODO: 3 columns gird of 3 charts
+    - bar chart -> showing the number of shipments per day of week over time
+    - line chart -> showing the number of shipments per month over time
+    - pie chart -> showing the distribution of shipment statuses
+    -->
 
     <!-- Status Distribution -->
     <div class="mt-8">
@@ -152,7 +160,7 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
                         ? 'bg-primary'
                         : 'bg-muted-foreground/40'
               "
-              :style="{ width: `${(s.count / analytics?.total) * 100}%` }"
+              :style="{ width: `${s.pct}%` }"
             />
           </div>
           <span class="w-fit text-right font-mono text-xs text-muted-foreground">
