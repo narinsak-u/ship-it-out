@@ -8,6 +8,7 @@ import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { fetchActiveDeliveries } from "@/lib/api/orders";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { trackShipment } from "@/lib/api/tracking";
 
 const router = useRouter();
 
@@ -20,15 +21,14 @@ const { data: analytics } = useAnalytics();
 
 const query = ref("");
 
-const onTrack = (e: Event) => {
+const onTrack = async (e: Event) => {
   e.preventDefault();
-  if (!orders.value) return;
-  const q = query.value.trim().toLowerCase();
-  const match = orders.value.find(
-    (o) => o.id.toLowerCase() === q || o.trackingNumber.toLowerCase() === q,
-  );
-  if (match) {
-    router.push({ name: "order-detail", params: { orderId: match.id } });
+  const q = query.value.trim();
+  if (!q) return;
+
+  const result = await trackShipment(q).catch(() => null);
+  if (result) {
+    router.push({ name: "order-detail", params: { orderId: result.shipment.id } });
   } else {
     router.push({ name: "orders" });
   }
