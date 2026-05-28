@@ -101,3 +101,34 @@ func Overview(c *fiber.Ctx) error {
 		"by_region": byRegion,
 	})
 }
+
+type monthCount struct {
+	Month string `json:"month"`
+	Count int64  `json:"count"`
+}
+
+type dayCount struct {
+	Day   string `json:"day"`
+	Count int64  `json:"count"`
+}
+
+func TimeSeries(c *fiber.Ctx) error {
+	var byMonth []monthCount
+	database.DB.Model(&models.Shipment{}).
+		Select("to_char(created_at, 'YYYY-MM') as month, count(*) as count").
+		Group("month").
+		Order("month").
+		Scan(&byMonth)
+
+	var byDay []dayCount
+	database.DB.Model(&models.Shipment{}).
+		Select("trim(to_char(created_at, 'Day')) as day, count(*) as count").
+		Group("day").
+		Order("min(extract(dow from created_at))").
+		Scan(&byDay)
+
+	return utils.Success(c, fiber.Map{
+		"by_month":       byMonth,
+		"by_day_of_week": byDay,
+	})
+}
