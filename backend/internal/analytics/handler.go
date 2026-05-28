@@ -61,8 +61,8 @@ func Overview(c *fiber.Ctx) error {
 	database.DB.Model(&models.Shipment{}).Where("status = ?", "DELIVERED").Count(&delivered)
 
 	type StatusCount struct {
-		Status string
-		Count  int64
+		Status string `json:"status"`
+		Count  int64  `json:"count"`
 	}
 	var byStatus []StatusCount
 	database.DB.Model(&models.Shipment{}).Select("status, count(*) as count").Group("status").Scan(&byStatus)
