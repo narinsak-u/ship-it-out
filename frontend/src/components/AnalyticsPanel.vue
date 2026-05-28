@@ -2,13 +2,21 @@
 import { computed } from "vue";
 import { useCarriers } from "@/hooks/useCarriers";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useTimeSeries } from "@/hooks/useTimeSeries";
 import { statusLabels } from "@/lib/orders";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
+import ShipmentsAreaChart from "@/components/charts/ShipmentsAreaChart.vue";
+import type { CumulativeEntry } from "@/components/charts/ShipmentsAreaChart.vue";
+import ShipmentsBarChart from "@/components/charts/ShipmentsBarChart.vue";
+import ShipmentsLineChart from "@/components/charts/ShipmentsLineChart.vue";
+import StatusPieChart from "@/components/charts/StatusPieChart.vue";
+import type { StatusPieEntry } from "@/components/charts/StatusPieChart.vue";
 
 const { data: carriersData } = useCarriers();
 const { data: analytics, isLoading, isError, refetch } = useAnalytics();
+const { data: timeSeries } = useTimeSeries();
 
 const kpis = computed(() => {
   const total = analytics.value?.total ?? 0;
@@ -40,9 +48,30 @@ const statusDistribution = computed(() => {
   }));
 });
 
-const maxRegionOrders = computed(() => Math.max(...regionPerformance.value.map((r) => r.total), 1));
+const statusPieData = computed((): StatusPieEntry[] => {
+  const colorMap: Record<string, string> = {
+    delivered: "hsl(var(--success))",
+    delayed: "hsl(var(--destructive))",
+    in_transit: "hsl(var(--info))",
+    out_for_delivery: "hsl(var(--primary))",
+    pending: "hsl(var(--muted-foreground))",
+    picked_up: "hsl(var(--warning))",
+    departed: "hsl(var(--secondary))",
+  };
+  return statusDistribution.value.map((s) => ({
+    ...s,
+    fill: colorMap[s.status] ?? "hsl(var(--muted-foreground))",
+  }));
+});
 
-const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((s) => s.count), 1));
+const cumulativeData = computed((): CumulativeEntry[] => {
+  if (!timeSeries.value) return [];
+  let running = 0;
+  return timeSeries.value.by_month.map((m) => {
+    running += m.count;
+    return { month: m.month, count: running };
+  });
+});
 </script>
 
 <template>
@@ -132,42 +161,52 @@ const maxStatusCount = computed(() => Math.max(...statusDistribution.value.map((
       </div>
     </div>
 
-    <!-- TODO: Area Chart here to show time series form the first shipment to the last shipment (month) : full width -->
-
-    <!-- TODO: 3 columns gird of 3 charts
-    - bar chart -> showing the number of shipments per day of week over time
-    - line chart -> showing the number of shipments per month over time
-    - pie chart -> showing the distribution of shipment statuses
-    -->
-
-    <!-- Status Distribution -->
+    <!-- Area Chart — full width, cumulative shipments per month -->
     <div class="mt-8">
-      <h3 class="font-mono text-sm font-semibold">Shipment Status Distribution</h3>
-      <div class="mt-4 space-y-2">
-        <div v-for="s in statusDistribution" :key="s.status" class="flex items-center gap-3">
-          <span class="w-32 font-mono text-xs text-muted-foreground">{{ s.label }}</span>
-          <div class="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
-            <div
-              class="h-2 rounded-full transition-all"
-              :class="
-                s.status === 'delivered'
-                  ? 'bg-success'
-                  : s.status === 'delayed'
-                    ? 'bg-destructive'
-                    : s.status === 'in_transit'
-                      ? 'bg-info'
-                      : s.status === 'out_for_delivery'
-                        ? 'bg-primary'
-                        : 'bg-muted-foreground/40'
-              "
-              :style="{ width: `${s.pct}%` }"
-            />
-          </div>
-          <span class="w-fit text-right font-mono text-xs text-muted-foreground">
-            {{ s.count }}/{{ analytics?.total ?? 0 }} ({{ s.pct }}%)
-          </span>
-        </div>
-      </div>
+      <Card class="shadow-elegant">
+        <CardHeader>
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Cumulative Shipments Over Time
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ShipmentsAreaChart :data="cumulativeData" class="h-64 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- 3-column chart grid -->
+    <div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <Card class="shadow-elegant">
+        <CardHeader>
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Shipments per Day
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ShipmentsBarChart :data="timeSeries?.by_day_of_week ?? []" class="h-48 w-full" />
+        </CardContent>
+      </Card>
+      <Card class="shadow-elegant">
+        <CardHeader>
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Shipments per Month
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ShipmentsLineChart :data="timeSeries?.by_month ?? []" class="h-48 w-full" />
+        </CardContent>
+      </Card>
+      <Card class="shadow-elegant">
+        <CardHeader>
+          <CardTitle class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Status Distribution
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <StatusPieChart :data="statusPieData" class="h-48 w-full" />
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>
