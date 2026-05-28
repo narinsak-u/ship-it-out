@@ -53,10 +53,10 @@ func Overview(c *fiber.Ctx) error {
 	database.DB.Model(&models.Shipment{}).Count(&total)
 
 	var active int64
-	database.DB.Model(&models.Shipment{}).Where("status NOT IN ?", []string{"DELIVERED", "RETURNED"}).Count(&active)
+	database.DB.Model(&models.Shipment{}).Where("status NOT IN ?", []string{"delivered", "returned"}).Count(&active)
 
 	var delivered int64
-	database.DB.Model(&models.Shipment{}).Where("status = ?", "DELIVERED").Count(&delivered)
+	database.DB.Model(&models.Shipment{}).Where("status = ?", "delivered").Count(&delivered)
 
 	type StatusCount struct {
 		Status string `json:"status"`

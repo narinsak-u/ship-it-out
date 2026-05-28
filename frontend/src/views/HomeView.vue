@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button.vue";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { fetchActiveDeliveries } from "@/lib/api/orders";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const router = useRouter();
 
@@ -14,6 +15,8 @@ const { data: orders } = useQuery({
   queryKey: ["orders"],
   queryFn: fetchActiveDeliveries,
 });
+
+const { data: analytics } = useAnalytics();
 
 const query = ref("");
 
@@ -32,16 +35,21 @@ const onTrack = (e: Event) => {
 };
 
 const stats = computed(() => {
-  const all = orders.value ?? [];
+  const total = analytics.value?.total ?? 0;
+  const delivered = analytics.value?.delivered ?? 0;
   return [
     {
       label: "Active shipments",
-      value: all.filter((o) => o.status !== "delivered").length,
+      value: total - delivered,
       icon: Truck,
     },
-    { label: "Delivered (30d)", value: 184, icon: Boxes },
-    { label: "On-time rate", value: "97.4%", icon: Activity },
-    { label: "Countries served", value: 42, icon: Globe2 },
+    {
+      label: "Delivered",
+      value: delivered,
+      icon: Boxes,
+    },
+    { label: "On-time rate", value: "99.9%", icon: Activity }, // hard coded for now
+    { label: "Provinces served", value: 77, icon: Globe2 }, // hard coded for now
   ];
 });
 
@@ -85,6 +93,7 @@ const recent = computed(() => (orders.value ?? []).slice(0, 3));
           <form
             @submit="onTrack"
             class="mt-10 flex max-w-xl gap-2 rounded-xl border border-border bg-card p-2 shadow-elegant"
+            aria-label="Track a shipment"
           >
             <div class="flex flex-1 items-center gap-2 px-3">
               <Search class="h-4 w-4 text-muted-foreground" />
@@ -101,7 +110,7 @@ const recent = computed(() => (orders.value ?? []).slice(0, 3));
     </section>
 
     <!-- Stats grid -->
-    <section class="border-y border-border bg-card/40">
+    <section class="border-y border-border bg-card/40" aria-label="Key metrics">
       <div class="mx-auto grid max-w-7xl grid-cols-2 divide-border md:grid-cols-4 md:divide-x">
         <div v-for="s in stats" :key="s.label" class="flex items-center gap-4 px-6 py-8">
           <div

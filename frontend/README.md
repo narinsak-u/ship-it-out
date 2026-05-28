@@ -45,7 +45,7 @@ src/
 ├── components/        # Shared Vue components
 │   └── ui/            # shadcn-vue primitives (auto-generated)
 ├── views/             # Page-level route components (lazy-loaded)
-├── lib/               # Types, API client, utilities, geocoding
+├── lib/               # Types, API client, utilities, seed data
 │   └── api/           # Endpoint functions + response mappers
 ├── hooks/             # TanStack Vue Query hooks (useQuery/useMutation)
 ├── stores/            # Pinia store (auth.ts)
@@ -95,10 +95,11 @@ Pagination: server-side (`OrdersView`) sends `page`/`limit`/`search` as query pa
 
 ## Conventions
 
-- Composition API with `<script setup lang="ts">` only
-- `import type { ... }` for type-only imports
-- `@/` path alias maps to `./src/`
-- All styling via Tailwind utility classes (no `<style scoped>`)
-- Formatted with Prettier (semicolons, double quotes, trailing commas)
+- **SFC:** `<script setup lang="ts">` only. No Options API. Order: `<script>` → `<template>` → no `<style>`.
+- **Imports:** `@/` alias for project files. Vue/external first, then `@/`, then relative. `import type` for types.
+- **State:** TanStack Vue Query for server state, Pinia (Composition API) for client state.
+- **Naming:** PascalCase components (`StatusBadge.vue`). Views suffixed `View`. Hooks/composables `use`-prefixed. Constants `UPPER_SNAKE_CASE`.
+- **CSS:** Tailwind utility classes only. No `<style scoped>`. Ocean Deep `oklch()` dark theme.
+- **Formatting:** Prettier (semicolons, double quotes, trailing commas, 100 print width).
 
 See `docs/OVERVIEW.md` for detailed architecture reference.
