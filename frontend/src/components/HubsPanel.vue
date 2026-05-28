@@ -65,6 +65,7 @@ const hubStatusCounts = computed(() => {
     active: hubs.value.filter((h) => h.status === "active").length,
     maintenance: hubs.value.filter((h) => h.status === "maintenance").length,
     closed: hubs.value.filter((h) => h.status === "closed").length,
+    full: hubs.value.filter((h) => h.status === "full").length,
   };
 });
 </script>
@@ -83,7 +84,7 @@ const hubStatusCounts = computed(() => {
   </div>
 
   <div v-else>
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
         <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
           Total Hubs
@@ -104,6 +105,14 @@ const hubStatusCounts = computed(() => {
         </div>
         <div class="mt-1 font-mono text-3xl font-semibold text-warning">
           {{ hubStatusCounts.maintenance }}
+        </div>
+      </div>
+      <div class="rounded-lg border border-border bg-secondary/50 p-4">
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Full
+        </div>
+        <div class="mt-1 font-mono text-3xl font-semibold text-destructive">
+          {{ hubStatusCounts.full }}
         </div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">

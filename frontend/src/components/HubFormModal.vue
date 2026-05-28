@@ -50,16 +50,20 @@ const name = ref("");
 const carrierId = "THUN";
 const location = ref("");
 const capacity = ref(1000);
+const currentUtilization = ref(0);
 const status = ref<HubStatus>("active");
 const geocodeError = ref("");
 const geocoding = ref(false);
+const utilizationError = ref("");
 
 function resetForm() {
   name.value = "";
   location.value = "";
   capacity.value = 1000;
+  currentUtilization.value = 0;
   status.value = "active";
   geocodeError.value = "";
+  utilizationError.value = "";
 }
 
 watch(existing, (hub) => {
@@ -67,7 +71,8 @@ watch(existing, (hub) => {
     name.value = hub.name;
     location.value = hub.address;
     capacity.value = hub.capacity;
-    status.value = hub.status;
+    currentUtilization.value = hub.currentUtilization;
+    status.value = hub.status === "full" ? "full" : hub.status;
   }
 });
 
@@ -81,6 +86,17 @@ watch(
 );
 
 const isEditing = computed(() => !!props.hubId);
+
+watch([currentUtilization, capacity], ([util, cap]) => {
+  if (util > cap) {
+    utilizationError.value = `Cannot exceed capacity (${cap})`;
+  } else {
+    utilizationError.value = "";
+  }
+  if (util === cap) {
+    status.value = "full";
+  }
+});
 
 const submitPending = computed(() =>
   isEditing.value ? updateHub.isPending.value : createHub.isPending.value,
@@ -114,7 +130,7 @@ async function handleSubmit() {
     address: location.value,
     coords,
     capacity: capacity.value,
-    currentUtilization: existing.value?.currentUtilization ?? 0,
+    currentUtilization: currentUtilization.value,
     status: status.value,
   };
 
@@ -206,6 +222,31 @@ async function handleSubmit() {
           </div>
           <div>
             <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              Current Utilization
+            </label>
+            <div class="relative">
+              <Input
+                v-model.number="currentUtilization"
+                type="number"
+                :max="capacity"
+                class="mt-1.5 font-mono text-sm"
+                :class="utilizationError ? 'border-destructive' : ''"
+              />
+              <span
+                v-if="!utilizationError"
+                class="absolute bottom-0 right-3 -translate-y-2.5 font-mono text-[11px] text-muted-foreground"
+              >
+                / {{ capacity }}
+              </span>
+            </div>
+            <p v-if="utilizationError" class="mt-1 font-mono text-xs text-destructive">
+              {{ utilizationError }}
+            </p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
               Status
             </label>
             <Select v-model="status">
@@ -232,7 +273,10 @@ async function handleSubmit() {
 
       <div class="mt-6 flex justify-end gap-3">
         <Button variant="outline" @click="emit('close')">Cancel</Button>
-        <Button :disabled="!name || !location || submitPending || geocoding" @click="handleSubmit">
+        <Button
+          :disabled="!name || !location || submitPending || geocoding || !!utilizationError"
+          @click="handleSubmit"
+        >
           {{
             geocoding
               ? "Resolving location\u2026"

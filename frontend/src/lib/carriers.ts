@@ -1,7 +1,7 @@
 import type { GeoPoint } from "@/lib/orders";
 
 export type CarrierStatus = "active" | "inactive";
-export type HubStatus = "active" | "maintenance" | "closed";
+export type HubStatus = "active" | "maintenance" | "closed" | "full";
 
 export interface Carrier {
   id: string;
@@ -155,6 +155,7 @@ export const hubStatusLabels: Record<HubStatus, string> = {
   active: "Active",
   maintenance: "Maintenance",
   closed: "Closed",
+  full: "Full",
 };
 
 export const carrierStatusLabels: Record<CarrierStatus, string> = {
