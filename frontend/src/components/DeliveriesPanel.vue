@@ -43,6 +43,7 @@ const { data: hubs } = useQuery({
 
 const query = ref("");
 const mounted = ref(false);
+const selectedOrderId = ref<string | null>(null);
 const secondsSinceUpdate = ref(0);
 let interval: ReturnType<typeof setInterval> | undefined;
 
@@ -77,6 +78,14 @@ const filtered = computed(() => {
 const { currentPage, totalPages, pageItems, setPage } = usePagination(filtered, 10);
 
 const hubOptions = computed(() => (hubs.value ?? []).filter((h) => h.status === "active"));
+
+const selectedOrder = computed(() => {
+  const id = selectedOrderId.value;
+  if (!id || !deliveries.value) return null;
+  return deliveries.value.find((d) => d.id === id) ?? null;
+});
+
+const mapOrder = computed(() => selectedOrder.value ?? filtered.value[0] ?? null);
 
 function usesHubSelector(status: ShipmentStatus) {
   return (
@@ -172,7 +181,9 @@ function handleUpdate(orderId: string) {
           <TableRow
             v-for="o in pageItems"
             :key="o.id"
-            class="border-b border-border transition-colors hover:bg-secondary/40"
+            class="cursor-pointer border-b border-border transition-colors hover:bg-secondary/40"
+            :class="selectedOrderId === o.id ? 'bg-secondary/60' : ''"
+            @click="selectedOrderId = o.id"
           >
             <TableCell class="font-mono text-sm text-primary">{{ o.id }}</TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{{
@@ -270,14 +281,15 @@ function handleUpdate(orderId: string) {
       <Suspense>
         <div class="h-75 w-full">
           <ShipmentMap
-            v-if="filtered[0]"
-            :origin="filtered[0].customer.coords"
-            :destination="filtered[0].receiver.coords"
-            :current="filtered[0].currentCoords"
-            :origin-label="filtered[0].origin"
-            :destination-label="filtered[0].destination"
-            :carrier="filtered[0].carrier"
-            :status="filtered[0].status"
+            v-if="mapOrder"
+            :key="mapOrder.id"
+            :origin="mapOrder.customer.coords"
+            :destination="mapOrder.receiver.coords"
+            :current="mapOrder.currentCoords"
+            :origin-label="mapOrder.origin"
+            :destination-label="mapOrder.destination"
+            :carrier="mapOrder.carrier"
+            :status="mapOrder.status"
           />
         </div>
         <template #fallback>
