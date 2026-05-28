@@ -51,7 +51,7 @@ const tooltipContentFn = componentToString(chartConfig.value, ChartTooltipConten
     <VisSingleContainer :data="data">
       <VisDonut
         :value="(d: Data) => d.count"
-        :color="(d: Data) => d.fill"
+        :color="(d: Data) => `var(--color-${d.status})`"
       />
       <ChartTooltip
         v-if="tooltipContentFn"

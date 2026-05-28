@@ -25,7 +25,7 @@ type Data = CumulativeEntry;
 const chartConfig = {
   count: {
     label: "Total Shipments",
-    color: "hsl(var(--primary))",
+    color: "var(--color-primary)",
   },
 } satisfies ChartConfig;
 </script>
@@ -43,7 +43,7 @@ const chartConfig = {
       <VisArea
         :x="(d: Data) => new Date(d.month + '-01').getTime()"
         :y="(d: Data) => d.count"
-        :color="[chartConfig.count.color]"
+        :color="['var(--color-count)']"
       />
       <VisAxis
         type="x"
@@ -66,7 +66,7 @@ const chartConfig = {
       <ChartTooltip />
       <ChartCrosshair
         :template="componentToString(chartConfig, ChartTooltipContent)"
-        :color="[chartConfig.count.color]"
+        :color="['var(--color-count)']"
       />
     </VisXYContainer>
   </ChartContainer>

@@ -34,7 +34,7 @@ const mappedData = computed<DataPoint[]>(() => {
 const chartConfig = {
   count: {
     label: "Shipments",
-    color: "hsl(var(--primary))",
+    color: "var(--color-primary)",
   },
 } satisfies ChartConfig;
 </script>
@@ -55,7 +55,7 @@ const chartConfig = {
       <VisGroupedBar
         :x="(d: DataPoint) => d.dayIndex"
         :y="(d: DataPoint) => d.count"
-        :color="[chartConfig.count.color]"
+        :color="['var(--color-count)']"
         :rounded-corners="4"
         bar-padding="0.1"
         group-padding="0"
@@ -78,7 +78,7 @@ const chartConfig = {
       <ChartTooltip />
       <ChartCrosshair
         :template="componentToString(chartConfig, ChartTooltipContent)"
-        :color="[chartConfig.count.color]"
+        :color="['var(--color-count)']"
       />
     </VisXYContainer>
   </ChartContainer>

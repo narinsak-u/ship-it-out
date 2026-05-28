@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/narinsak-u/backend/internal/models"
@@ -14,438 +15,271 @@ func SeedShipments(db *gorm.DB) {
 		return
 	}
 
-	parse := func(layout, value string) time.Time {
-		t, err := time.Parse(layout, value)
-		if err != nil {
-			panic("seed: failed to parse time: " + err.Error())
-		}
-		return t
+	rng := rand.New(rand.NewSource(42))
+
+	type person struct {
+		Name        string
+		Zipcode     string
+		SubDistrict string
+		District    string
+		Province    string
+		Lat         float64
+		Lng         float64
 	}
 
-	type seedEvent struct {
-		Timestamp   string
-		Location    models.Location
-		Status      string
-		Description string
+	customers := []person{
+		{Name: "สมชาย วงศ์เจริญ", Zipcode: "20110", SubDistrict: "แหลมฉบัง", District: "ศรีราชา", Province: "ชลบุรี", Lat: 13.0833, Lng: 100.8833},
+		{Name: "วิมล ศรีสุวรรณ", Zipcode: "24000", SubDistrict: "หน้าเมือง", District: "เมือง", Province: "ฉะเชิงเทรา", Lat: 13.6883, Lng: 101.0719},
+		{Name: "วิชัย สมบูรณ์", Zipcode: "21000", SubDistrict: "ท่าประดู่", District: "เมือง", Province: "ระยอง", Lat: 12.6814, Lng: 101.2817},
+		{Name: "สุนิสา ใจดี", Zipcode: "10200", SubDistrict: "บางรัก", District: "บางรัก", Province: "กรุงเทพมหานคร", Lat: 13.7279, Lng: 100.5242},
+		{Name: "ธานี ทรัพย์ทวี", Zipcode: "10270", SubDistrict: "สำโรงเหนือ", District: "เมือง", Province: "สมุทรปราการ", Lat: 13.6509, Lng: 100.6016},
+		{Name: "รัตนา พิมพ์ทอง", Zipcode: "11000", SubDistrict: "ท่าทราย", District: "เมือง", Province: "นนทบุรี", Lat: 13.8548, Lng: 100.5146},
+		{Name: "สุธีร์ ศรีวัฒน์", Zipcode: "12000", SubDistrict: "ประชาธิปัตย์", District: "ธัญบุรี", Province: "ปทุมธานี", Lat: 13.9782, Lng: 100.6147},
+		{Name: "กาญจนา ศิริโชค", Zipcode: "13000", SubDistrict: "ประตูชัย", District: "พระนครศรีอยุธยา", Province: "พระนครศรีอยุธยา", Lat: 14.3542, Lng: 100.5547},
+		{Name: "นฤมล สุขเกษม", Zipcode: "10100", SubDistrict: "ปทุมวัน", District: "ปทุมวัน", Province: "กรุงเทพมหานคร", Lat: 13.7466, Lng: 100.5326},
+		{Name: "สาโรจน์ เจริญสุข", Zipcode: "20110", SubDistrict: "บางพระ", District: "ศรีราชา", Province: "ชลบุรี", Lat: 13.1173, Lng: 100.9256},
+		{Name: "ประเสริฐ วงศ์ดี", Zipcode: "21160", SubDistrict: "นิคมพัฒนา", District: "นิคมพัฒนา", Province: "ระยอง", Lat: 12.7167, Lng: 101.15},
+		{Name: "สุดา มากสุข", Zipcode: "24110", SubDistrict: "บางคล้า", District: "บางคล้า", Province: "ฉะเชิงเทรา", Lat: 13.7167, Lng: 101.2},
+		{Name: "พิมล สุขใจ", Zipcode: "10250", SubDistrict: "คลองเตย", District: "คลองเตย", Province: "กรุงเทพมหานคร", Lat: 13.7122, Lng: 100.5638},
+		{Name: "อรัญญา มั่นคง", Zipcode: "22000", SubDistrict: "จันทนิมิต", District: "เมือง", Province: "จันทบุรี", Lat: 12.6096, Lng: 102.1041},
+		{Name: "ปรีชา ทรัพย์เจริญ", Zipcode: "20150", SubDistrict: "หนองปรือ", District: "บางละมุง", Province: "ชลบุรี", Lat: 12.9236, Lng: 100.8825},
+		{Name: "ดารา รักไทย", Zipcode: "23000", SubDistrict: "บางพระ", District: "เมือง", Province: "ตราด", Lat: 12.2417, Lng: 102.5167},
+		{Name: "มานพ คงสมบูรณ์", Zipcode: "84000", SubDistrict: "ตลาด", District: "เมือง", Province: "สุราษฎร์ธานี", Lat: 9.1382, Lng: 99.3214},
+		{Name: "จินตนา แก้วประเสริฐ", Zipcode: "21000", SubDistrict: "ท่าประดู่", District: "เมือง", Province: "ระยอง", Lat: 12.6814, Lng: 101.2817},
+		{Name: "สมบูรณ์ เจริญผล", Zipcode: "13000", SubDistrict: "ประตูชัย", District: "พระนครศรีอยุธยา", Province: "พระนครศรีอยุธยา", Lat: 14.3542, Lng: 100.5547},
+		{Name: "วรรณา ศิริสวัสดิ์", Zipcode: "24000", SubDistrict: "หน้าเมือง", District: "เมือง", Province: "ฉะเชิงเทรา", Lat: 13.6883, Lng: 101.0719},
 	}
 
-	type seedShipment struct {
-		OrderID           string
-		TrackingNumber    string
-		Customer          models.ContactInfo
-		Receiver          models.ContactInfo
-		Status            string
-		HubID             string
-		Carrier           string
-		Weight            float64
-		Items             int
-		EstimatedDelivery string
-		CreatedAt         string
-		Progress          float64
-		CurrentCoords     models.GeoPoint
-		Events            []seedEvent
+	receivers := []person{
+		{Name: "มาลี ทองดี", Zipcode: "22000", SubDistrict: "จันทนิมิต", District: "เมือง", Province: "จันทบุรี", Lat: 12.6096, Lng: 102.1041},
+		{Name: "กิตติพงศ์ แก้ววิเศษ", Zipcode: "20150", SubDistrict: "หนองปรือ", District: "บางละมุง", Province: "ชลบุรี", Lat: 12.9236, Lng: 100.8825},
+		{Name: "ประภาสิริ วัฒนา", Zipcode: "23000", SubDistrict: "บางพระ", District: "เมือง", Province: "ตราด", Lat: 12.2417, Lng: 102.5167},
+		{Name: "นพดล อินทร์แก้ว", Zipcode: "50000", SubDistrict: "ศรีภูมิ", District: "เมือง", Province: "เชียงใหม่", Lat: 18.7883, Lng: 98.9853},
+		{Name: "ไพศาล แซ่เล่า", Zipcode: "83000", SubDistrict: "ป่าตอง", District: "กะทู้", Province: "ภูเก็ต", Lat: 7.8961, Lng: 98.2966},
+		{Name: "สมศักดิ์ แก้วพล", Zipcode: "57000", SubDistrict: "เวียง", District: "เมือง", Province: "เชียงราย", Lat: 19.9072, Lng: 99.8325},
+		{Name: "อับดุลเลาะ สะมะแอ", Zipcode: "90110", SubDistrict: "คอหงส์", District: "หาดใหญ่", Province: "สงขลา", Lat: 7.0088, Lng: 100.4747},
+		{Name: "ธนพล จันทร์ศรี", Zipcode: "40000", SubDistrict: "ในเมือง", District: "เมือง", Province: "ขอนแก่น", Lat: 16.4322, Lng: 102.8236},
+		{Name: "อดุลย์ กล้าหาญ", Zipcode: "30000", SubDistrict: "ในเมือง", District: "เมือง", Province: "นครราชสีมา", Lat: 14.975, Lng: 102.0825},
+		{Name: "วาสนา คงมั่น", Zipcode: "84000", SubDistrict: "ตลาด", District: "เมือง", Province: "สุราษฎร์ธานี", Lat: 9.1382, Lng: 99.3214},
+		{Name: "บุญธรรม พิมพา", Zipcode: "41000", SubDistrict: "หมากแข้ง", District: "เมือง", Province: "อุดรธานี", Lat: 17.4132, Lng: 102.7856},
+		{Name: "สมพร รักษ์ดี", Zipcode: "80000", SubDistrict: "ท่าวัง", District: "เมือง", Province: "นครศรีธรรมราช", Lat: 8.4333, Lng: 99.9667},
+		{Name: "วีระ วงค์คำ", Zipcode: "34000", SubDistrict: "ในเมือง", District: "เมือง", Province: "อุบลราชธานี", Lat: 15.2296, Lng: 104.8603},
+		{Name: "ธัญญา เรืองศรี", Zipcode: "22000", SubDistrict: "จันทนิมิต", District: "เมือง", Province: "จันทบุรี", Lat: 12.6096, Lng: 102.1041},
+		{Name: "สุชาติ พัฒนา", Zipcode: "20110", SubDistrict: "บางพระ", District: "ศรีราชา", Province: "ชลบุรี", Lat: 13.1173, Lng: 100.9256},
+		{Name: "บุญมี ชัยวัฒน์", Zipcode: "50000", SubDistrict: "ศรีภูมิ", District: "เมือง", Province: "เชียงใหม่", Lat: 18.7883, Lng: 98.9853},
+		{Name: "สมหมาย ใจบุญ", Zipcode: "40000", SubDistrict: "ในเมือง", District: "เมือง", Province: "ขอนแก่น", Lat: 16.4322, Lng: 102.8236},
+		{Name: "ประทุม ทองสุข", Zipcode: "30000", SubDistrict: "ในเมือง", District: "เมือง", Province: "นครราชสีมา", Lat: 14.975, Lng: 102.0825},
+		{Name: "ส้มจีน แซ่ตั้ง", Zipcode: "90110", SubDistrict: "คอหงส์", District: "หาดใหญ่", Province: "สงขลา", Lat: 7.0088, Lng: 100.4747},
+		{Name: "องอาจ เดชะ", Zipcode: "83000", SubDistrict: "ป่าตอง", District: "กะทู้", Province: "ภูเก็ต", Lat: 7.8961, Lng: 98.2966},
 	}
 
-	seeds := []seedShipment{
-		{
-			OrderID: "ORD-10245", TrackingNumber: "TH202600100",
-			Customer: models.ContactInfo{
-				Name: "สมชาย วงศ์เจริญ", Zipcode: "20110",
-				SubDistrict: "แหลมฉบัง", District: "ศรีราชา", Province: "ชลบุรี",
-				Coords: models.GeoPoint{Lat: 13.0833, Lng: 100.8833},
-			},
-			Receiver: models.ContactInfo{
-				Name: "มาลี ทองดี", Zipcode: "22000",
-				SubDistrict: "จันทนิมิต", District: "เมือง", Province: "จันทบุรี",
-				Coords: models.GeoPoint{Lat: 12.6096, Lng: 102.1041},
-			},
-			Status:            "in_transit",
-			HubID:             "HUB-002",
-			Carrier:           "Thun-u-der Express",
-			Weight:            5.2,
-			Items:             2,
-			EstimatedDelivery: "May 26, 2026",
-			CreatedAt:         "May 22, 2026",
-			Progress:          45,
-			CurrentCoords:     models.GeoPoint{Lat: 12.85, Lng: 101.5},
-			Events: []seedEvent{
-				{Timestamp: "May 24, 08:30", Location: models.Location{Name: "Near Ban Bueng", Lat: 12.85, Lng: 101.5}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 22, 14:00", Location: models.Location{Name: "Chonburi Hub", Lat: 13.3611, Lng: 100.9847}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 22, 09:15", Location: models.Location{Name: "แหลมฉบัง, ศรีราชา, ชลบุรี", Lat: 13.0833, Lng: 100.8833}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 22, 08:00", Location: models.Location{Name: "แหลมฉบัง, ศรีราชา, ชลบุรี", Lat: 13.0833, Lng: 100.8833}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10249", TrackingNumber: "TH202600101",
-			Customer: models.ContactInfo{
-				Name: "วิมล ศรีสุวรรณ", Zipcode: "24000",
-				SubDistrict: "หน้าเมือง", District: "เมือง", Province: "ฉะเชิงเทรา",
-				Coords: models.GeoPoint{Lat: 13.6883, Lng: 101.0719},
-			},
-			Receiver: models.ContactInfo{
-				Name: "กิตติพงศ์ แก้ววิเศษ", Zipcode: "20150",
-				SubDistrict: "หนองปรือ", District: "บางละมุง", Province: "ชลบุรี",
-				Coords: models.GeoPoint{Lat: 12.9236, Lng: 100.8825},
-			},
-			Status:            "pending",
-			HubID:             "",
-			Carrier:           "Thun-u-der Express",
-			Weight:            1.5,
-			Items:             1,
-			EstimatedDelivery: "May 27, 2026",
-			CreatedAt:         "May 24, 2026",
-			Progress:          5,
-			CurrentCoords:     models.GeoPoint{Lat: 13.6883, Lng: 101.0719},
-			Events: []seedEvent{
-				{Timestamp: "May 24, 11:20", Location: models.Location{Name: "หน้าเมือง, เมือง, ฉะเชิงเทรา", Lat: 13.6883, Lng: 101.0719}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10250", TrackingNumber: "TH202600102",
-			Customer: models.ContactInfo{
-				Name: "วิชัย สมบูรณ์", Zipcode: "21000",
-				SubDistrict: "ท่าประดู่", District: "เมือง", Province: "ระยอง",
-				Coords: models.GeoPoint{Lat: 12.6814, Lng: 101.2817},
-			},
-			Receiver: models.ContactInfo{
-				Name: "ประภาสิริ วัฒนา", Zipcode: "23000",
-				SubDistrict: "บางพระ", District: "เมือง", Province: "ตราด",
-				Coords: models.GeoPoint{Lat: 12.2417, Lng: 102.5167},
-			},
-			Status:            "out_for_delivery",
-			HubID:             "HUB-002",
-			Carrier:           "Thun-u-der Express",
-			Weight:            3.8,
-			Items:             3,
-			EstimatedDelivery: "May 25, 2026",
-			CreatedAt:         "May 23, 2026",
-			Progress:          75,
-			CurrentCoords:     models.GeoPoint{Lat: 12.45, Lng: 101.9},
-			Events: []seedEvent{
-				{Timestamp: "May 25, 09:00", Location: models.Location{Name: "Near Trat", Lat: 12.2417, Lng: 102.5167}, Status: "Out for Delivery", Description: "Out for delivery."},
-				{Timestamp: "May 24, 15:30", Location: models.Location{Name: "Chanthaburi", Lat: 12.6096, Lng: 102.1041}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 23, 16:30", Location: models.Location{Name: "Chonburi Hub", Lat: 13.3611, Lng: 100.9847}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 23, 13:00", Location: models.Location{Name: "ท่าประดู่, เมือง, ระยอง", Lat: 12.6814, Lng: 101.2817}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 23, 08:00", Location: models.Location{Name: "ท่าประดู่, เมือง, ระยอง", Lat: 12.6814, Lng: 101.2817}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10251", TrackingNumber: "TH202600103",
-			Customer: models.ContactInfo{
-				Name: "สุนิสา ใจดี", Zipcode: "10200",
-				SubDistrict: "บางรัก", District: "บางรัก", Province: "กรุงเทพมหานคร",
-				Coords: models.GeoPoint{Lat: 13.7279, Lng: 100.5242},
-			},
-			Receiver: models.ContactInfo{
-				Name: "นพดล อินทร์แก้ว", Zipcode: "50000",
-				SubDistrict: "ศรีภูมิ", District: "เมือง", Province: "เชียงใหม่",
-				Coords: models.GeoPoint{Lat: 18.7883, Lng: 98.9853},
-			},
-			Status:            "delivered",
-			HubID:             "HUB-004",
-			Carrier:           "Thun-u-der Express",
-			Weight:            2.1,
-			Items:             1,
-			EstimatedDelivery: "May 20, 2026",
-			CreatedAt:         "May 16, 2026",
-			Progress:          100,
-			CurrentCoords:     models.GeoPoint{Lat: 18.7883, Lng: 98.9853},
-			Events: []seedEvent{
-				{Timestamp: "May 20, 14:30", Location: models.Location{Name: "ศรีภูมิ, เมือง, เชียงใหม่", Lat: 18.7883, Lng: 98.9853}, Status: "Delivered", Description: "Delivered to recipient."},
-				{Timestamp: "May 19, 10:00", Location: models.Location{Name: "Chiang Mai Hub", Lat: 18.7883, Lng: 98.9853}, Status: "Out for Delivery", Description: "Out for delivery."},
-				{Timestamp: "May 18, 16:00", Location: models.Location{Name: "Nakhon Sawan", Lat: 15.7167, Lng: 100.1333}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 17, 09:00", Location: models.Location{Name: "Bangkok Hub", Lat: 13.7563, Lng: 100.5018}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 16, 15:00", Location: models.Location{Name: "บางรัก, บางรัก, กรุงเทพมหานคร", Lat: 13.7279, Lng: 100.5242}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 16, 08:00", Location: models.Location{Name: "บางรัก, บางรัก, กรุงเทพมหานคร", Lat: 13.7279, Lng: 100.5242}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10252", TrackingNumber: "TH202600104",
-			Customer: models.ContactInfo{
-				Name: "ธานี ทรัพย์ทวี", Zipcode: "10270",
-				SubDistrict: "สำโรงเหนือ", District: "เมือง", Province: "สมุทรปราการ",
-				Coords: models.GeoPoint{Lat: 13.6509, Lng: 100.6016},
-			},
-			Receiver: models.ContactInfo{
-				Name: "ไพศาล แซ่เล่า", Zipcode: "83000",
-				SubDistrict: "ป่าตอง", District: "กะทู้", Province: "ภูเก็ต",
-				Coords: models.GeoPoint{Lat: 7.8961, Lng: 98.2966},
-			},
-			Status:            "picked_up",
-			HubID:             "HUB-001",
-			Carrier:           "Thun-u-der Express",
-			Weight:            8.5,
-			Items:             5,
-			EstimatedDelivery: "May 29, 2026",
-			CreatedAt:         "May 25, 2026",
-			Progress:          15,
-			CurrentCoords:     models.GeoPoint{Lat: 13.65, Lng: 100.6},
-			Events: []seedEvent{
-				{Timestamp: "May 25, 14:30", Location: models.Location{Name: "สำโรงเหนือ, เมือง, สมุทรปราการ", Lat: 13.6509, Lng: 100.6016}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 25, 09:00", Location: models.Location{Name: "สำโรงเหนือ, เมือง, สมุทรปราการ", Lat: 13.6509, Lng: 100.6016}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10253", TrackingNumber: "TH202600105",
-			Customer: models.ContactInfo{
-				Name: "รัตนา พิมพ์ทอง", Zipcode: "11000",
-				SubDistrict: "ท่าทราย", District: "เมือง", Province: "นนทบุรี",
-				Coords: models.GeoPoint{Lat: 13.8548, Lng: 100.5146},
-			},
-			Receiver: models.ContactInfo{
-				Name: "สมศักดิ์ แก้วพล", Zipcode: "57000",
-				SubDistrict: "เวียง", District: "เมือง", Province: "เชียงราย",
-				Coords: models.GeoPoint{Lat: 19.9072, Lng: 99.8325},
-			},
-			Status:            "in_transit",
-			HubID:             "HUB-004",
-			Carrier:           "Thun-u-der Express",
-			Weight:            4.2,
-			Items:             2,
-			EstimatedDelivery: "May 28, 2026",
-			CreatedAt:         "May 24, 2026",
-			Progress:          35,
-			CurrentCoords:     models.GeoPoint{Lat: 16.5, Lng: 100.5},
-			Events: []seedEvent{
-				{Timestamp: "May 25, 11:00", Location: models.Location{Name: "Nakhon Sawan", Lat: 15.7167, Lng: 100.1333}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 24, 16:00", Location: models.Location{Name: "Bangkok Hub", Lat: 13.7563, Lng: 100.5018}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 24, 10:00", Location: models.Location{Name: "ท่าทราย, เมือง, นนทบุรี", Lat: 13.8548, Lng: 100.5146}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 24, 08:00", Location: models.Location{Name: "ท่าทราย, เมือง, นนทบุรี", Lat: 13.8548, Lng: 100.5146}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10254", TrackingNumber: "TH202600106",
-			Customer: models.ContactInfo{
-				Name: "สุธีร์ ศรีวัฒน์", Zipcode: "12000",
-				SubDistrict: "ประชาธิปัตย์", District: "ธัญบุรี", Province: "ปทุมธานี",
-				Coords: models.GeoPoint{Lat: 13.9782, Lng: 100.6147},
-			},
-			Receiver: models.ContactInfo{
-				Name: "อับดุลเลาะ สะมะแอ", Zipcode: "90110",
-				SubDistrict: "คอหงส์", District: "หาดใหญ่", Province: "สงขลา",
-				Coords: models.GeoPoint{Lat: 7.0088, Lng: 100.4747},
-			},
-			Status:            "delayed",
-			HubID:             "HUB-005",
-			Carrier:           "Thun-u-der Express",
-			Weight:            6.7,
-			Items:             4,
-			EstimatedDelivery: "May 24, 2026",
-			CreatedAt:         "May 20, 2026",
-			Progress:          60,
-			CurrentCoords:     models.GeoPoint{Lat: 11.5, Lng: 99.5},
-			Events: []seedEvent{
-				{Timestamp: "May 25, 08:00", Location: models.Location{Name: "Phuket Hub", Lat: 7.8804, Lng: 98.3923}, Status: "Delayed", Description: "Unexpected issue encountered."},
-				{Timestamp: "May 23, 14:00", Location: models.Location{Name: "Chumphon", Lat: 10.4931, Lng: 99.1801}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 22, 09:00", Location: models.Location{Name: "Bangkok Hub", Lat: 13.7563, Lng: 100.5018}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 21, 16:00", Location: models.Location{Name: "ประชาธิปัตย์, ธัญบุรี, ปทุมธานี", Lat: 13.9782, Lng: 100.6147}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 21, 08:00", Location: models.Location{Name: "ประชาธิปัตย์, ธัญบุรี, ปทุมธานี", Lat: 13.9782, Lng: 100.6147}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10255", TrackingNumber: "TH202600107",
-			Customer: models.ContactInfo{
-				Name: "กาญจนา ศิริโชค", Zipcode: "13000",
-				SubDistrict: "ประตูชัย", District: "พระนครศรีอยุธยา", Province: "พระนครศรีอยุธยา",
-				Coords: models.GeoPoint{Lat: 14.3542, Lng: 100.5547},
-			},
-			Receiver: models.ContactInfo{
-				Name: "ธนพล จันทร์ศรี", Zipcode: "40000",
-				SubDistrict: "ในเมือง", District: "เมือง", Province: "ขอนแก่น",
-				Coords: models.GeoPoint{Lat: 16.4322, Lng: 102.8236},
-			},
-			Status:            "pending",
-			HubID:             "",
-			Carrier:           "Thun-u-der Express",
-			Weight:            3.3,
-			Items:             2,
-			EstimatedDelivery: "May 29, 2026",
-			CreatedAt:         "May 26, 2026",
-			Progress:          0,
-			CurrentCoords:     models.GeoPoint{Lat: 14.3542, Lng: 100.5547},
-			Events: []seedEvent{
-				{Timestamp: "May 26, 10:00", Location: models.Location{Name: "ประตูชัย, พระนครศรีอยุธยา, พระนครศรีอยุธยา", Lat: 14.3542, Lng: 100.5547}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10256", TrackingNumber: "TH202600108",
-			Customer: models.ContactInfo{
-				Name: "นฤมล สุขเกษม", Zipcode: "10100",
-				SubDistrict: "ปทุมวัน", District: "ปทุมวัน", Province: "กรุงเทพมหานคร",
-				Coords: models.GeoPoint{Lat: 13.7466, Lng: 100.5326},
-			},
-			Receiver: models.ContactInfo{
-				Name: "อดุลย์ กล้าหาญ", Zipcode: "30000",
-				SubDistrict: "ในเมือง", District: "เมือง", Province: "นครราชสีมา",
-				Coords: models.GeoPoint{Lat: 14.975, Lng: 102.0825},
-			},
-			Status:            "delivered",
-			HubID:             "HUB-006",
-			Carrier:           "Thun-u-der Express",
-			Weight:            1.8,
-			Items:             1,
-			EstimatedDelivery: "May 23, 2026",
-			CreatedAt:         "May 19, 2026",
-			Progress:          100,
-			CurrentCoords:     models.GeoPoint{Lat: 14.975, Lng: 102.0825},
-			Events: []seedEvent{
-				{Timestamp: "May 23, 11:30", Location: models.Location{Name: "ในเมือง, เมือง, นครราชสีมา", Lat: 14.975, Lng: 102.0825}, Status: "Delivered", Description: "Delivered to recipient."},
-				{Timestamp: "May 22, 15:00", Location: models.Location{Name: "Korat Hub", Lat: 14.9799, Lng: 102.0977}, Status: "Out for Delivery", Description: "Out for delivery."},
-				{Timestamp: "May 21, 10:00", Location: models.Location{Name: "Saraburi", Lat: 14.5333, Lng: 100.9167}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 20, 14:00", Location: models.Location{Name: "Bangkok Hub", Lat: 13.7563, Lng: 100.5018}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 19, 16:30", Location: models.Location{Name: "ปทุมวัน, ปทุมวัน, กรุงเทพมหานคร", Lat: 13.7466, Lng: 100.5326}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 19, 08:00", Location: models.Location{Name: "ปทุมวัน, ปทุมวัน, กรุงเทพมหานคร", Lat: 13.7466, Lng: 100.5326}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10257", TrackingNumber: "TH202600109",
-			Customer: models.ContactInfo{
-				Name: "สาโรจน์ เจริญสุข", Zipcode: "20110",
-				SubDistrict: "บางพระ", District: "ศรีราชา", Province: "ชลบุรี",
-				Coords: models.GeoPoint{Lat: 13.1173, Lng: 100.9256},
-			},
-			Receiver: models.ContactInfo{
-				Name: "วาสนา คงมั่น", Zipcode: "84000",
-				SubDistrict: "ตลาด", District: "เมือง", Province: "สุราษฎร์ธานี",
-				Coords: models.GeoPoint{Lat: 9.1382, Lng: 99.3214},
-			},
-			Status:            "out_for_delivery",
-			HubID:             "HUB-005",
-			Carrier:           "Thun-u-der Express",
-			Weight:            10.0,
-			Items:             6,
-			EstimatedDelivery: "May 26, 2026",
-			CreatedAt:         "May 22, 2026",
-			Progress:          80,
-			CurrentCoords:     models.GeoPoint{Lat: 9.5, Lng: 99.2},
-			Events: []seedEvent{
-				{Timestamp: "May 26, 09:00", Location: models.Location{Name: "Surat Thani", Lat: 9.1382, Lng: 99.3214}, Status: "Out for Delivery", Description: "Out for delivery."},
-				{Timestamp: "May 25, 14:00", Location: models.Location{Name: "Chumphon", Lat: 10.4931, Lng: 99.1801}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 24, 10:00", Location: models.Location{Name: "Chonburi Hub", Lat: 13.3611, Lng: 100.9847}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 23, 14:00", Location: models.Location{Name: "บางพระ, ศรีราชา, ชลบุรี", Lat: 13.1173, Lng: 100.9256}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 23, 08:00", Location: models.Location{Name: "บางพระ, ศรีราชา, ชลบุรี", Lat: 13.1173, Lng: 100.9256}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10258", TrackingNumber: "TH202600110",
-			Customer: models.ContactInfo{
-				Name: "ประเสริฐ วงศ์ดี", Zipcode: "21160",
-				SubDistrict: "นิคมพัฒนา", District: "นิคมพัฒนา", Province: "ระยอง",
-				Coords: models.GeoPoint{Lat: 12.7167, Lng: 101.15},
-			},
-			Receiver: models.ContactInfo{
-				Name: "บุญธรรม พิมพา", Zipcode: "41000",
-				SubDistrict: "หมากแข้ง", District: "เมือง", Province: "อุดรธานี",
-				Coords: models.GeoPoint{Lat: 17.4132, Lng: 102.7856},
-			},
-			Status:            "in_transit",
-			HubID:             "HUB-006",
-			Carrier:           "Thun-u-der Express",
-			Weight:            7.1,
-			Items:             3,
-			EstimatedDelivery: "May 28, 2026",
-			CreatedAt:         "May 24, 2026",
-			Progress:          40,
-			CurrentCoords:     models.GeoPoint{Lat: 15.0, Lng: 102.0},
-			Events: []seedEvent{
-				{Timestamp: "May 25, 16:00", Location: models.Location{Name: "Korat Hub", Lat: 14.9799, Lng: 102.0977}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 24, 18:00", Location: models.Location{Name: "Chonburi Hub", Lat: 13.3611, Lng: 100.9847}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 24, 11:00", Location: models.Location{Name: "นิคมพัฒนา, นิคมพัฒนา, ระยอง", Lat: 12.7167, Lng: 101.15}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 24, 08:00", Location: models.Location{Name: "นิคมพัฒนา, นิคมพัฒนา, ระยอง", Lat: 12.7167, Lng: 101.15}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10259", TrackingNumber: "TH202600111",
-			Customer: models.ContactInfo{
-				Name: "สุดา มากสุข", Zipcode: "24110",
-				SubDistrict: "บางคล้า", District: "บางคล้า", Province: "ฉะเชิงเทรา",
-				Coords: models.GeoPoint{Lat: 13.7167, Lng: 101.2},
-			},
-			Receiver: models.ContactInfo{
-				Name: "สมพร รักษ์ดี", Zipcode: "80000",
-				SubDistrict: "ท่าวัง", District: "เมือง", Province: "นครศรีธรรมราช",
-				Coords: models.GeoPoint{Lat: 8.4333, Lng: 99.9667},
-			},
-			Status:            "departed",
-			HubID:             "HUB-005",
-			Carrier:           "Thun-u-der Express",
-			Weight:            5.5,
-			Items:             3,
-			EstimatedDelivery: "May 28, 2026",
-			CreatedAt:         "May 25, 2026",
-			Progress:          20,
-			CurrentCoords:     models.GeoPoint{Lat: 13.7, Lng: 101.1},
-			Events: []seedEvent{
-				{Timestamp: "May 25, 17:00", Location: models.Location{Name: "Chonburi Hub", Lat: 13.3611, Lng: 100.9847}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 25, 13:00", Location: models.Location{Name: "บางคล้า, บางคล้า, ฉะเชิงเทรา", Lat: 13.7167, Lng: 101.2}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 25, 08:00", Location: models.Location{Name: "บางคล้า, บางคล้า, ฉะเชิงเทรา", Lat: 13.7167, Lng: 101.2}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-		{
-			OrderID: "ORD-10260", TrackingNumber: "TH202600112",
-			Customer: models.ContactInfo{
-				Name: "พิมล สุขใจ", Zipcode: "10250",
-				SubDistrict: "คลองเตย", District: "คลองเตย", Province: "กรุงเทพมหานคร",
-				Coords: models.GeoPoint{Lat: 13.7122, Lng: 100.5638},
-			},
-			Receiver: models.ContactInfo{
-				Name: "วีระ วงค์คำ", Zipcode: "34000",
-				SubDistrict: "ในเมือง", District: "เมือง", Province: "อุบลราชธานี",
-				Coords: models.GeoPoint{Lat: 15.2296, Lng: 104.8603},
-			},
-			Status:            "delivered",
-			HubID:             "HUB-009",
-			Carrier:           "Thun-u-der Express",
-			Weight:            4.5,
-			Items:             2,
-			EstimatedDelivery: "May 24, 2026",
-			CreatedAt:         "May 20, 2026",
-			Progress:          100,
-			CurrentCoords:     models.GeoPoint{Lat: 15.2296, Lng: 104.8603},
-			Events: []seedEvent{
-				{Timestamp: "May 24, 10:00", Location: models.Location{Name: "ในเมือง, เมือง, อุบลราชธานี", Lat: 15.2296, Lng: 104.8603}, Status: "Delivered", Description: "Delivered to recipient."},
-				{Timestamp: "May 23, 14:00", Location: models.Location{Name: "Ubon Ratchathani Hub", Lat: 15.2448, Lng: 104.8474}, Status: "Out for Delivery", Description: "Out for delivery."},
-				{Timestamp: "May 22, 16:00", Location: models.Location{Name: "Pak Thong Chai", Lat: 14.4667, Lng: 101.9667}, Status: "In Transit", Description: "Transit to next hub."},
-				{Timestamp: "May 21, 14:00", Location: models.Location{Name: "Bangkok Hub", Lat: 13.7563, Lng: 100.5018}, Status: "Departed", Description: "In transit to hub."},
-				{Timestamp: "May 20, 17:00", Location: models.Location{Name: "คลองเตย, คลองเตย, กรุงเทพมหานคร", Lat: 13.7122, Lng: 100.5638}, Status: "Picked Up", Description: "Parcel collected from sender."},
-				{Timestamp: "May 20, 08:00", Location: models.Location{Name: "คลองเตย, คลองเตย, กรุงเทพมหานคร", Lat: 13.7122, Lng: 100.5638}, Status: "Label Created", Description: "Awaiting pickup."},
-			},
-		},
-	}
+	hubs := []string{"HUB-001", "HUB-002", "HUB-003", "HUB-004", "HUB-005", "HUB-006", "HUB-007", "HUB-008", "HUB-009", "HUB-010"}
 
 	composeAddress := func(c models.ContactInfo) string {
 		return c.SubDistrict + ", " + c.District + ", " + c.Province
 	}
 
-	for _, s := range seeds {
+	for i := 0; i < 20; i++ {
+		orderNum := 10245 + i
+		trackingNum := "TH2026" + padInt(100+i)
+
+		cust := customers[i]
+		recv := receivers[i]
+
+		daysInMonth := func(m time.Month) int {
+			switch m {
+			case time.January, time.March, time.May, time.July, time.August, time.October, time.December:
+				return 31
+			case time.February:
+				return 28
+			default:
+				return 30
+			}
+		}
+
+		var month time.Month
+		var shipmentStatus string
+		var progress float64
+
+		if i < 5 {
+			// First 5 orders: force May with distinct statuses
+			month = time.May
+			mayStatuses := []string{"pending", "picked_up", "departed", "in_transit", "out_for_delivery"}
+			shipmentStatus = mayStatuses[i]
+			switch shipmentStatus {
+			case "pending":
+				progress = float64(rng.Intn(10))
+			case "picked_up":
+				progress = float64(rng.Intn(20) + 10)
+			case "departed":
+				progress = float64(rng.Intn(25) + 20)
+			case "in_transit":
+				progress = float64(rng.Intn(40) + 30)
+			case "out_for_delivery":
+				progress = float64(rng.Intn(25) + 65)
+			}
+		} else {
+			// Remaining 15: random Jan-May
+			month = time.Month(rng.Intn(5) + 1)
+			if month < time.May {
+				shipmentStatus = "delivered"
+				progress = 100
+			} else {
+				roll := rng.Intn(100)
+				switch {
+				case roll < 10:
+					shipmentStatus = "pending"
+					progress = float64(rng.Intn(10))
+				case roll < 20:
+					shipmentStatus = "picked_up"
+					progress = float64(rng.Intn(20) + 10)
+				case roll < 30:
+					shipmentStatus = "departed"
+					progress = float64(rng.Intn(25) + 20)
+				case roll < 55:
+					shipmentStatus = "in_transit"
+					progress = float64(rng.Intn(40) + 30)
+				case roll < 75:
+					shipmentStatus = "out_for_delivery"
+					progress = float64(rng.Intn(25) + 65)
+				case roll < 90:
+					shipmentStatus = "delivered"
+					progress = 100
+				default:
+					shipmentStatus = "delayed"
+					progress = float64(rng.Intn(40) + 40)
+				}
+			}
+		}
+
+		day := rng.Intn(daysInMonth(month)) + 1
+		createdAt := time.Date(2026, month, day, rng.Intn(12)+8, rng.Intn(60), 0, 0, time.UTC)
+
+		hubID := hubs[rng.Intn(len(hubs))]
+		if shipmentStatus == "pending" {
+			hubID = ""
+		}
+
+		estDays := rng.Intn(5) + 1
+		estDelivery := createdAt.AddDate(0, 0, estDays)
+		carrier := "Thun-u-der Express"
+
+		currLat := cust.Lat + (recv.Lat-cust.Lat)*progress/100.0
+		currLng := cust.Lng + (recv.Lng-cust.Lng)*progress/100.0
+
+		// Build events
+		type event struct {
+			timestamp time.Time
+			status    string
+			locName   string
+			lat, lng  float64
+			desc      string
+		}
+		var events []event
+		maxDay := daysInMonth(month)
+
+		makeEvent := func(dayOffset, hourMin, hourMax, minOffset int, status, locName string, lat, lng float64, desc string) {
+			d := day + dayOffset
+			if d > maxDay {
+				d = maxDay
+			}
+			h := hourMin + rng.Intn(hourMax-hourMin+1)
+			m := rng.Intn(60)
+			t := time.Date(2026, month, d, h, m, 0, 0, time.UTC)
+			events = append(events, event{t, status, locName, lat, lng, desc})
+		}
+
+		custAddr := cust.SubDistrict + ", " + cust.District + ", " + cust.Province
+		recvAddr := recv.SubDistrict + ", " + recv.District + ", " + recv.Province
+
+		// Label Created
+		makeEvent(0, 7, 9, 0, "Label Created", custAddr, cust.Lat, cust.Lng, "Awaiting pickup.")
+
+		if shipmentStatus != "pending" {
+			// Picked Up
+			makeEvent(rng.Intn(2), 9, 14, 0, "Picked Up", custAddr, cust.Lat, cust.Lng, "Parcel collected from sender.")
+		}
+
+		if shipmentStatus == "departed" || shipmentStatus == "in_transit" || shipmentStatus == "out_for_delivery" || shipmentStatus == "delivered" || shipmentStatus == "delayed" {
+			// Departed
+			makeEvent(rng.Intn(3)+1, 8, 13, 0, "Departed", "Bangkok Hub", 13.7563, 100.5018, "In transit to hub.")
+		}
+
+		if shipmentStatus == "in_transit" || shipmentStatus == "out_for_delivery" || shipmentStatus == "delivered" || shipmentStatus == "delayed" {
+			// In Transit
+			midLat := cust.Lat + (recv.Lat-cust.Lat)*0.5
+			midLng := cust.Lng + (recv.Lng-cust.Lng)*0.5
+			makeEvent(rng.Intn(3)+3, 8, 13, 0, "In Transit", "Central Hub", midLat, midLng, "Transit to next hub.")
+		}
+
+		if shipmentStatus == "out_for_delivery" || shipmentStatus == "delivered" || shipmentStatus == "delayed" {
+			// Out for Delivery
+			makeEvent(rng.Intn(2)+5, 8, 12, 0, "Out for Delivery", recvAddr, recv.Lat, recv.Lng, "Out for delivery.")
+		}
+
+		if shipmentStatus == "delivered" {
+			// Delivered
+			makeEvent(rng.Intn(2)+6, 9, 15, 0, "Delivered", recvAddr, recv.Lat, recv.Lng, "Delivered to recipient.")
+		}
+
+		if shipmentStatus == "delayed" {
+			// Delayed
+			makeEvent(rng.Intn(2)+6, 8, 12, 0, "Delayed", "Transit Hub", currLat, currLng, "Unexpected issue encountered.")
+		}
+
+		custContact := models.ContactInfo{
+			Name: cust.Name, Zipcode: cust.Zipcode,
+			SubDistrict: cust.SubDistrict, District: cust.District, Province: cust.Province,
+			Coords: models.GeoPoint{Lat: cust.Lat, Lng: cust.Lng},
+		}
+		recvContact := models.ContactInfo{
+			Name: recv.Name, Zipcode: recv.Zipcode,
+			SubDistrict: recv.SubDistrict, District: recv.District, Province: recv.Province,
+			Coords: models.GeoPoint{Lat: recv.Lat, Lng: recv.Lng},
+		}
+
 		shipment := models.Shipment{
-			OrderID:           s.OrderID,
-			TrackingNumber:    s.TrackingNumber,
-			Customer:          s.Customer,
-			Receiver:          s.Receiver,
-			Origin:            composeAddress(s.Customer),
-			Destination:       composeAddress(s.Receiver),
-			Status:            s.Status,
-			HubID:             s.HubID,
-			Carrier:           s.Carrier,
-			Weight:            s.Weight,
-			Items:             s.Items,
-			EstimatedDelivery: parse("January 2, 2006", s.EstimatedDelivery),
-			CreatedAt:         parse("January 2, 2006", s.CreatedAt),
-			Progress:          s.Progress,
-			CurrentCoords:     s.CurrentCoords,
+			OrderID:           "ORD-" + padInt(orderNum),
+			TrackingNumber:    trackingNum,
+			Customer:          custContact,
+			Receiver:          recvContact,
+			Origin:            composeAddress(custContact),
+			Destination:       composeAddress(recvContact),
+			Status:            shipmentStatus,
+			HubID:             hubID,
+			Carrier:           carrier,
+			Weight:            weights[i],
+			Items:             rng.Intn(6) + 1,
+			EstimatedDelivery: estDelivery,
+			CreatedAt:         createdAt,
+			Progress:          progress,
+			CurrentCoords:     models.GeoPoint{Lat: currLat, Lng: currLng},
 		}
 		db.Create(&shipment)
 
-		for _, e := range s.Events {
+		for _, e := range events {
 			event := models.ShipmentEvent{
 				ShipmentID:  shipment.ID,
-				Status:      e.Status,
-				Location:    e.Location,
-				Description: e.Description,
-				CreatedAt:   parse("January 2, 15:04", e.Timestamp),
+				Status:      e.status,
+				Location:    models.Location{Name: e.locName, Lat: e.lat, Lng: e.lng},
+				Description: e.desc,
+				CreatedAt:   e.timestamp,
 			}
 			db.Create(&event)
 		}
 	}
+}
+
+var weights = []float64{1.2, 2.5, 3.8, 5.2, 6.7, 8.5, 10.0, 4.2, 7.1, 3.3, 1.8, 5.5, 4.5, 2.1, 9.3, 6.0, 3.5, 7.8, 2.0, 4.8}
+
+func padInt(n int) string {
+	s := ""
+	for n > 0 {
+		s = string(rune('0'+n%10)) + s
+		n /= 10
+	}
+	for len(s) < 3 {
+		s = "0" + s
+	}
+	return s
 }

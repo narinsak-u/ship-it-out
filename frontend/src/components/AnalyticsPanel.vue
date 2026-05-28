@@ -50,13 +50,13 @@ const statusDistribution = computed(() => {
 
 const statusPieData = computed((): StatusPieEntry[] => {
   const colorMap: Record<string, string> = {
-    delivered: "hsl(var(--success))",
-    delayed: "hsl(var(--destructive))",
-    in_transit: "hsl(var(--info))",
-    out_for_delivery: "hsl(var(--primary))",
-    pending: "hsl(var(--muted-foreground))",
-    picked_up: "hsl(var(--warning))",
-    departed: "hsl(var(--secondary))",
+    delivered: "var(--color-success)",
+    delayed: "var(--color-destructive)",
+    in_transit: "var(--color-info)",
+    out_for_delivery: "var(--color-primary)",
+    pending: "var(--color-muted-foreground)",
+    picked_up: "var(--color-warning)",
+    departed: "var(--color-secondary)",
   };
   return statusDistribution.value.map((s) => ({
     ...s,
