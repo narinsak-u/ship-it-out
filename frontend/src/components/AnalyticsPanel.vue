@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useQuery } from "@tanstack/vue-query";
 import { fetchAnalytics, fetchTimeSeries } from "@/lib/api/analytics";
+import { analyticsKeys } from "@/lib/api/queryKeys";
 import { statusLabels } from "@/lib/orders";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Skeleton from "@/components/ui/Skeleton.vue";
@@ -19,13 +20,15 @@ const {
   isError,
   refetch,
 } = useQuery({
-  queryKey: ["analytics"],
+  queryKey: analyticsKeys.all,
   queryFn: fetchAnalytics,
+  staleTime: 5 * 60_000,
 });
 
 const { data: timeSeries } = useQuery({
-  queryKey: ["analytics", "timeseries"],
+  queryKey: analyticsKeys.timeseries(),
   queryFn: fetchTimeSeries,
+  staleTime: 5 * 60_000,
 });
 
 const kpis = computed(() => {
