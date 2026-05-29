@@ -1,14 +1,14 @@
 # Backend — Thun-u-der Express
 
-Go/Fiber API server for the shipment tracking platform. PostgreSQL + Redis + JWT auth.
+Go/Fiber API server for the shipment tracking platform. PostgreSQL + JWT auth.
 
 ## Quick Start
 
 ```bash
-# With Docker (Postgres + Redis + backend)
+# With Docker (Postgres + backend)
 docker compose up
 
-# Without Docker (requires separate Postgres + Redis)
+# Without Docker (requires separate Postgres)
 cp .env.example .env
 go run .
 ```
@@ -19,10 +19,9 @@ go run .
 backend/
 ├── cmd/server/main.go       # Entry point: config → DB → migrate → seed → routes → server
 ├── internal/
-│   ├── config/config.go     # Env-based config (Port, DatabaseURL, RedisURL, JWTSecret)
+│   ├── config/config.go     # Env-based config (Port, DatabaseURL, JWTSecret)
 │   ├── database/
-│   │   ├── postgres.go      # GORM connection
-│   │   └── redis.go         # go-redis client
+│   │   └── postgres.go      # GORM connection
 │   ├── seed/
 │   │   ├── hubs.go          # Demo hub data (6 hubs, Eastern Thailand)
 │   │   └── shipments.go     # Demo shipments + tracking events (3 orders, Eastern Thailand)
@@ -40,14 +39,11 @@ backend/
 │   ├── hub/handler.go       # Hub CRUD
 │   ├── tracking/handler.go  # Public tracking lookup
 │   ├── analytics/handler.go # Dashboard aggregate stats
-│   └── websocket/           # Real-time tracking via WebSocket
-│       ├── hub.go           # Room-based broadcast hub
-│       └── client.go        # WS client + upgrade handler
 ├── pkg/utils/
 │   ├── hash.go              # bcrypt helpers
 │   └── response.go          # Standard JSON response writers
 ├── Dockerfile
-├── docker-compose.yml       # Postgres 16 + Redis 7 + backend
+├── docker-compose.yml       # Postgres 16 + backend
 └── docs/
     ├── OVERVIEW.md          # Full API reference + architecture
     └── WORKFLOW.md          # Workflow descriptions
@@ -72,9 +68,6 @@ backend/
 | DELETE | `/api/hubs/:id`               | JWT  | Delete hub                 |
 | GET    | `/api/track/:trackingNumber`  | No   | Public tracking lookup     |
 | GET    | `/api/analytics/overview`     | JWT  | Dashboard stats            |
-| GET    | `/ws/tracking/:trackingNumber`| No   | Real-time tracking updates |
-| GET    | `/ws/admin`                   | No   | Admin WS (room "global")   |
-| GET    | `/ws/driver`                  | No   | Driver WS (room "global")  |
 
 ## Seed Data
 
@@ -102,5 +95,4 @@ go run .
 | -------------- | ------------------------------------------------------------ |
 | `PORT`         | `8080`                                                       |
 | `DATABASE_URL` | `postgres://user:pass@localhost:5432/shipments`              |
-| `REDIS_URL`    | `redis://localhost:6379`                                     |
 | `JWT_SECRET`   | `change-me`                                                  |

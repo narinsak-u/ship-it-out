@@ -435,48 +435,6 @@ Client → GET /api/analytics/overview (JWT required)
 
 ---
 
-## 6. WebSocket Workflow
-
-**Purpose:** Provide real-time tracking updates to connected clients.
-
-### 6.1 Connection
-
-```
-Client → GET /ws/tracking/TH202612345 (WebSocket upgrade)
-         │
-         ├─ 1. Fiber checks for WebSocket upgrade headers
-         │     └─ If not a WS request → 400
-         ├─ 2. Determine room:
-         │     ├─ /ws/tracking/:trackingNumber → room = the tracking number
-         │     └─ /ws/admin → room = "global"
-         ├─ 3. Create Client struct: { Room, Conn, Send (buffered chan, 256) }
-         ├─ 4. Register client in DefaultHub
-         │     (adds to map[Client]bool under a mutex)
-         ├─ 5. Start goroutine: reads from client.Send chan → writes to WS connection
-         ├─ 6. Enter read loop: blocks on conn.ReadMessage()
-         │     (messages from client are currently discarded)
-         └─ 7. On read error → break → Unregister client → close conn
-```
-
-### 6.2 Broadcasting
-
-```
-External trigger (not yet implemented)
-         │
-         └─ DefaultHub.BroadcastToRoom(room, message)
-              │
-              ├─ 1. Acquire read lock
-              ├─ 2. Iterate all clients
-              │     └─ For each client with matching Room:
-              │          ├─ Try: message ← client.Send (non-blocking send to chan)
-              │          └─ On full buffer: close chan + delete client (slow consumer drop)
-              └─ 3. Release lock
-```
-
-**Current state:** The WebSocket infrastructure (connection upgrade, room registration, broadcasting) is fully wired. What's missing is the trigger that calls `BroadcastToRoom()` when a shipment status changes (e.g., in `UpdateStatus`).
-
----
-
 ## 7. Seed Data Workflow
 
 **Purpose:** Populate the database with demo data on first startup so developers can test immediately.

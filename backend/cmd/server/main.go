@@ -15,11 +15,10 @@ import (
 	"github.com/narinsak-u/backend/internal/seed"
 	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/internal/tracking"
-	"github.com/narinsak-u/backend/internal/websocket"
 )
 
-// main is the entry point that starts the entire backend server. It:
-//  1. Loads config (env vars) and connects to Postgres + Redis databases
+// main starts the backend server. It:
+//  1. Loads config (env vars) and connects to Postgres
 //  2. Runs auto-migration so database tables match our Go models
 //  3. Creates a Fiber HTTP server with CORS + logging middleware
 //  4. Registers all routes:
@@ -27,16 +26,14 @@ import (
 //     - /shipments/* — CRUD for shipments (requires auth)
 //     - /track/:trackingNumber — public tracking lookup
 //     - /analytics/overview — dashboard stats (requires auth)
-//     - /ws/* — real-time WebSocket connections
 //  5. Starts the HTTP server on the configured port
 func main() {
 	// Use Unix timestamps (e.g. 1700000000) in log output instead of RFC3339
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	// --- Bootstrap: load config, connect databases, migrate schemas ---
+	// --- Bootstrap: load config, connect database, migrate schemas ---
 	config.Load()
 	database.ConnectPostgres(config.App.DatabaseURL)
-	database.ConnectRedis(config.App.RedisURL)
 
 	// Auto-create/update tables so they match our model structs
 	database.DB.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{})
@@ -88,10 +85,6 @@ func main() {
 	// --- Analytics (auth required) ---
 	api.Get("/analytics/overview", middleware.AuthRequired(), analytics.Overview)
 	api.Get("/analytics/timeseries", middleware.AuthRequired(), analytics.TimeSeries)
-
-	// --- WebSocket endpoints for real-time tracking updates ---
-	app.Get("/ws/tracking/:trackingNumber", websocket.HandleWebSocket)
-	app.Get("/ws/admin", websocket.HandleWebSocket)
 
 	// --- Start the server ---
 	log.Info().Str("port", config.App.Port).Msg("server starting")

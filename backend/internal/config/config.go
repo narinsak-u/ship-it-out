@@ -11,7 +11,6 @@ import (
 type Config struct {
 	Port        string
 	DatabaseURL string
-	RedisURL    string
 	JWTSecret   string
 	JWTTTL      time.Duration
 }
@@ -27,7 +26,6 @@ func Load() {
 	App = Config{
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/shipments"),
-		RedisURL:    getEnv("REDIS_URL", "redis://localhost:6379"),
 		JWTSecret:   getEnv("JWT_SECRET", "change-me"),
 		JWTTTL:      24 * time.Hour,
 	}

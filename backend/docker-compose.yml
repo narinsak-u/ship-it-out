@@ -12,11 +12,6 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
   backend:
     build:
       context: .
@@ -26,11 +21,9 @@ services:
     environment:
       PORT: "8080"
       DATABASE_URL: "postgres://user:pass@db:5432/shipments"
-      REDIS_URL: "redis://redis:6379"
       JWT_SECRET: "change-me"
     depends_on:
       - db
-      - redis
 
 volumes:
   pgdata:

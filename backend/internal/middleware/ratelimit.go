@@ -10,8 +10,7 @@
 // inconveniencing legitimate users.
 //
 // This is a single-instance in-process limiter. For horizontally-scaled deployments
-// it should be replaced with a Redis-backed implementation (Redis is already
-// connected as a dependency but not yet used for this purpose).
+// it should be replaced with a shared backend (e.g. Redis).
 package middleware
 
 import (
