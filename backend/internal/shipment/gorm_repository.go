@@ -150,22 +150,23 @@ func (r *GormRepository) CountByProvince() ([]ProvinceCountResult, error) {
 }
 
 func (r *GormRepository) generateTrackingNumber() string {
-	return fmt.Sprintf("TH%d%05d", time.Now().Year(), time.Now().UnixMilli()%100000)
+	return fmt.Sprintf("TH%d%05d", time.Now().Year(), time.Now().UnixMicro()%100000)
 }
 
 func (r *GormRepository) generateOrderID() string {
 	r.orderIDLock.Lock()
 	defer r.orderIDLock.Unlock()
-	var shipments []models.Shipment
-	r.db.Select("order_id").Find(&shipments)
-	maxNum := 10245
-	for _, s := range shipments {
-		parts := strings.SplitN(s.OrderID, "-", 2)
-		if len(parts) == 2 {
-			if n, err := strconv.Atoi(parts[1]); err == nil && n > maxNum {
-				maxNum = n
-			}
+
+	var max models.Shipment
+	if err := r.db.Select("order_id").Order("order_id DESC").First(&max).Error; err != nil {
+		return "ORD-10246"
+	}
+
+	parts := strings.SplitN(max.OrderID, "-", 2)
+	if len(parts) == 2 {
+		if n, err := strconv.Atoi(parts[1]); err == nil {
+			return fmt.Sprintf("ORD-%d", n+1)
 		}
 	}
-	return fmt.Sprintf("ORD-%d", maxNum+1)
+	return "ORD-10246"
 }

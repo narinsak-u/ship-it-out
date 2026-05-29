@@ -50,7 +50,7 @@ func setAuthCookie(c *fiber.Ctx, token string) {
 		HTTPOnly: true,
 		SameSite: "Lax",
 		Secure:   true,
-		MaxAge:   86400,
+		MaxAge:   int(config.App.JWTTTL.Seconds()),
 	})
 }
 

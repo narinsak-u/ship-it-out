@@ -230,11 +230,15 @@ func (h *Handler) UpdateStatus(c *fiber.Ctx) error {
 		shipment.CurrentCoords.Lng = hubRecord.Lng
 	}
 
-	h.repo.Save(shipment)
+	if err := h.repo.Save(shipment); err != nil {
+		return utils.Error(c, 500, "failed to update shipment")
+	}
 
 	event := statusToEvent(*shipment, hub, body.Status)
 	event.ShipmentID = shipment.ID
-	h.repo.CreateEvent(&event)
+	if err := h.repo.CreateEvent(&event); err != nil {
+		return utils.Error(c, 500, "failed to create tracking event")
+	}
 
 	return utils.Success(c, shipment)
 }
