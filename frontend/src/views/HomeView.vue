@@ -9,17 +9,20 @@ import StatusBadge from "@/components/StatusBadge.vue";
 import { fetchActiveDeliveries } from "@/lib/api/orders";
 import { fetchAnalytics } from "@/lib/api/analytics";
 import { trackShipment } from "@/lib/api/tracking";
+import { deliveryKeys, analyticsKeys } from "@/lib/api/queryKeys";
 
 const router = useRouter();
 
 const { data: orders } = useQuery({
-  queryKey: ["orders"],
+  queryKey: deliveryKeys.active(),
   queryFn: fetchActiveDeliveries,
+  staleTime: 10_000,
 });
 
 const { data: analytics } = useQuery({
-  queryKey: ["analytics"],
+  queryKey: analyticsKeys.all,
   queryFn: fetchAnalytics,
+  staleTime: 5 * 60_000,
 });
 
 const query = ref("");
