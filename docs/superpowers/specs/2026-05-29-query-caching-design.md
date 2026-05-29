@@ -62,18 +62,34 @@ Hierarchical keys for type-safe, precise cache invalidation:
 | Analytics overview (`analyticsKeys.all`) | 5 min | Aggregate stats |
 | Time series (`analyticsKeys.timeseries()`) | 5 min | Historical chart data |
 
-### 4. Mutation Invalidation Updates
+### 4. Mutation → Real-time Refresh Flow
 
-| Mutation | Invalidates |
-|----------|-------------|
-| `useCreateOrder` | `orderKeys.all`, `deliveryKeys.all` |
-| `useUpdateOrder` | `orderKeys.all`, `deliveryKeys.all` |
-| `useUpdateShipmentStatus` | `deliveryKeys.all` |
-| `useCreateHub` | `hubKeys.all` |
-| `useUpdateHub` | `hubKeys.all` |
-| `useDeleteHub` | `hubKeys.all` |
+When a mutation `onSuccess` fires, `invalidateQueries` marks matching cache entries as stale:
 
-### 5. View Key Swaps
+- **Active queries** (component mounted and watching the key) → refetch **immediately in the background**. The UI updates as soon as the response arrives, giving a real-time feel.
+- **Inactive queries** (navigated away, no active observer) → marked stale. On next mount, `refetchOnMount` sees stale data and refetches.
+- **Other users / external updates**: not covered here — that would require WebSocket push or periodic polling (already done for active deliveries via `refetchInterval: 15000`).
+
+This means: edit an order → redirect back to orders list → the list query was invalidated, mounts as stale, refetches immediately. Same for hub edits/creates.
+
+### 5. Mutation Invalidation Table
+
+| Mutation | File | Current Invalidation | New Invalidation |
+|----------|------|---------------------|------------------|
+| `useCreateOrder` | `hooks/useOrders.ts` | `["deliveries"]` | `orderKeys.all`, `deliveryKeys.all` |
+| `useUpdateOrder` | `hooks/useOrders.ts` | `["deliveries"]` | `orderKeys.all`, `deliveryKeys.all` |
+| `deleteOrder` (inline mutation) | `views/OrdersView.vue` | `["orders"]` | `orderKeys.all`, `deliveryKeys.all` |
+| `useUpdateShipmentStatus` | `hooks/useDeliveries.ts` | `["deliveries"]` | `deliveryKeys.all` |
+| `useCreateHub` | `hooks/useHubs.ts` | `["hubs"]` | `hubKeys.all` |
+| `useUpdateHub` | `hooks/useHubs.ts` | `["hubs"]` | `hubKeys.all` |
+| `useDeleteHub` | `hooks/useHubs.ts` | `["hubs"]` | `hubKeys.all` |
+
+Key changes for coverage:
+- `useCreateOrder` / `useUpdateOrder` now also invalidate `orderKeys.all` so the OrdersView list refreshes (previously only deliveries panel refreshed)
+- Delete order (inline in OrdersView) also invalidates both orders + deliveries
+- `useUpdateShipmentStatus` invalidates deliveries (previously correct, stays correct)
+
+### 6. View Key Swaps
 
 | File | Old Key | New Key |
 |------|---------|---------|
@@ -97,9 +113,10 @@ Hierarchical keys for type-safe, precise cache invalidation:
 | `src/lib/api/queryKeys.ts` | **New** — key factory |
 | `src/hooks/useDeliveries.ts` | Swap key strings for factory in mutations |
 | `src/hooks/useHubs.ts` | Swap key strings for factory |
-| `src/hooks/useOrders.ts` | Swap key strings, add orderKeys.all invalidation |
+| `src/hooks/useOrders.ts` | Swap key strings, add orderKeys.all + deliveryKeys.all invalidation |
+| `src/hooks/useDeliveries.ts` | Swap key strings to deliveryKeys |
 | `src/views/HomeView.vue` | Swap key strings, add staleTime |
-| `src/views/OrdersView.vue` | Swap key strings, add staleTime |
+| `src/views/OrdersView.vue` | Swap key strings, add staleTime; update delete mutation invalidation |
 | `src/views/OrderDetailView.vue` | Swap key strings, add staleTime |
 | `src/views/OrderFormView.vue` | Swap key strings |
 | `src/components/AnalyticsPanel.vue` | Swap key strings, add staleTime |
