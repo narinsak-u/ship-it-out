@@ -56,11 +56,12 @@ func main() {
 	api := app.Group("/api")
 
 	// --- Auth routes (public — no auth required) ---
+	authHandler := auth.NewHandler(auth.NewGormRepository(database.DB))
 	authGroup := api.Group("/auth")
-	authGroup.Post("/register", middleware.RateLimitAuth(), auth.Register) // POST /api/auth/register (rate limited)
-	authGroup.Post("/login", middleware.RateLimitAuth(), auth.Login)       // POST /api/auth/login (rate limited)
-	authGroup.Get("/me", middleware.AuthRequired(), auth.Me)               // GET  /api/auth/me (needs valid JWT cookie)
-	authGroup.Post("/logout", auth.Logout)                                 // POST /api/auth/logout
+	authGroup.Post("/register", middleware.RateLimitAuth(), authHandler.Register) // POST /api/auth/register (rate limited)
+	authGroup.Post("/login", middleware.RateLimitAuth(), authHandler.Login)       // POST /api/auth/login (rate limited)
+	authGroup.Get("/me", middleware.AuthRequired(), authHandler.Me)               // GET  /api/auth/me (needs valid JWT cookie)
+	authGroup.Post("/logout", authHandler.Logout)                                 // POST /api/auth/logout
 
 	// --- Shipment routes (public read, auth required for write) ---
 	api.Get("/shipments", shipment.List)             // GET    /api/shipments (public)
