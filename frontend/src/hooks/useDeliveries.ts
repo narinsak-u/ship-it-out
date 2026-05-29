@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import { fetchActiveDeliveries, updateShipmentStatus } from "@/lib/api/orders";
 import type { ShipmentStatus } from "@/lib/orders";
+import { deliveryKeys } from "@/lib/api/queryKeys";
 
 export function useActiveDeliveries() {
   return useQuery({
-    queryKey: ["deliveries"],
+    queryKey: deliveryKeys.active(),
     queryFn: fetchActiveDeliveries,
     refetchInterval: 15_000,
   });
@@ -23,7 +24,7 @@ export function useUpdateShipmentStatus() {
       hubId?: string;
     }) => updateShipmentStatus(orderId, status, hubId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["deliveries"] });
+      queryClient.invalidateQueries({ queryKey: deliveryKeys.all });
     },
   });
 }
