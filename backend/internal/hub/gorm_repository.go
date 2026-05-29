@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/narinsak-u/backend/internal/models"
 	"gorm.io/gorm"
@@ -11,6 +12,7 @@ import (
 
 type GormRepository struct {
 	db *gorm.DB
+	mu sync.Mutex
 }
 
 func NewGormRepository(db *gorm.DB) *GormRepository {
@@ -49,6 +51,9 @@ func (r *GormRepository) Delete(id string) error {
 }
 
 func (r *GormRepository) generateHubID() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	var hubs []models.Hub
 	r.db.Select("id").Find(&hubs)
 	maxNum := 0
