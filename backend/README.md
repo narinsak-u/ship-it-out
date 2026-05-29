@@ -115,10 +115,54 @@ go run .
 
 ## Testing
 
+Tests use [testify](https://github.com/stretchr/testify) (assert, require, mock) with Fiber's `app.Test()` for HTTP integration. Handler tests mock the repository layer — **no database required**.
+
+### Run all tests
+
 ```bash
-go test ./... -count=1          # Run all tests
-go test ./... -count=1 -race    # With race detection
-go test ./... -v -count=1       # Verbose output
+go test ./... -count=1
 ```
 
-Tests use [testify](https://github.com/stretchr/testify) (assert, require, mock) with Fiber's `app.Test()` for HTTP integration. Handler tests mock the repository layer — no database required. Coverage: ~64 tests across 10 packages, 46% overall (handler/business logic 70-100%, GORM repo code requires a live PostgreSQL database).
+### Run with race detection
+
+```bash
+go test ./... -count=1 -race
+```
+
+### Run a specific package
+
+```bash
+go test ./internal/auth/ -v -count=1
+go test ./internal/shipment/ -v -count=1
+```
+
+### Run a specific test
+
+```bash
+go test ./internal/auth/ -v -count=1 -run TestRegister_Success
+```
+
+### Coverage
+
+```bash
+go test ./... -count=1 -coverprofile=coverage.out
+go tool cover -func=coverage.out          # Per-function breakdown
+go tool cover -html=coverage.out          # HTML report
+```
+
+### Test structure
+
+| Package | Type | Coverage | Notes |
+|---------|------|----------|-------|
+| `pkg/utils` | Unit | 100% | Hash/response helpers |
+| `internal/config` | Unit | 100% | Env loading |
+| `internal/models` | Unit | 100% | GORM BeforeSave/AfterFind hooks |
+| `internal/tracking` | HTTP + mock | 89% | Handler via `shipment.Repository` |
+| `internal/analytics` | HTTP + mock | 81% | Handler via `shipment.Repository` |
+| `internal/auth` | HTTP + mock | 74% | Handler + repository |
+| `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
+| `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
+| `internal/hub` | HTTP + mock | 49% | Handler + repository |
+| `cmd/server`, `database`, `seed` | — | 0% | Require live PostgreSQL |
+
+Handler/business logic coverage is 70-100%. GORM repository implementations (`gorm_repository.go`) are untested in unit tests — they require a live PostgreSQL connection or test containers to execute.
