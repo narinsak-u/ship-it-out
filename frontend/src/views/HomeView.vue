@@ -7,6 +7,8 @@ import Button from "@/components/ui/Button.vue";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { fetchActiveDeliveries } from "@/lib/api/orders";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { trackShipment } from "@/lib/api/tracking";
 
 const router = useRouter();
 
@@ -15,33 +17,39 @@ const { data: orders } = useQuery({
   queryFn: fetchActiveDeliveries,
 });
 
+const { data: analytics } = useAnalytics();
+
 const query = ref("");
 
-const onTrack = (e: Event) => {
+const onTrack = async (e: Event) => {
   e.preventDefault();
-  if (!orders.value) return;
-  const q = query.value.trim().toLowerCase();
-  const match = orders.value.find(
-    (o) => o.id.toLowerCase() === q || o.trackingNumber.toLowerCase() === q,
-  );
-  if (match) {
-    router.push({ name: "order-detail", params: { orderId: match.id } });
+  const q = query.value.trim();
+  if (!q) return;
+
+  const result = await trackShipment(q).catch(() => null);
+  if (result) {
+    router.push({ name: "order-detail", params: { orderId: result.shipment.id } });
   } else {
     router.push({ name: "orders" });
   }
 };
 
 const stats = computed(() => {
-  const all = orders.value ?? [];
+  const total = analytics.value?.total ?? 0;
+  const delivered = analytics.value?.delivered ?? 0;
   return [
     {
       label: "Active shipments",
-      value: all.filter((o) => o.status !== "delivered").length,
+      value: total - delivered,
       icon: Truck,
     },
-    { label: "Delivered (30d)", value: 184, icon: Boxes },
-    { label: "On-time rate", value: "97.4%", icon: Activity },
-    { label: "Countries served", value: 42, icon: Globe2 },
+    {
+      label: "Delivered",
+      value: delivered,
+      icon: Boxes,
+    },
+    { label: "On-time rate", value: "99.9%", icon: Activity }, // hard coded for now
+    { label: "Provinces served", value: 77, icon: Globe2 }, // hard coded for now
   ];
 });
 
@@ -68,9 +76,14 @@ const recent = computed(() => (orders.value ?? []).slice(0, 3));
             <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
             Live ops console
           </span>
-          <h1 class="mt-6 text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
-            Move cargo with<br />
-            <span class="bg-gradient-accent bg-clip-text text-transparent">radar precision.</span>
+          <h1
+            class="mt-6 gap-1 flex flex-col text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl"
+          >
+            <div class="flex items-center gap-6">
+              <span>Move fast</span>
+              <Truck class="w-20 h-20 animate-running" />
+            </div>
+            <span class="bg-gradient-accent bg-clip-text w-fit">Break nothing.</span>
           </h1>
           <p class="mt-6 max-w-xl font-sans text-lg text-muted-foreground">
             Trace every parcel from origin warehouse to doorstep. Realtime telemetry, port-side
@@ -80,6 +93,7 @@ const recent = computed(() => (orders.value ?? []).slice(0, 3));
           <form
             @submit="onTrack"
             class="mt-10 flex max-w-xl gap-2 rounded-xl border border-border bg-card p-2 shadow-elegant"
+            aria-label="Track a shipment"
           >
             <div class="flex flex-1 items-center gap-2 px-3">
               <Search class="h-4 w-4 text-muted-foreground" />
@@ -96,7 +110,7 @@ const recent = computed(() => (orders.value ?? []).slice(0, 3));
     </section>
 
     <!-- Stats grid -->
-    <section class="border-y border-border bg-card/40">
+    <section class="border-y border-border bg-card/40" aria-label="Key metrics">
       <div class="mx-auto grid max-w-7xl grid-cols-2 divide-border md:grid-cols-4 md:divide-x">
         <div v-for="s in stats" :key="s.label" class="flex items-center gap-4 px-6 py-8">
           <div

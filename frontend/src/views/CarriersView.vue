@@ -4,18 +4,18 @@ import { Warehouse, BarChart3, Package } from "lucide-vue-next";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+const DeliveriesPanel = defineAsyncComponent(() => import("@/components/DeliveriesPanel.vue"));
 const HubsPanel = defineAsyncComponent(() => import("@/components/HubsPanel.vue"));
 const AnalyticsPanel = defineAsyncComponent(() => import("@/components/AnalyticsPanel.vue"));
-const DeliveriesPanel = defineAsyncComponent(() => import("@/components/DeliveriesPanel.vue"));
 
-type Tab = "hubs" | "analytics" | "deliveries";
+type Tab = "deliveries" | "hubs" | "analytics";
 
-const activeTab = ref<Tab>("hubs");
+const activeTab = ref<Tab>("deliveries");
 
 const tabs: Array<{ key: Tab; label: string; icon: typeof Warehouse }> = [
+  { key: "deliveries", label: "Active Deliveries", icon: Package },
   { key: "hubs", label: "Hubs", icon: Warehouse },
   { key: "analytics", label: "Analytics", icon: BarChart3 },
-  { key: "deliveries", label: "Active Deliveries", icon: Package },
 ];
 </script>
 
@@ -40,7 +40,7 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Warehouse }> = [
           @click="activeTab = t.key"
           :class="
             cn(
-              'flex items-center gap-2 rounded-t-lg px-5 py-3 font-mono text-sm transition-colors border border-border',
+              'flex items-center cursor-pointer gap-2 rounded-t-lg px-5 py-3 font-mono text-sm transition-colors border border-border',
               activeTab === t.key
                 ? 'bg-card text-foreground border-b-card -mb-px'
                 : 'bg-transparent text-muted-foreground hover:text-foreground border-transparent hover:border-border',
@@ -54,9 +54,9 @@ const tabs: Array<{ key: Tab; label: string; icon: typeof Warehouse }> = [
 
       <!-- Tab content -->
       <Card class="rounded-tl-none rounded-b-xl rounded-tr-xl p-6 shadow-elegant">
-        <HubsPanel v-if="activeTab === 'hubs'" />
+        <DeliveriesPanel v-if="activeTab === 'deliveries'" />
+        <HubsPanel v-else-if="activeTab === 'hubs'" />
         <AnalyticsPanel v-else-if="activeTab === 'analytics'" />
-        <DeliveriesPanel v-else-if="activeTab === 'deliveries'" />
       </Card>
     </section>
   </div>

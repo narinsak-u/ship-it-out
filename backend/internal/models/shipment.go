@@ -43,7 +43,7 @@ type Shipment struct {
 	Status            string      `gorm:"not null;default:pending" json:"status"`
 	Carrier           string      `json:"carrier"`
 	HubID             string      `gorm:"column:hub_id" json:"hubId,omitempty"`
-	Weight            string      `json:"weight"`
+	Weight            float64     `json:"weight"`
 	Items             int         `json:"items"`
 	EstimatedDelivery time.Time   `json:"estimatedDelivery"`
 	CreatedAt         time.Time   `json:"createdAt"`

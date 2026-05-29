@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { Search, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import { useHubs, useDeleteHub } from "@/hooks/useHubs";
-import { getCarrier, hubStatusLabels } from "@/lib/carriers";
+import { hubStatusLabels } from "@/lib/hubs";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 import Badge from "@/components/ui/Badge.vue";
@@ -35,11 +35,7 @@ const filtered = computed(() => {
   const q = query.value.trim().toLowerCase();
   return hubs.value.filter((h) => {
     if (!q) return true;
-    return (
-      h.name.toLowerCase().includes(q) ||
-      h.address.toLowerCase().includes(q) ||
-      getCarrier(h.carrierId)?.name.toLowerCase().includes(q)
-    );
+    return h.name.toLowerCase().includes(q) || h.address.toLowerCase().includes(q);
   });
 });
 
@@ -65,6 +61,7 @@ const hubStatusCounts = computed(() => {
     active: hubs.value.filter((h) => h.status === "active").length,
     maintenance: hubs.value.filter((h) => h.status === "maintenance").length,
     closed: hubs.value.filter((h) => h.status === "closed").length,
+    full: hubs.value.filter((h) => h.status === "full").length,
   };
 });
 </script>
@@ -83,7 +80,7 @@ const hubStatusCounts = computed(() => {
   </div>
 
   <div v-else>
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
         <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
           Total Hubs
@@ -104,6 +101,14 @@ const hubStatusCounts = computed(() => {
         </div>
         <div class="mt-1 font-mono text-3xl font-semibold text-warning">
           {{ hubStatusCounts.maintenance }}
+        </div>
+      </div>
+      <div class="rounded-lg border border-border bg-secondary/50 p-4">
+        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Full
+        </div>
+        <div class="mt-1 font-mono text-3xl font-semibold text-destructive">
+          {{ hubStatusCounts.full }}
         </div>
       </div>
       <div class="rounded-lg border border-border bg-secondary/50 p-4">
@@ -137,12 +142,13 @@ const hubStatusCounts = computed(() => {
           <TableRow
             class="border-b border-border bg-secondary/50 font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:bg-secondary/50"
           >
+            <TableHead class="hidden md:table-cell">ID</TableHead>
             <TableHead class="hidden md:table-cell">Name</TableHead>
             <TableHead class="hidden md:table-cell">Carrier</TableHead>
             <TableHead class="hidden md:table-cell">Address</TableHead>
             <TableHead class="hidden md:table-cell">Capacity</TableHead>
             <TableHead class="hidden md:table-cell">Status</TableHead>
-            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell text-right">
+            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell">
               Actions
             </TableHead>
           </TableRow>
@@ -153,9 +159,10 @@ const hubStatusCounts = computed(() => {
             :key="h.id"
             class="border-b border-border transition-colors hover:bg-secondary/40"
           >
+            <TableCell class="font-mono text-xs text-muted-foreground">{{ h.id }}</TableCell>
             <TableCell class="font-mono text-sm">{{ h.name }}</TableCell>
             <TableCell class="font-mono text-sm text-muted-foreground">
-              {{ getCarrier(h.carrierId)?.name ?? h.carrierId }}
+              {{ h.carrierId }}
             </TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{{ h.address }}</TableCell>
             <TableCell>
@@ -169,9 +176,9 @@ const hubStatusCounts = computed(() => {
                     }"
                   />
                 </div>
-                <span class="font-mono text-xs text-muted-foreground"
-                  >{{ Math.round((h.currentUtilization / h.capacity) * 100) }}%</span
-                >
+                <span class="font-mono text-xs text-muted-foreground">
+                  {{ Math.round((h.currentUtilization / h.capacity) * 100) }}%
+                </span>
               </div>
             </TableCell>
             <TableCell>
@@ -190,16 +197,16 @@ const hubStatusCounts = computed(() => {
                 {{ hubStatusLabels[h.status] }}
               </Badge>
             </TableCell>
-            <TableCell v-if="auth.isAuthenticated" class="text-right">
+            <TableCell v-if="auth.isAuthenticated">
               <button
                 @click="openEdit(h.id)"
-                class="rounded p-1.5 text-muted-foreground hover:text-foreground"
+                class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-foreground"
               >
                 <Pencil class="h-4 w-4" />
               </button>
               <button
                 @click="deleteTarget = h.id"
-                class="rounded p-1.5 text-muted-foreground hover:text-destructive"
+                class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-destructive"
               >
                 <Trash2 class="h-4 w-4" />
               </button>
@@ -229,7 +236,14 @@ const hubStatusCounts = computed(() => {
       title="Delete Hub"
       description="Are you sure you want to delete this hub? This action cannot be undone."
       :pending="deleteHub.isPending.value"
-      @confirm="deleteTarget && deleteHub.mutate(deleteTarget, { onSuccess: () => { deleteTarget = null } })"
+      @confirm="
+        deleteTarget &&
+        deleteHub.mutate(deleteTarget, {
+          onSuccess: () => {
+            deleteTarget = null;
+          },
+        })
+      "
       @cancel="deleteTarget = null"
     />
 

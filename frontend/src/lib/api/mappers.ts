@@ -1,5 +1,5 @@
 import type { Order, TrackingEvent, ShipmentStatus, GeoPoint, ContactInfo } from "@/lib/orders";
-import type { Hub, HubStatus } from "@/lib/carriers";
+import type { Hub, HubStatus } from "@/lib/hubs";
 
 // Backend response types (mirrors Go struct JSON tags)
 
@@ -14,7 +14,7 @@ export interface BackendShipment {
   status: string;
   carrier: string;
   hubId?: string;
-  weight: string;
+  weight: number;
   items: number;
   estimatedDelivery: string;
   createdAt: string;

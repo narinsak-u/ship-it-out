@@ -87,6 +87,7 @@ func main() {
 
 	// --- Analytics (auth required) ---
 	api.Get("/analytics/overview", middleware.AuthRequired(), analytics.Overview)
+	api.Get("/analytics/timeseries", middleware.AuthRequired(), analytics.TimeSeries)
 
 	// --- WebSocket endpoints for real-time tracking updates ---
 	app.Get("/ws/tracking/:trackingNumber", websocket.HandleWebSocket)

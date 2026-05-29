@@ -17,7 +17,7 @@ export interface OrderFormData {
   customer: ContactInfo;
   receiver: ContactInfo;
   carrier: string;
-  weight: string;
+  weight: number;
   items: number;
   estimatedDelivery: string;
   status?: ShipmentStatus;

@@ -18,8 +18,8 @@ const activeTab = ref<Tab>("login");
 const submitting = ref(false);
 
 // Login fields
-const loginEmail = ref("");
-const loginPassword = ref("");
+const loginEmail = ref("admin@gmail.com");
+const loginPassword = ref("123456789");
 
 // Signup fields
 const signupName = ref("");

@@ -1,7 +1,7 @@
 import { toast } from "vue-sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
-import { fetchHubs, createHub, updateHub, deleteHub } from "@/lib/api/carriers";
-import type { Hub } from "@/lib/carriers";
+import { fetchHubs, createHub, updateHub, deleteHub } from "@/lib/api/hubs";
+import type { Hub } from "@/lib/hubs";
 
 export function useHubs() {
   return useQuery({

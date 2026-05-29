@@ -52,7 +52,7 @@ function goTo(page: number) {
     <div class="flex items-center gap-1">
       <button
         :disabled="currentPage <= 1"
-        class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+        class="rounded cursor-pointer p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
         @click="goTo(currentPage - 1)"
       >
         <ChevronLeft class="h-4 w-4" />
@@ -64,7 +64,7 @@ function goTo(page: number) {
           @click="goTo(p)"
           :class="
             cn(
-              'flex h-7 min-w-7 items-center justify-center rounded px-1.5 font-mono text-xs transition-colors',
+              'flex cursor-pointer h-7 min-w-7 items-center justify-center rounded px-1.5 font-mono text-xs transition-colors',
               p === currentPage
                 ? 'border border-primary bg-primary/15 text-primary'
                 : 'text-muted-foreground hover:text-foreground',
@@ -76,7 +76,7 @@ function goTo(page: number) {
       </template>
       <button
         :disabled="currentPage >= totalPages"
-        class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+        class="rounded cursor-pointer p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
         @click="goTo(currentPage + 1)"
       >
         <ChevronRight class="h-4 w-4" />
