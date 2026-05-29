@@ -15,11 +15,10 @@ import (
 	"github.com/narinsak-u/backend/internal/seed"
 	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/internal/tracking"
-	"github.com/narinsak-u/backend/internal/websocket"
 )
 
-// main is the entry point that starts the entire backend server. It:
-//  1. Loads config (env vars) and connects to Postgres + Redis databases
+// main starts the backend server. It:
+//  1. Loads config (env vars) and connects to Postgres
 //  2. Runs auto-migration so database tables match our Go models
 //  3. Creates a Fiber HTTP server with CORS + logging middleware
 //  4. Registers all routes:
@@ -27,16 +26,14 @@ import (
 //     - /shipments/* — CRUD for shipments (requires auth)
 //     - /track/:trackingNumber — public tracking lookup
 //     - /analytics/overview — dashboard stats (requires auth)
-//     - /ws/* — real-time WebSocket connections
 //  5. Starts the HTTP server on the configured port
 func main() {
 	// Use Unix timestamps (e.g. 1700000000) in log output instead of RFC3339
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	// --- Bootstrap: load config, connect databases, migrate schemas ---
+	// --- Bootstrap: load config, connect database, migrate schemas ---
 	config.Load()
 	database.ConnectPostgres(config.App.DatabaseURL)
-	database.ConnectRedis(config.App.RedisURL)
 
 	// Auto-create/update tables so they match our model structs
 	database.DB.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{})
@@ -59,39 +56,44 @@ func main() {
 	api := app.Group("/api")
 
 	// --- Auth routes (public — no auth required) ---
+	authHandler := auth.NewHandler(auth.NewGormRepository(database.DB))
 	authGroup := api.Group("/auth")
-	authGroup.Post("/register", auth.Register)               // POST /api/auth/register
-	authGroup.Post("/login", auth.Login)                     // POST /api/auth/login
-	authGroup.Get("/me", middleware.AuthRequired(), auth.Me) // GET  /api/auth/me (needs valid JWT cookie)
-	authGroup.Post("/logout", auth.Logout)                   // POST /api/auth/logout
-
-	// --- Shipment routes (public read, auth required for write) ---
-	api.Get("/shipments", shipment.List)             // GET    /api/shipments (public)
-	api.Get("/shipments/:orderId", shipment.GetByID) // GET    /api/shipments/:orderId (public)
-	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
-	shipmentGroup.Post("/", shipment.Create)                       // POST   /api/shipments
-	shipmentGroup.Patch("/:orderId/status", shipment.UpdateStatus) // PATCH  /api/shipments/:orderId/status
-	shipmentGroup.Put("/:orderId", shipment.Update)                // PUT    /api/shipments/:orderId
-	shipmentGroup.Delete("/:orderId", shipment.Delete)             // DELETE /api/shipments/:orderId
-
-	// --- Public tracking (anyone can look up a shipment by tracking number) ---
-	api.Get("/track/:trackingNumber", tracking.Track)
+	authGroup.Post("/register", middleware.RateLimitAuth(), authHandler.Register) // POST /api/auth/register (rate limited)
+	authGroup.Post("/login", middleware.RateLimitAuth(), authHandler.Login)       // POST /api/auth/login (rate limited)
+	authGroup.Get("/me", middleware.AuthRequired(), authHandler.Me)               // GET  /api/auth/me (needs valid JWT cookie)
+	authGroup.Post("/logout", authHandler.Logout)                                 // POST /api/auth/logout
 
 	// --- Hub routes (public read, auth required for write) ---
-	api.Get("/hubs", hub.List)        // GET /api/hubs (public)
-	api.Get("/hubs/:id", hub.GetByID) // GET /api/hubs/:id (public)
+	hubRepo := hub.NewGormRepository(database.DB)
+	hubHandler := hub.NewHandler(hubRepo)
+
+	api.Get("/hubs", hubHandler.List)        // GET /api/hubs (public)
+	api.Get("/hubs/:id", hubHandler.GetByID) // GET /api/hubs/:id (public)
 	hubGroup := api.Group("/hubs", middleware.AuthRequired())
-	hubGroup.Post("/", hub.Create)
-	hubGroup.Put("/:id", hub.Update)
-	hubGroup.Delete("/:id", hub.Delete)
+	hubGroup.Post("/", hubHandler.Create)
+	hubGroup.Put("/:id", hubHandler.Update)
+	hubGroup.Delete("/:id", hubHandler.Delete)
+
+	// --- Shipment routes (public read, auth required for write) ---
+	shipmentRepo := shipment.NewGormRepository(database.DB)
+	shipmentHandler := shipment.NewHandler(shipmentRepo, hubRepo)
+
+	api.Get("/shipments", shipmentHandler.List)             // GET    /api/shipments (public)
+	api.Get("/shipments/:orderId", shipmentHandler.GetByID) // GET    /api/shipments/:orderId (public)
+	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
+	shipmentGroup.Post("/", shipmentHandler.Create)                       // POST   /api/shipments
+	shipmentGroup.Patch("/:orderId/status", shipmentHandler.UpdateStatus) // PATCH  /api/shipments/:orderId/status
+	shipmentGroup.Put("/:orderId", shipmentHandler.Update)                // PUT    /api/shipments/:orderId
+	shipmentGroup.Delete("/:orderId", shipmentHandler.Delete)             // DELETE /api/shipments/:orderId
+
+	// --- Public tracking (anyone can look up a shipment by tracking number) ---
+	trackingHandler := tracking.NewHandler(shipmentRepo)
+	api.Get("/track/:trackingNumber", trackingHandler.Track)
 
 	// --- Analytics (auth required) ---
-	api.Get("/analytics/overview", middleware.AuthRequired(), analytics.Overview)
-	api.Get("/analytics/timeseries", middleware.AuthRequired(), analytics.TimeSeries)
-
-	// --- WebSocket endpoints for real-time tracking updates ---
-	app.Get("/ws/tracking/:trackingNumber", websocket.HandleWebSocket)
-	app.Get("/ws/admin", websocket.HandleWebSocket)
+	analyticsHandler := analytics.NewHandler(shipmentRepo)
+	api.Get("/analytics/overview", middleware.AuthRequired(), analyticsHandler.Overview)
+	api.Get("/analytics/timeseries", middleware.AuthRequired(), analyticsHandler.TimeSeries)
 
 	// --- Start the server ---
 	log.Info().Str("port", config.App.Port).Msg("server starting")

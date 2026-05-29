@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import StatusBadge from "@/components/StatusBadge.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import { fetchOrder, fetchOrderEvents } from "@/lib/api/orders";
+import { orderKeys } from "@/lib/api/queryKeys";
 
 const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.vue"));
 
@@ -14,8 +15,9 @@ const route = useRoute();
 const orderId = route.params.orderId as string;
 
 const { data: order, isLoading } = useQuery({
-  queryKey: ["order", orderId],
+  queryKey: orderKeys.detail(orderId),
   queryFn: () => fetchOrder(orderId),
+  staleTime: 60_000,
 });
 
 const { data: events } = useQuery({
@@ -25,6 +27,7 @@ const { data: events } = useQuery({
     return fetchOrderEvents(order.value.trackingNumber);
   },
   enabled: computed(() => !!order.value),
+  staleTime: 60_000,
 });
 
 const timeline = computed(() => [...(events.value ?? [])].reverse());

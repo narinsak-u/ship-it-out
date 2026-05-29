@@ -8,6 +8,7 @@ import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import { fetchOrdersPaginated, deleteOrder } from "@/lib/api/orders";
+import { orderKeys, deliveryKeys } from "@/lib/api/queryKeys";
 import Button from "@/components/ui/Button.vue";
 import {
   Table,
@@ -48,8 +49,10 @@ watch(filter, () => {
   currentPage.value = 1;
 });
 
+const queryKey = computed(() => orderKeys.list({ page: currentPage.value, search: debouncedSearch.value, status: filter.value }));
+
 const { data: pageData, isLoading } = useQuery({
-  queryKey: ["orders", currentPage, debouncedSearch, filter],
+  queryKey,
   queryFn: () =>
     fetchOrdersPaginated({
       page: currentPage.value,
@@ -57,6 +60,7 @@ const { data: pageData, isLoading } = useQuery({
       search: debouncedSearch.value || undefined,
       status: filter.value === "all" ? undefined : filter.value,
     }),
+  staleTime: 60_000,
 });
 
 const pageItems = computed(() => pageData.value?.data ?? []);
@@ -72,7 +76,8 @@ const deleteMutation = useMutation({
   onSuccess: () => {
     toast.success("Order deleted");
     deleteTarget.value = null;
-    queryClient.invalidateQueries({ queryKey: ["orders"] });
+    queryClient.invalidateQueries({ queryKey: orderKeys.all });
+    queryClient.invalidateQueries({ queryKey: deliveryKeys.all });
   },
 });
 

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { toast } from "vue-sonner";
 import { Search, RefreshCw, Check, Eye } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
+import { hubKeys } from "@/lib/api/queryKeys";
 import { fetchHubs } from "@/lib/api/hubs";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import { useAuthStore } from "@/stores/auth";
@@ -37,8 +38,9 @@ const { data: deliveries, isLoading, isError, refetch, dataUpdatedAt } = useActi
 const updateStatus = useUpdateShipmentStatus();
 
 const { data: hubs } = useQuery({
-  queryKey: ["hubs"],
+  queryKey: hubKeys.all,
   queryFn: fetchHubs,
+  staleTime: 2 * 60_000,
 });
 
 const query = ref("");

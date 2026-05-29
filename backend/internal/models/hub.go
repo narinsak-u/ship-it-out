@@ -18,7 +18,7 @@ type Hub struct {
 	Coords             GeoPoint  `gorm:"-" json:"coords"`
 	Capacity           int       `gorm:"not null" json:"capacity"`
 	CurrentUtilization int       `gorm:"not null" json:"currentUtilization"`
-	Status             string    `gorm:"not null;default:active" json:"status"`
+	Status             string    `gorm:"index;not null;default:active" json:"status"`
 	CreatedAt          time.Time `json:"createdAt"`
 }
 

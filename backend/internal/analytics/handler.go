@@ -2,74 +2,52 @@ package analytics
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/database"
-	"github.com/narinsak-u/backend/internal/models"
+	"github.com/narinsak-u/backend/internal/data"
+	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
-
-var provinceRegion = map[string]string{
-	"กรุงเทพมหานคร": "Central", "นนทบุรี": "Central", "ปทุมธานี": "Central",
-	"สมุทรปราการ": "Central", "พระนครศรีอยุธยา": "Central",
-	"นครปฐม": "Central", "สมุทรสาคร": "Central", "สมุทรสงคราม": "Central",
-	"สิงห์บุรี": "Central", "อ่างทอง": "Central", "ลพบุรี": "Central",
-	"สระบุรี": "Central", "ชัยนาท": "Central", "สุพรรณบุรี": "Central",
-	"นครสวรรค์": "Central", "อุทัยธานี": "Central", "พิจิตร": "Central",
-	"ชลบุรี": "East", "ระยอง": "East", "ฉะเชิงเทรา": "East",
-	"จันทบุรี": "East", "ตราด": "East", "ปราจีนบุรี": "East",
-	"สระแก้ว": "East", "นครนายก": "East",
-	"เชียงใหม่": "North", "เชียงราย": "North", "ลำปาง": "North",
-	"ลำพูน": "North", "แพร่": "North", "น่าน": "North", "พะเยา": "North",
-	"แม่ฮ่องสอน": "North", "อุตรดิตถ์": "North",
-	"กำแพงเพชร": "North", "เพชรบูรณ์": "North", "พิษณุโลก": "North", "สุโขทัย": "North",
-	"กาญจนบุรี": "West", "เพชรบุรี": "West", "ประจวบคีรีขันธ์": "West",
-	"ราชบุรี": "West", "ตาก": "West",
-	"ขอนแก่น": "North-east", "นครราชสีมา": "North-east",
-	"อุดรธานี": "North-east", "อุบลราชธานี": "North-east",
-	"บุรีรัมย์": "North-east", "สุรินทร์": "North-east", "ศรีสะเกษ": "North-east",
-	"ชัยภูมิ": "North-east", "เลย": "North-east", "หนองบัวลำภู": "North-east",
-	"หนองคาย": "North-east", "มหาสารคาม": "North-east", "ร้อยเอ็ด": "North-east",
-	"กาฬสินธุ์": "North-east", "สกลนคร": "North-east", "นครพนม": "North-east",
-	"มุกดาหาร": "North-east", "อำนาจเจริญ": "North-east", "บึงกาฬ": "North-east",
-	"ยโสธร":  "North-east",
-	"ภูเก็ต": "South", "สงขลา": "South", "สุราษฎร์ธานี": "South",
-	"นครศรีธรรมราช": "South", "กระบี่": "South", "ตรัง": "South",
-	"พัทลุง": "South", "สตูล": "South", "ชุมพร": "South",
-	"ระนอง": "South", "พังงา": "South", "ปัตตานี": "South",
-	"ยะลา": "South", "นราธิวาส": "South",
-}
-
-type provinceCount struct {
-	Province string
-	Total    int64
-}
 
 type regionCount struct {
 	Name  string `json:"name"`
 	Total int64  `json:"total"`
 }
 
-func Overview(c *fiber.Ctx) error {
-	var total int64
-	database.DB.Model(&models.Shipment{}).Count(&total)
+type Handler struct {
+	repo shipment.Repository
+}
 
-	var active int64
-	database.DB.Model(&models.Shipment{}).Where("status NOT IN ?", []string{"delivered", "returned"}).Count(&active)
+func NewHandler(repo shipment.Repository) *Handler {
+	return &Handler{repo: repo}
+}
+
+func (h *Handler) Overview(c *fiber.Ctx) error {
+	total, err := h.repo.Count()
+	if err != nil {
+		return utils.Error(c, 500, "failed to fetch analytics")
+	}
+
+	active, err := h.repo.CountActive()
+	if err != nil {
+		return utils.Error(c, 500, "failed to fetch analytics")
+	}
+
+	byStatus, err := h.repo.CountByStatus()
+	if err != nil {
+		return utils.Error(c, 500, "failed to fetch analytics")
+	}
 
 	var delivered int64
-	database.DB.Model(&models.Shipment{}).Where("status = ?", "delivered").Count(&delivered)
-
-	type StatusCount struct {
-		Status string `json:"status"`
-		Count  int64  `json:"count"`
+	for _, s := range byStatus {
+		if s.Status == "delivered" {
+			delivered = s.Count
+			break
+		}
 	}
-	var byStatus []StatusCount
-	database.DB.Model(&models.Shipment{}).Select("status, count(*) as count").Group("status").Scan(&byStatus)
 
-	var byProvince []provinceCount
-	database.DB.Model(&models.Shipment{}).
-		Select("receiver_province as province, count(*) as total").
-		Group("receiver_province").
-		Scan(&byProvince)
+	byProvince, err := h.repo.CountByProvince()
+	if err != nil {
+		return utils.Error(c, 500, "failed to fetch analytics")
+	}
 
 	regionMap := map[string]*regionCount{
 		"Central":    {Name: "Central"},
@@ -80,7 +58,7 @@ func Overview(c *fiber.Ctx) error {
 		"South":      {Name: "South"},
 	}
 	for _, p := range byProvince {
-		region := provinceRegion[p.Province]
+		region := data.ThailandProvinceRegion[p.Province]
 		if region == "" {
 			continue
 		}
@@ -102,30 +80,16 @@ func Overview(c *fiber.Ctx) error {
 	})
 }
 
-type monthCount struct {
-	Month string `json:"month"`
-	Count int64  `json:"count"`
-}
+func (h *Handler) TimeSeries(c *fiber.Ctx) error {
+	byMonth, err := h.repo.CountByMonth()
+	if err != nil {
+		return utils.Error(c, 500, "failed to fetch time series")
+	}
 
-type dayCount struct {
-	Day   string `json:"day"`
-	Count int64  `json:"count"`
-}
-
-func TimeSeries(c *fiber.Ctx) error {
-	var byMonth []monthCount
-	database.DB.Model(&models.Shipment{}).
-		Select("to_char(created_at, 'YYYY-MM') as month, count(*) as count").
-		Group("month").
-		Order("month").
-		Scan(&byMonth)
-
-	var byDay []dayCount
-	database.DB.Model(&models.Shipment{}).
-		Select("trim(to_char(created_at, 'Day')) as day, count(*) as count").
-		Group("day").
-		Order("min(extract(dow from created_at))").
-		Scan(&byDay)
+	byDay, err := h.repo.CountByDayOfWeek()
+	if err != nil {
+		return utils.Error(c, 500, "failed to fetch time series")
+	}
 
 	return utils.Success(c, fiber.Map{
 		"by_month":       byMonth,

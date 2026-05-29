@@ -55,14 +55,15 @@ function openEdit(id: string) {
 }
 
 const hubStatusCounts = computed(() => {
-  if (!hubs.value) return { total: 0, active: 0, maintenance: 0, closed: 0 };
-  return {
-    total: hubs.value.length,
-    active: hubs.value.filter((h) => h.status === "active").length,
-    maintenance: hubs.value.filter((h) => h.status === "maintenance").length,
-    closed: hubs.value.filter((h) => h.status === "closed").length,
-    full: hubs.value.filter((h) => h.status === "full").length,
-  };
+  if (!hubs.value) return { total: 0, active: 0, maintenance: 0, closed: 0, full: 0 };
+  return hubs.value.reduce(
+    (acc, h) => {
+      acc.total++;
+      acc[h.status as keyof typeof acc]++;
+      return acc;
+    },
+    { total: 0, active: 0, maintenance: 0, closed: 0, full: 0 },
+  );
 });
 </script>
 

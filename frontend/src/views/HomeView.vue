@@ -7,17 +7,23 @@ import Button from "@/components/ui/Button.vue";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { fetchActiveDeliveries } from "@/lib/api/orders";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { fetchAnalytics } from "@/lib/api/analytics";
 import { trackShipment } from "@/lib/api/tracking";
+import { deliveryKeys, analyticsKeys } from "@/lib/api/queryKeys";
 
 const router = useRouter();
 
 const { data: orders } = useQuery({
-  queryKey: ["orders"],
+  queryKey: deliveryKeys.active(),
   queryFn: fetchActiveDeliveries,
+  staleTime: 10_000,
 });
 
-const { data: analytics } = useAnalytics();
+const { data: analytics } = useQuery({
+  queryKey: analyticsKeys.all,
+  queryFn: fetchAnalytics,
+  staleTime: 5 * 60_000,
+});
 
 const query = ref("");
 

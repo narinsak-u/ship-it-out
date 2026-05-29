@@ -6,10 +6,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/narinsak-u/backend/internal/config"
-	"github.com/narinsak-u/backend/internal/database"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
+
+type Handler struct {
+	repo Repository
+}
+
+func NewHandler(repo Repository) *Handler {
+	return &Handler{repo: repo}
+}
 
 // The name of the cookie where we store the JWT token for the browser
 const cookieName = "jwt"
@@ -32,6 +39,7 @@ type LoginRequest struct {
 // The cookie is:
 //   - HTTP-only (JavaScript can't read it — prevents XSS attacks)
 //   - SameSite=Lax (sent on same-site navigation but not cross-site)
+//   - Secure (only sent over HTTPS in production)
 //   - MaxAge=86400 (24 hours — after that the browser deletes it)
 //   - Path="/" (sent to every page on this domain)
 func setAuthCookie(c *fiber.Ctx, token string) {
@@ -41,7 +49,8 @@ func setAuthCookie(c *fiber.Ctx, token string) {
 		Path:     "/",
 		HTTPOnly: true,
 		SameSite: "Lax",
-		MaxAge:   86400,
+		Secure:   true,
+		MaxAge:   int(config.App.JWTTTL.Seconds()),
 	})
 }
 
@@ -54,7 +63,7 @@ func setAuthCookie(c *fiber.Ctx, token string) {
 //  6. Create a signed JWT token containing user_id, role, and expiry time
 //  7. Set the JWT as an HTTP-only cookie so the browser remembers the session
 //  8. Return the new user object as JSON
-func Register(c *fiber.Ctx) error {
+func (h *Handler) Register(c *fiber.Ctx) error {
 	// --- Parse + validate the incoming JSON ---
 	var req RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -85,7 +94,7 @@ func Register(c *fiber.Ctx) error {
 	}
 
 	// If the email is already taken, the unique constraint fails → 409 Conflict
-	if result := database.DB.Create(&user); result.Error != nil {
+	if err := h.repo.Create(&user); err != nil {
 		return utils.Error(c, 409, "email already registered")
 	}
 
@@ -115,7 +124,7 @@ func Register(c *fiber.Ctx) error {
 //  4. Create a signed JWT token containing user_id, role, and expiry time
 //  5. Set the JWT as an HTTP-only cookie
 //  6. Return the token + user object as JSON (so mobile/CLI clients can use the token directly)
-func Login(c *fiber.Ctx) error {
+func (h *Handler) Login(c *fiber.Ctx) error {
 	// --- Parse the incoming JSON ---
 	var req LoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -123,8 +132,8 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// --- Find the user by email ---
-	var user models.User
-	if result := database.DB.Where("email = ?", req.Email).First(&user); result.Error != nil {
+	user, err := h.repo.FindByEmail(req.Email)
+	if err != nil {
 		// We say "invalid email or password" rather than "user not found"
 		// to avoid leaking which emails are registered
 		return utils.Error(c, 401, "invalid email or password")
@@ -164,7 +173,7 @@ func Login(c *fiber.Ctx) error {
 //  1. Read user_id from the request context (set by middleware)
 //  2. Look up the user in the database by that ID
 //  3. Return a safe subset of user fields (no password hash!)
-func Me(c *fiber.Ctx) error {
+func (h *Handler) Me(c *fiber.Ctx) error {
 	// AuthRequired middleware ran before us and stored user_id in locals
 	userID, ok := c.Locals("user_id").(uint)
 	if !ok {
@@ -172,8 +181,8 @@ func Me(c *fiber.Ctx) error {
 	}
 
 	// Fetch fresh user data from the database
-	var user models.User
-	if result := database.DB.First(&user, userID); result.Error != nil {
+	user, err := h.repo.FindByID(userID)
+	if err != nil {
 		return utils.Error(c, 404, "user not found")
 	}
 
@@ -192,13 +201,14 @@ func Me(c *fiber.Ctx) error {
 //  1. Overwrite the "jwt" cookie with an empty value and MaxAge=0
 //     (MaxAge=0 tells the browser to delete the cookie immediately)
 //  2. Return a success message
-func Logout(c *fiber.Ctx) error {
+func (h *Handler) Logout(c *fiber.Ctx) error {
 	c.Cookie(&fiber.Cookie{
 		Name:     cookieName,
 		Value:    "",
 		Path:     "/",
 		HTTPOnly: true,
 		SameSite: "Lax",
+		Secure:   true,
 		MaxAge:   0, // 0 = delete the cookie right now
 	})
 	return utils.Success(c, fiber.Map{"message": "logged out"})
