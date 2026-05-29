@@ -158,6 +158,20 @@ func TestHubDelete_Success(t *testing.T) {
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
+func TestHubUpdate_InvalidBody(t *testing.T) {
+	repo := new(mockRepo)
+	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001"}, nil)
+
+	app := fiber.New()
+	h := NewHandler(repo)
+	app.Put("/api/hubs/:id", h.Update)
+
+	req := httptest.NewRequest("PUT", "/api/hubs/HUB-001", strings.NewReader("not json"))
+	req.Header.Set("Content-Type", "application/json")
+	resp, _ := app.Test(req, 1000)
+	assert.Equal(t, 400, resp.StatusCode)
+}
+
 func TestHubDelete_Error(t *testing.T) {
 	repo := new(mockRepo)
 	repo.On("Delete", "HUB-999").Return(gorm.ErrRecordNotFound)

@@ -1,10 +1,12 @@
 package middleware
 
 import (
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,6 +40,26 @@ func TestRateLimiter_WindowExpiry(t *testing.T) {
 	assert.False(t, rl.allow(ip))
 	time.Sleep(40 * time.Millisecond)
 	assert.True(t, rl.allow(ip))
+}
+
+func TestRateLimitAuth_Handler(t *testing.T) {
+	orig := authRateLimiter
+	authRateLimiter = newRateLimiter(2, time.Minute)
+	defer func() { authRateLimiter = orig }()
+
+	app := fiber.New()
+	app.Post("/test", RateLimitAuth(), func(c *fiber.Ctx) error {
+		return c.SendString("ok")
+	})
+
+	resp1, _ := app.Test(httptest.NewRequest("POST", "/test", nil), 1000)
+	assert.Equal(t, 200, resp1.StatusCode)
+
+	resp2, _ := app.Test(httptest.NewRequest("POST", "/test", nil), 1000)
+	assert.Equal(t, 200, resp2.StatusCode)
+
+	resp3, _ := app.Test(httptest.NewRequest("POST", "/test", nil), 1000)
+	assert.Equal(t, 429, resp3.StatusCode)
 }
 
 func TestRateLimiter_ConcurrentAccess(t *testing.T) {
