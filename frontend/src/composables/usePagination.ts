@@ -4,8 +4,8 @@ export function usePagination<T>(items: Ref<T[] | null | undefined>, pageSize = 
   const currentPage = ref(1);
 
   const totalPages = computed(() => {
-    if (!items.value) return 0;
-    return Math.max(1, Math.ceil(items.value.length / pageSize));
+    if (!items.value || items.value.length === 0) return 0;
+    return Math.ceil(items.value.length / pageSize);
   });
 
   const pageItems = computed(() => {
