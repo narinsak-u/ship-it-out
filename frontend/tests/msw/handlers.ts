@@ -39,9 +39,9 @@ export const handlers = [
   http.get(`${BASE}/shipments`, ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get("limit");
-    const status = url.searchParams.get("exclude_status");
+    const excludeStatus = url.searchParams.get("exclude_status");
     let data = mockShipments;
-    if (status === "delivered") data = mockShipments.filter((s) => s.status !== "delivered");
+    if (excludeStatus === "delivered") data = mockShipments.filter((s) => s.status !== "delivered");
     if (limit === "-1") return HttpResponse.json({ data, pagination: { page: 1, limit: -1, total: data.length, totalPages: 1 } });
     return HttpResponse.json({ data, pagination: { page: 1, limit: 10, total: data.length, totalPages: 1 } });
   }),
@@ -63,6 +63,7 @@ export const handlers = [
     HttpResponse.json({ data: { shipment: { id: "ORD-001" }, events: [] } }),
   ),
   http.get(`${BASE}/hubs`, () => HttpResponse.json({ data: mockHubs })),
+  http.get(`${BASE}/hubs/:id`, () => HttpResponse.json({ data: mockHubs[0] })),
   http.post(`${BASE}/hubs`, async ({ request }) => {
     const body = await request.json();
     return HttpResponse.json({ data: { ...mockHubs[0], ...body } }, { status: 201 });
