@@ -25,6 +25,11 @@ type DayCountResult struct {
 	Count int64  `json:"count"`
 }
 
+type ProvinceCountResult struct {
+	Province string `json:"province"`
+	Total    int64  `json:"total"`
+}
+
 type Repository interface {
 	List(filter ShipmentFilter) ([]models.Shipment, int64, error)
 	FindByOrderID(orderID string) (*models.Shipment, error)
@@ -40,4 +45,5 @@ type Repository interface {
 	CountByStatus() ([]StatusCountResult, error)
 	CountByMonth() ([]MonthCountResult, error)
 	CountByDayOfWeek() ([]DayCountResult, error)
+	CountByProvince() ([]ProvinceCountResult, error)
 }

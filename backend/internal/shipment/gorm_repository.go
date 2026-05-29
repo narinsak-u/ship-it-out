@@ -138,6 +138,17 @@ func (r *GormRepository) CountByDayOfWeek() ([]DayCountResult, error) {
 	return results, nil
 }
 
+func (r *GormRepository) CountByProvince() ([]ProvinceCountResult, error) {
+	var results []ProvinceCountResult
+	if err := r.db.Model(&models.Shipment{}).
+		Select("receiver_province as province, count(*) as total").
+		Group("receiver_province").
+		Scan(&results).Error; err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 func (r *GormRepository) generateTrackingNumber() string {
 	return fmt.Sprintf("TH%d%05d", time.Now().Year(), time.Now().UnixMilli()%100000)
 }

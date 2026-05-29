@@ -87,11 +87,13 @@ func main() {
 	shipmentGroup.Delete("/:orderId", shipmentHandler.Delete)             // DELETE /api/shipments/:orderId
 
 	// --- Public tracking (anyone can look up a shipment by tracking number) ---
-	api.Get("/track/:trackingNumber", tracking.Track)
+	trackingHandler := tracking.NewHandler(shipmentRepo)
+	api.Get("/track/:trackingNumber", trackingHandler.Track)
 
 	// --- Analytics (auth required) ---
-	api.Get("/analytics/overview", middleware.AuthRequired(), analytics.Overview)
-	api.Get("/analytics/timeseries", middleware.AuthRequired(), analytics.TimeSeries)
+	analyticsHandler := analytics.NewHandler(shipmentRepo)
+	api.Get("/analytics/overview", middleware.AuthRequired(), analyticsHandler.Overview)
+	api.Get("/analytics/timeseries", middleware.AuthRequired(), analyticsHandler.TimeSeries)
 
 	// --- Start the server ---
 	log.Info().Str("port", config.App.Port).Msg("server starting")

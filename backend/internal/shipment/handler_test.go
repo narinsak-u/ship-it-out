@@ -109,6 +109,14 @@ func (m *mockRepo) CountByDayOfWeek() ([]DayCountResult, error) {
 	return args.Get(0).([]DayCountResult), args.Error(1)
 }
 
+func (m *mockRepo) CountByProvince() ([]ProvinceCountResult, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]ProvinceCountResult), args.Error(1)
+}
+
 type mockHubRepo struct {
 	mock.Mock
 }
