@@ -6,6 +6,7 @@ import { toast } from "vue-sonner";
 import { useCreateOrder, useUpdateOrder } from "@/hooks/useOrders";
 import { fetchOrder } from "@/lib/api/orders";
 import type { OrderFormData } from "@/lib/api/orders";
+import { orderKeys } from "@/lib/api/queryKeys";
 import OrderForm from "@/components/OrderForm.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 
@@ -19,7 +20,7 @@ const isEditing = computed(() => !!route.params.orderId);
 const orderId = computed(() => route.params.orderId as string | undefined);
 
 const { data: order } = useQuery({
-  queryKey: ["order", orderId.value],
+  queryKey: orderKeys.detail(orderId.value!),
   queryFn: () => fetchOrder(orderId.value!),
   enabled: isEditing,
 });
