@@ -49,8 +49,10 @@ watch(filter, () => {
   currentPage.value = 1;
 });
 
+const queryKey = computed(() => orderKeys.list({ page: currentPage.value, search: debouncedSearch.value, status: filter.value }));
+
 const { data: pageData, isLoading } = useQuery({
-  queryKey: orderKeys.list({ page: currentPage.value, search: debouncedSearch.value, status: filter.value }),
+  queryKey,
   queryFn: () =>
     fetchOrdersPaginated({
       page: currentPage.value,
