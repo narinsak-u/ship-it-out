@@ -76,12 +76,15 @@ func main() {
 	api.Get("/track/:trackingNumber", tracking.Track)
 
 	// --- Hub routes (public read, auth required for write) ---
-	api.Get("/hubs", hub.List)        // GET /api/hubs (public)
-	api.Get("/hubs/:id", hub.GetByID) // GET /api/hubs/:id (public)
+	hubRepo := hub.NewGormRepository(database.DB)
+	hubHandler := hub.NewHandler(hubRepo)
+
+	api.Get("/hubs", hubHandler.List)        // GET /api/hubs (public)
+	api.Get("/hubs/:id", hubHandler.GetByID) // GET /api/hubs/:id (public)
 	hubGroup := api.Group("/hubs", middleware.AuthRequired())
-	hubGroup.Post("/", hub.Create)
-	hubGroup.Put("/:id", hub.Update)
-	hubGroup.Delete("/:id", hub.Delete)
+	hubGroup.Post("/", hubHandler.Create)
+	hubGroup.Put("/:id", hubHandler.Update)
+	hubGroup.Delete("/:id", hubHandler.Delete)
 
 	// --- Analytics (auth required) ---
 	api.Get("/analytics/overview", middleware.AuthRequired(), analytics.Overview)
