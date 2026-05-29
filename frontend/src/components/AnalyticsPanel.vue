@@ -3,16 +3,19 @@ import { computed } from "vue";
 import { useQuery } from "@tanstack/vue-query";
 import { fetchAnalytics, fetchTimeSeries } from "@/lib/api/analytics";
 import { analyticsKeys } from "@/lib/api/queryKeys";
-import { statusLabels } from "@/lib/orders";
+import {
+  computeKpis,
+  computeRegionPerformance,
+  computeStatusPieData,
+  computeCumulativeData,
+} from "@/lib/analytics-utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Button from "@/components/ui/Button.vue";
 import ShipmentsAreaChart from "@/components/charts/ShipmentsAreaChart.vue";
-import type { CumulativeEntry } from "@/components/charts/ShipmentsAreaChart.vue";
 import ShipmentsBarChart from "@/components/charts/ShipmentsBarChart.vue";
 import ShipmentsLineChart from "@/components/charts/ShipmentsLineChart.vue";
 import StatusPieChart from "@/components/charts/StatusPieChart.vue";
-import type { StatusPieEntry } from "@/components/charts/StatusPieChart.vue";
 
 const {
   data: analytics,
@@ -31,60 +34,10 @@ const { data: timeSeries } = useQuery({
   staleTime: 5 * 60_000,
 });
 
-const kpis = computed(() => {
-  const total = analytics.value?.total ?? 0;
-  const delivered = analytics.value?.delivered ?? 0;
-  const onTime = Math.round((delivered / Math.max(total, 1)) * 100) || 99.9;
-  const regions = analytics.value?.by_region.length ?? 0;
-  return { total, onTime, regions, avgDeliveryTime: "3.2 days" };
-});
-
-const regionPerformance = computed(() => {
-  if (!analytics.value) return [];
-  const total = analytics.value.total;
-  return analytics.value.by_region
-    .map((r) => ({
-      ...r,
-      pct: total > 0 ? Math.round((r.total / total) * 100) : 0,
-    }))
-    .sort((a, b) => b.total - a.total);
-});
-
-const statusDistribution = computed(() => {
-  if (!analytics.value) return [];
-  const total = analytics.value.total;
-  return analytics.value.by_status.map((s) => ({
-    status: s.status.toLowerCase(),
-    label: (statusLabels as Record<string, string>)[s.status.toLowerCase()] ?? s.status,
-    count: s.count,
-    pct: Math.round((s.count / Math.max(total, 1)) * 100),
-  }));
-});
-
-const statusPieData = computed((): StatusPieEntry[] => {
-  const colorMap: Record<string, string> = {
-    delivered: "var(--color-success)",
-    delayed: "var(--color-destructive)",
-    in_transit: "var(--color-info)",
-    out_for_delivery: "var(--color-primary)",
-    pending: "var(--color-muted-foreground)",
-    picked_up: "var(--color-warning)",
-    departed: "var(--color-secondary)",
-  };
-  return statusDistribution.value.map((s) => ({
-    ...s,
-    fill: colorMap[s.status] ?? "hsl(var(--muted-foreground))",
-  }));
-});
-
-const cumulativeData = computed((): CumulativeEntry[] => {
-  if (!timeSeries.value) return [];
-  let running = 0;
-  return timeSeries.value.by_month.map((m) => {
-    running += m.count;
-    return { month: m.month, count: running };
-  });
-});
+const kpis = computed(() => computeKpis(analytics.value ?? null));
+const regionPerformance = computed(() => computeRegionPerformance(analytics.value ?? null));
+const statusPieData = computed(() => computeStatusPieData(analytics.value ?? null));
+const cumulativeData = computed(() => computeCumulativeData(timeSeries.value ?? null));
 </script>
 
 <template>

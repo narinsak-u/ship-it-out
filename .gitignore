@@ -41,3 +41,7 @@ backend/tmp/
 .superpowers
 .env
 .playwright-cli
+
+# Test output
+frontend/coverage/
+frontend/test-results/

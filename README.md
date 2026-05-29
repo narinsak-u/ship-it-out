@@ -2,6 +2,8 @@
 
 Real-time shipment tracking platform with a **Vue 3** frontend and **Go** backend. Monitor cargo globally with interactive maps, status updates, and timeline tracking.
 
+![Dashboard screenshot](frontend/public/Screenshot.png)
+
 ---
 
 ## Tech Stack
