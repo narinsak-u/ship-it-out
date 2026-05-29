@@ -33,3 +33,10 @@ func TestThailandProvinceRegion_UnknownProvince(t *testing.T) {
 func TestThailandProvinceRegion_NotEmpty(t *testing.T) {
 	assert.Greater(t, len(data.ThailandProvinceRegion), 70)
 }
+
+func TestThailandProvinceRegion_AllValuesAreValid(t *testing.T) {
+	validRegions := map[string]bool{"Central": true, "East": true, "North": true, "West": true, "North-east": true, "South": true}
+	for province, region := range data.ThailandProvinceRegion {
+		assert.True(t, validRegions[region], "province %q has unknown region %q", province, region)
+	}
+}

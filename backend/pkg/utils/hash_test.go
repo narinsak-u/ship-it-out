@@ -5,6 +5,7 @@ import (
 
 	"github.com/narinsak-u/backend/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHashPassword(t *testing.T) {
@@ -15,7 +16,8 @@ func TestHashPassword(t *testing.T) {
 }
 
 func TestCheckPassword(t *testing.T) {
-	hash, _ := utils.HashPassword("correctPassword")
+	hash, err := utils.HashPassword("correctPassword")
+	require.NoError(t, err)
 	assert.True(t, utils.CheckPassword("correctPassword", hash))
 	assert.False(t, utils.CheckPassword("wrongPassword", hash))
 }

@@ -71,7 +71,8 @@ func TestSuccessWithPagination_ZeroTotal(t *testing.T) {
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 
-	utils.SuccessWithPagination(c, []interface{}{}, 1, 10, 0)
+	err := utils.SuccessWithPagination(c, []interface{}{}, 1, 10, 0)
+	assert.NoError(t, err)
 	var resp map[string]interface{}
 	json.Unmarshal(c.Response().Body(), &resp)
 	pagination := resp["pagination"].(map[string]interface{})
