@@ -1,6 +1,16 @@
 package utils
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"fmt"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/narinsak-u/backend/internal/models"
+)
+
+// ComposeAddress builds a display string from a ContactInfo's address fields.
+func ComposeAddress(c models.ContactInfo) string {
+	return fmt.Sprintf("%s, %s, %s", c.SubDistrict, c.District, c.Province)
+}
 
 func Success(c *fiber.Ctx, data interface{}) error {
 	return c.JSON(fiber.Map{"success": true, "data": data})

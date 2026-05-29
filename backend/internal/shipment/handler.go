@@ -4,7 +4,6 @@ package shipment
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -28,11 +27,6 @@ type CreateRequest struct {
 // Example: "TH202596374"
 func generateTrackingNumber() string {
 	return fmt.Sprintf("TH%d%05d", time.Now().Year(), time.Now().UnixMilli()%100000)
-}
-
-// composeAddress builds a display string from a ContactInfo's address fields.
-func composeAddress(c models.ContactInfo) string {
-	return fmt.Sprintf("%s, %s, %s", c.SubDistrict, c.District, c.Province)
 }
 
 // List returns shipments from the database with optional pagination and filtering.
@@ -77,23 +71,6 @@ func List(c *fiber.Ctx) error {
 	return utils.SuccessWithPagination(c, shipments, page, limit, int(total))
 }
 
-// generateOrderID creates a human-readable order ID like "ORD-10251".
-// Scans existing order IDs to find the highest numeric suffix and increments it.
-func generateOrderID() string {
-	var shipments []models.Shipment
-	database.DB.Select("order_id").Find(&shipments)
-	maxNum := 10245
-	for _, s := range shipments {
-		parts := strings.SplitN(s.OrderID, "-", 2)
-		if len(parts) == 2 {
-			if n, err := strconv.Atoi(parts[1]); err == nil && n > maxNum {
-				maxNum = n
-			}
-		}
-	}
-	return fmt.Sprintf("ORD-%d", maxNum+1)
-}
-
 // Create adds a new shipment to the database.
 func Create(c *fiber.Ctx) error {
 	var req CreateRequest
@@ -101,13 +78,29 @@ func Create(c *fiber.Ctx) error {
 		return utils.Error(c, 400, "invalid request body")
 	}
 
+	if req.Customer.Name == "" || req.Customer.Province == "" || req.Customer.Zipcode == "" {
+		return utils.Error(c, 400, "customer name, province, and zipcode are required")
+	}
+	if req.Receiver.Name == "" || req.Receiver.Province == "" || req.Receiver.Zipcode == "" {
+		return utils.Error(c, 400, "receiver name, province, and zipcode are required")
+	}
+	if req.Weight <= 0 {
+		return utils.Error(c, 400, "weight must be greater than 0")
+	}
+	if req.Items < 1 {
+		return utils.Error(c, 400, "items must be at least 1")
+	}
+	if req.Carrier == "" {
+		return utils.Error(c, 400, "carrier is required")
+	}
+
 	shipment := models.Shipment{
-		OrderID:           generateOrderID(),
+		OrderID:           utils.GenerateOrderID(),
 		TrackingNumber:    generateTrackingNumber(),
 		Customer:          req.Customer,
 		Receiver:          req.Receiver,
-		Origin:            composeAddress(req.Customer),
-		Destination:       composeAddress(req.Receiver),
+		Origin:            utils.ComposeAddress(req.Customer),
+		Destination:       utils.ComposeAddress(req.Receiver),
 		CurrentCoords:     req.Customer.Coords,
 		Status:            "pending",
 		Carrier:           req.Carrier,
@@ -127,7 +120,7 @@ func Create(c *fiber.Ctx) error {
 		Status:      "Label Created",
 		Description: "Awaiting pickup.",
 		Location: models.Location{
-			Name: composeAddress(req.Customer),
+			Name: utils.ComposeAddress(req.Customer),
 			Lat:  req.Customer.Coords.Lat,
 			Lng:  req.Customer.Coords.Lng,
 		},
@@ -160,7 +153,7 @@ func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus strin
 		eventStatus = "Label Created"
 		description = "Awaiting pickup."
 		location = models.Location{
-			Name: composeAddress(shipment.Customer),
+			Name: utils.ComposeAddress(shipment.Customer),
 			Lat:  shipment.CustomerLat,
 			Lng:  shipment.CustomerLng,
 		}
@@ -168,7 +161,7 @@ func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus strin
 		eventStatus = "Picked Up"
 		description = "Parcel collected from sender."
 		location = models.Location{
-			Name: composeAddress(shipment.Customer),
+			Name: utils.ComposeAddress(shipment.Customer),
 			Lat:  shipment.CustomerLat,
 			Lng:  shipment.CustomerLng,
 		}
@@ -200,7 +193,7 @@ func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus strin
 		eventStatus = "Delivered"
 		description = "Delivered to recipient."
 		location = models.Location{
-			Name: composeAddress(shipment.Receiver),
+			Name: utils.ComposeAddress(shipment.Receiver),
 			Lat:  shipment.ReceiverLat,
 			Lng:  shipment.ReceiverLng,
 		}
@@ -244,25 +237,17 @@ func UpdateStatus(c *fiber.Ctx) error {
 	}
 
 	shipment.Status = body.Status
-	if body.HubID != "" {
-		shipment.HubID = body.HubID
-	}
 
-	// Look up hub if provided (for statuses where location = hub address)
 	var hub *models.Hub
 	if body.HubID != "" {
 		var h models.Hub
-		if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error == nil {
-			hub = &h
-			if err := database.DB.Where("id = ?", body.HubID).First(&h); err.Error != nil {
-				return utils.Error(c, 400, "invalid hub ID")
-			}
-			hub = &h
-			shipment.HubID = body.HubID
-			shipment.CurrentCoords.Lat = h.Lat
-			shipment.CurrentCoords.Lng = h.Lng
-			shipment.CurrentCoords.Lng = h.Lng
+		if err := database.DB.Where("id = ?", body.HubID).First(&h).Error; err != nil {
+			return utils.Error(c, 400, "invalid hub ID")
 		}
+		hub = &h
+		shipment.HubID = body.HubID
+		shipment.CurrentCoords.Lat = h.Lat
+		shipment.CurrentCoords.Lng = h.Lng
 	}
 
 	database.DB.Save(&shipment)
@@ -301,11 +286,11 @@ func Update(c *fiber.Ctx) error {
 	if req.Customer != nil {
 		shipment.Customer = *req.Customer
 		shipment.CurrentCoords = req.Customer.Coords
-		shipment.Origin = composeAddress(*req.Customer)
+		shipment.Origin = utils.ComposeAddress(*req.Customer)
 	}
 	if req.Receiver != nil {
 		shipment.Receiver = *req.Receiver
-		shipment.Destination = composeAddress(*req.Receiver)
+		shipment.Destination = utils.ComposeAddress(*req.Receiver)
 	}
 	if req.Carrier != nil {
 		shipment.Carrier = *req.Carrier

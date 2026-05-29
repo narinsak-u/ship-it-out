@@ -1,3 +1,6 @@
+// Package tracking provides the public-facing shipment tracking endpoint.
+// It is the only handler accessible without authentication, enabling customers
+// to look up their shipment status and event history via a tracking number.
 package tracking
 
 import (

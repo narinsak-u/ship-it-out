@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button.vue";
 import Input from "@/components/ui/Input.vue";
 import StatusBadge from "@/components/StatusBadge.vue";
 import { fetchActiveDeliveries } from "@/lib/api/orders";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { fetchAnalytics } from "@/lib/api/analytics";
 import { trackShipment } from "@/lib/api/tracking";
 
 const router = useRouter();
@@ -17,7 +17,10 @@ const { data: orders } = useQuery({
   queryFn: fetchActiveDeliveries,
 });
 
-const { data: analytics } = useAnalytics();
+const { data: analytics } = useQuery({
+  queryKey: ["analytics"],
+  queryFn: fetchAnalytics,
+});
 
 const query = ref("");
 

@@ -32,6 +32,7 @@ type LoginRequest struct {
 // The cookie is:
 //   - HTTP-only (JavaScript can't read it — prevents XSS attacks)
 //   - SameSite=Lax (sent on same-site navigation but not cross-site)
+//   - Secure (only sent over HTTPS in production)
 //   - MaxAge=86400 (24 hours — after that the browser deletes it)
 //   - Path="/" (sent to every page on this domain)
 func setAuthCookie(c *fiber.Ctx, token string) {
@@ -41,6 +42,7 @@ func setAuthCookie(c *fiber.Ctx, token string) {
 		Path:     "/",
 		HTTPOnly: true,
 		SameSite: "Lax",
+		Secure:   true,
 		MaxAge:   86400,
 	})
 }
@@ -199,6 +201,7 @@ func Logout(c *fiber.Ctx) error {
 		Path:     "/",
 		HTTPOnly: true,
 		SameSite: "Lax",
+		Secure:   true,
 		MaxAge:   0, // 0 = delete the cookie right now
 	})
 	return utils.Success(c, fiber.Map{"message": "logged out"})
