@@ -1,16 +1,26 @@
-// Package shipment provides HTTP handlers for shipment CRUD operations.
 package shipment
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/database"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
+
+type HubRepository interface {
+	FindByID(id string) (*models.Hub, error)
+}
+
+type Handler struct {
+	repo    Repository
+	hubRepo HubRepository
+}
+
+func NewHandler(repo Repository, hubRepo HubRepository) *Handler {
+	return &Handler{repo: repo, hubRepo: hubRepo}
+}
 
 // CreateRequest is the JSON body for creating a new shipment.
 // Uses the same nested ContactInfo structure as the frontend Order type.
@@ -22,57 +32,27 @@ type CreateRequest struct {
 	Items    int                `json:"items"`
 }
 
-// generateTrackingNumber creates a unique identifier for each shipment.
-// Format: "TH" + current year + 5-digit millisecond-based number
-// Example: "TH202596374"
-func generateTrackingNumber() string {
-	return fmt.Sprintf("TH%d%05d", time.Now().Year(), time.Now().UnixMilli()%100000)
-}
-
 // List returns shipments from the database with optional pagination and filtering.
-// Query params: page (default 1), limit (default 10, use -1 for all), search, status, exclude_status.
-func List(c *fiber.Ctx) error {
+// Query params: page (default 1), limit (default 10), search, status, exclude_status.
+func (h *Handler) List(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
-	search := c.Query("search", "")
-	status := c.Query("status", "")
-	excludeStatus := c.Query("exclude_status", "")
-
-	if page < 1 {
-		page = 1
+	filter := ShipmentFilter{
+		Page:          page,
+		Limit:         limit,
+		Search:        c.Query("search", ""),
+		Status:        c.Query("status", ""),
+		ExcludeStatus: c.Query("exclude_status", ""),
 	}
-
-	var total int64
-	query := database.DB.Model(&models.Shipment{})
-
-	if status != "" && status != "all" {
-		query = query.Where("status = ?", status)
+	shipments, total, err := h.repo.List(filter)
+	if err != nil {
+		return utils.Error(c, 500, "failed to list shipments")
 	}
-	if excludeStatus != "" {
-		query = query.Where("status != ?", excludeStatus)
-	}
-	if search != "" {
-		like := "%" + search + "%"
-		query = query.Where(
-			"order_id ILIKE ? OR tracking_number ILIKE ? OR customer_name ILIKE ? OR destination ILIKE ?",
-			like, like, like, like,
-		)
-	}
-
-	query.Count(&total)
-
-	var shipments []models.Shipment
-	if limit > 0 {
-		offset := (page - 1) * limit
-		query = query.Offset(offset).Limit(limit)
-	}
-	query.Order("created_at DESC").Find(&shipments)
-
-	return utils.SuccessWithPagination(c, shipments, page, limit, int(total))
+	return utils.SuccessWithPagination(c, shipments, filter.Page, filter.Limit, int(total))
 }
 
 // Create adds a new shipment to the database.
-func Create(c *fiber.Ctx) error {
+func (h *Handler) Create(c *fiber.Ctx) error {
 	var req CreateRequest
 	if err := c.BodyParser(&req); err != nil {
 		return utils.Error(c, 400, "invalid request body")
@@ -95,8 +75,6 @@ func Create(c *fiber.Ctx) error {
 	}
 
 	shipment := models.Shipment{
-		OrderID:           utils.GenerateOrderID(),
-		TrackingNumber:    generateTrackingNumber(),
 		Customer:          req.Customer,
 		Receiver:          req.Receiver,
 		Origin:            utils.ComposeAddress(req.Customer),
@@ -110,7 +88,7 @@ func Create(c *fiber.Ctx) error {
 		Progress:          0,
 	}
 
-	if result := database.DB.Create(&shipment); result.Error != nil {
+	if err := h.repo.Create(&shipment); err != nil {
 		return utils.Error(c, 500, "failed to create shipment")
 	}
 
@@ -125,20 +103,18 @@ func Create(c *fiber.Ctx) error {
 			Lng:  req.Customer.Coords.Lng,
 		},
 	}
-	database.DB.Create(&event)
+	h.repo.CreateEvent(&event)
 
 	return utils.Success(c, shipment)
 }
 
 // GetByID fetches a single shipment by its order ID.
-func GetByID(c *fiber.Ctx) error {
+func (h *Handler) GetByID(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
-
-	var shipment models.Shipment
-	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
+	shipment, err := h.repo.FindByOrderID(orderID)
+	if err != nil {
 		return utils.Error(c, 404, "shipment not found")
 	}
-
 	return utils.Success(c, shipment)
 }
 
@@ -220,7 +196,7 @@ func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus strin
 
 // UpdateStatus changes the status of a shipment and records a tracking event
 // with context-aware status label, description, and location.
-func UpdateStatus(c *fiber.Ctx) error {
+func (h *Handler) UpdateStatus(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
 	var body struct {
@@ -231,8 +207,12 @@ func UpdateStatus(c *fiber.Ctx) error {
 		return utils.Error(c, 400, "invalid request body")
 	}
 
-	var shipment models.Shipment
-	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
+	if body.Status == "" {
+		return utils.Error(c, 400, "status is required")
+	}
+
+	shipment, err := h.repo.FindByOrderID(orderID)
+	if err != nil {
 		return utils.Error(c, 404, "shipment not found")
 	}
 
@@ -240,21 +220,21 @@ func UpdateStatus(c *fiber.Ctx) error {
 
 	var hub *models.Hub
 	if body.HubID != "" {
-		var h models.Hub
-		if err := database.DB.Where("id = ?", body.HubID).First(&h).Error; err != nil {
+		hubRecord, err := h.hubRepo.FindByID(body.HubID)
+		if err != nil {
 			return utils.Error(c, 400, "invalid hub ID")
 		}
-		hub = &h
+		hub = hubRecord
 		shipment.HubID = body.HubID
-		shipment.CurrentCoords.Lat = h.Lat
-		shipment.CurrentCoords.Lng = h.Lng
+		shipment.CurrentCoords.Lat = hubRecord.Lat
+		shipment.CurrentCoords.Lng = hubRecord.Lng
 	}
 
-	database.DB.Save(&shipment)
+	h.repo.Save(shipment)
 
-	event := statusToEvent(shipment, hub, body.Status)
+	event := statusToEvent(*shipment, hub, body.Status)
 	event.ShipmentID = shipment.ID
-	database.DB.Create(&event)
+	h.repo.CreateEvent(&event)
 
 	return utils.Success(c, shipment)
 }
@@ -270,7 +250,7 @@ type UpdateRequest struct {
 }
 
 // Update modifies an existing shipment's fields.
-func Update(c *fiber.Ctx) error {
+func (h *Handler) Update(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
 	var req UpdateRequest
@@ -278,8 +258,8 @@ func Update(c *fiber.Ctx) error {
 		return utils.Error(c, 400, "invalid request body")
 	}
 
-	var shipment models.Shipment
-	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
+	shipment, err := h.repo.FindByOrderID(orderID)
+	if err != nil {
 		return utils.Error(c, 404, "shipment not found")
 	}
 
@@ -305,21 +285,25 @@ func Update(c *fiber.Ctx) error {
 		shipment.EstimatedDelivery = *req.EstimatedDelivery
 	}
 
-	database.DB.Save(&shipment)
+	h.repo.Save(shipment)
 	return utils.Success(c, shipment)
 }
 
 // Delete removes a shipment and its events from the database.
-func Delete(c *fiber.Ctx) error {
+func (h *Handler) Delete(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
-	var shipment models.Shipment
-	if result := database.DB.Where("order_id = ?", orderID).First(&shipment); result.Error != nil {
+	shipment, err := h.repo.FindByOrderID(orderID)
+	if err != nil {
 		return utils.Error(c, 404, "shipment not found")
 	}
 
-	database.DB.Where("shipment_id = ?", shipment.ID).Delete(&models.ShipmentEvent{})
-	database.DB.Delete(&shipment)
+	if err := h.repo.DeleteShipmentEvents(shipment.ID); err != nil {
+		return utils.Error(c, 500, "failed to delete shipment events")
+	}
+	if err := h.repo.Delete(shipment); err != nil {
+		return utils.Error(c, 500, "failed to delete shipment")
+	}
 
 	return utils.Success(c, fiber.Map{"message": "shipment deleted"})
 }

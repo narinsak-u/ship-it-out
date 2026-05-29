@@ -63,18 +63,6 @@ func main() {
 	authGroup.Get("/me", middleware.AuthRequired(), authHandler.Me)               // GET  /api/auth/me (needs valid JWT cookie)
 	authGroup.Post("/logout", authHandler.Logout)                                 // POST /api/auth/logout
 
-	// --- Shipment routes (public read, auth required for write) ---
-	api.Get("/shipments", shipment.List)             // GET    /api/shipments (public)
-	api.Get("/shipments/:orderId", shipment.GetByID) // GET    /api/shipments/:orderId (public)
-	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
-	shipmentGroup.Post("/", shipment.Create)                       // POST   /api/shipments
-	shipmentGroup.Patch("/:orderId/status", shipment.UpdateStatus) // PATCH  /api/shipments/:orderId/status
-	shipmentGroup.Put("/:orderId", shipment.Update)                // PUT    /api/shipments/:orderId
-	shipmentGroup.Delete("/:orderId", shipment.Delete)             // DELETE /api/shipments/:orderId
-
-	// --- Public tracking (anyone can look up a shipment by tracking number) ---
-	api.Get("/track/:trackingNumber", tracking.Track)
-
 	// --- Hub routes (public read, auth required for write) ---
 	hubRepo := hub.NewGormRepository(database.DB)
 	hubHandler := hub.NewHandler(hubRepo)
@@ -85,6 +73,21 @@ func main() {
 	hubGroup.Post("/", hubHandler.Create)
 	hubGroup.Put("/:id", hubHandler.Update)
 	hubGroup.Delete("/:id", hubHandler.Delete)
+
+	// --- Shipment routes (public read, auth required for write) ---
+	shipmentRepo := shipment.NewGormRepository(database.DB)
+	shipmentHandler := shipment.NewHandler(shipmentRepo, hubRepo)
+
+	api.Get("/shipments", shipmentHandler.List)             // GET    /api/shipments (public)
+	api.Get("/shipments/:orderId", shipmentHandler.GetByID) // GET    /api/shipments/:orderId (public)
+	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
+	shipmentGroup.Post("/", shipmentHandler.Create)                       // POST   /api/shipments
+	shipmentGroup.Patch("/:orderId/status", shipmentHandler.UpdateStatus) // PATCH  /api/shipments/:orderId/status
+	shipmentGroup.Put("/:orderId", shipmentHandler.Update)                // PUT    /api/shipments/:orderId
+	shipmentGroup.Delete("/:orderId", shipmentHandler.Delete)             // DELETE /api/shipments/:orderId
+
+	// --- Public tracking (anyone can look up a shipment by tracking number) ---
+	api.Get("/track/:trackingNumber", tracking.Track)
 
 	// --- Analytics (auth required) ---
 	api.Get("/analytics/overview", middleware.AuthRequired(), analytics.Overview)
