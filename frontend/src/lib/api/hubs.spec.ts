@@ -7,7 +7,15 @@ describe("hubs API", () => {
     expect(result).toBeInstanceOf(Array);
   });
   it("createHub sends POST", async () => {
-    const result = await createHub({ name: "Test Hub", carrierId: "c1", address: "123 St", coords: { lat: 0, lng: 0 }, capacity: 500, currentUtilization: 0, status: "active" });
+    const result = await createHub({
+      name: "Test Hub",
+      carrierId: "c1",
+      address: "123 St",
+      coords: { lat: 0, lng: 0 },
+      capacity: 500,
+      currentUtilization: 0,
+      status: "active",
+    });
     expect(result.name).toBe("Test Hub");
   });
   it("updateHub sends PUT", async () => {

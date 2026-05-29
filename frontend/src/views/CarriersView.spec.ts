@@ -18,7 +18,7 @@ describe("CarriersView", () => {
         stubs: { Card: true, CardContent: true },
       },
     });
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 200));
     expect(wrapper.text()).toContain("Active Deliveries");
     expect(wrapper.text()).toContain("Hubs");
     expect(wrapper.text()).toContain("Analytics");
@@ -33,17 +33,17 @@ describe("CarriersView", () => {
         stubs: { Card: true, CardContent: true },
       },
     });
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 200));
 
     const buttons = wrapper.findAll("button");
-    const hubsBtn = buttons.find(b => b.text().includes("Hubs"));
+    const hubsBtn = buttons.find((b) => b.text().includes("Hubs"));
     expect(hubsBtn).toBeDefined();
 
     await hubsBtn!.trigger("click");
     await nextTick();
 
     const updatedButtons = wrapper.findAll("button");
-    const activeBtn = updatedButtons.find(b => b.classes().includes("bg-card"));
+    const activeBtn = updatedButtons.find((b) => b.classes().includes("bg-card"));
     expect(activeBtn).toBeDefined();
     expect(activeBtn!.text()).toContain("Hubs");
   });

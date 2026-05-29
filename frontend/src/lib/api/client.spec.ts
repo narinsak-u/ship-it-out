@@ -24,9 +24,7 @@ describe("api client", () => {
     expect(result.data).toBeUndefined();
   });
   it("returns network error when fetch fails", async () => {
-    server.use(
-      http.get("http://localhost:8080/api/auth/me", () => HttpResponse.error()),
-    );
+    server.use(http.get("http://localhost:8080/api/auth/me", () => HttpResponse.error()));
     const result = await api.get("/auth/me");
     expect(result.error).toContain("Network error");
   });

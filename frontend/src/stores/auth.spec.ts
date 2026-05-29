@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
 import { useAuthStore } from "./auth";
 
-const mockUser = { id: 1, name: "Test User", email: "test@test.com", role: "admin", created_at: "2026-01-01T00:00:00Z" };
+const mockUser = {
+  id: 1,
+  name: "Test User",
+  email: "test@test.com",
+  role: "admin",
+  created_at: "2026-01-01T00:00:00Z",
+};
 
 vi.mock("@/lib/api/client", () => {
   const mockApi = {

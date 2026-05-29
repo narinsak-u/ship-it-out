@@ -6,16 +6,29 @@ import { createPinia, setActivePinia } from "pinia";
 
 vi.mock("@/lib/api/orders", () => ({
   fetchOrder: vi.fn().mockResolvedValue({
-    id: "ORD-001", trackingNumber: "TH202600001", status: "in_transit", progress: 62,
+    id: "ORD-001",
+    trackingNumber: "TH202600001",
+    status: "in_transit",
+    progress: 62,
     customer: { name: "John Doe", coords: { lat: 13.75, lng: 100.5 } },
     receiver: { name: "Jane Doe", coords: { lat: 18.78, lng: 98.98 } },
-    origin: "Bangkok", destination: "Chiang Mai",
-    carrier: "Pacific Freight", weight: 12.4, items: 3,
-    estimatedDelivery: "Jun 1, 2026", createdAt: "May 28, 2026",
-    currentCoords: { lat: 16.0, lng: 99.5 }, events: [],
+    origin: "Bangkok",
+    destination: "Chiang Mai",
+    carrier: "Pacific Freight",
+    weight: 12.4,
+    items: 3,
+    estimatedDelivery: "Jun 1, 2026",
+    createdAt: "May 28, 2026",
+    currentCoords: { lat: 16.0, lng: 99.5 },
+    events: [],
   }),
   fetchOrderEvents: vi.fn().mockResolvedValue([
-    { timestamp: "May 28, 10:00", location: { name: "Bangkok", lat: 13.75, lng: 100.5 }, status: "Picked Up", description: "" },
+    {
+      timestamp: "May 28, 10:00",
+      location: { name: "Bangkok", lat: 13.75, lng: 100.5 },
+      status: "Picked Up",
+      description: "",
+    },
   ]),
 }));
 
@@ -24,7 +37,11 @@ const router = createRouter({
   routes: [
     { path: "/", name: "home", component: { template: "<div>Home</div>" } },
     { path: "/orders", name: "orders", component: { template: "<div>Orders</div>" } },
-    { path: "/orders/:orderId", name: "order-detail", component: { template: "<div>Detail</div>" } },
+    {
+      path: "/orders/:orderId",
+      name: "order-detail",
+      component: { template: "<div>Detail</div>" },
+    },
   ],
 });
 
@@ -52,12 +69,14 @@ describe("OrderDetailView", () => {
         },
       },
     });
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 500));
     expect(wrapper.text()).toContain("TH202600001");
   });
 
   it("shows 404 for non-existent order", async () => {
-    vi.mocked((await import("@/lib/api/orders")).fetchOrder).mockRejectedValue(new Error("Not found"));
+    vi.mocked((await import("@/lib/api/orders")).fetchOrder).mockRejectedValue(
+      new Error("Not found"),
+    );
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { default: OrderDetailView } = await import("./OrderDetailView.vue");
     await router.push("/orders/FAKE");
@@ -76,7 +95,7 @@ describe("OrderDetailView", () => {
         },
       },
     });
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 500));
     expect(wrapper.text()).toContain("404");
   });
 });

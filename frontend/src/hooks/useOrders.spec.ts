@@ -23,11 +23,31 @@ function mountComposable<T>(setup: () => T) {
 describe("useCreateOrder", () => {
   it("returns mutation with mutateAsync function", async () => {
     let mutation!: ReturnType<typeof useCreateOrder>;
-    mountComposable(() => { mutation = useCreateOrder(); return {}; });
+    mountComposable(() => {
+      mutation = useCreateOrder();
+      return {};
+    });
     const result = await mutation.mutateAsync({
-      customer: { name: "T", zipcode: "1", subDistrict: "A", district: "B", province: "C", coords: { lat: 0, lng: 0 } },
-      receiver: { name: "R", zipcode: "2", subDistrict: "D", district: "E", province: "F", coords: { lat: 0, lng: 0 } },
-      carrier: "Test", weight: 1, items: 1, estimatedDelivery: "",
+      customer: {
+        name: "T",
+        zipcode: "1",
+        subDistrict: "A",
+        district: "B",
+        province: "C",
+        coords: { lat: 0, lng: 0 },
+      },
+      receiver: {
+        name: "R",
+        zipcode: "2",
+        subDistrict: "D",
+        district: "E",
+        province: "F",
+        coords: { lat: 0, lng: 0 },
+      },
+      carrier: "Test",
+      weight: 1,
+      items: 1,
+      estimatedDelivery: "",
     });
     expect(result.id).toBe("ORD-NEW");
   });
@@ -36,7 +56,10 @@ describe("useCreateOrder", () => {
 describe("useUpdateOrder", () => {
   it("returns mutation for updating orders", async () => {
     let mutation!: ReturnType<typeof useUpdateOrder>;
-    mountComposable(() => { mutation = useUpdateOrder(); return {}; });
+    mountComposable(() => {
+      mutation = useUpdateOrder();
+      return {};
+    });
     const result = await mutation.mutateAsync({ id: "ORD-001", data: { weight: 20 } });
     expect(result.id).toBe("ORD-001");
   });
