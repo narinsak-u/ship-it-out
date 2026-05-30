@@ -54,7 +54,6 @@ const currentUtilization = ref(0);
 const status = ref<HubStatus>("active");
 const geocodeError = ref("");
 const geocoding = ref(false);
-const utilizationError = ref("");
 
 function resetForm() {
   name.value = "";
@@ -63,7 +62,6 @@ function resetForm() {
   currentUtilization.value = 0;
   status.value = "active";
   geocodeError.value = "";
-  utilizationError.value = "";
 }
 
 watch(existing, (hub) => {
@@ -87,12 +85,13 @@ watch(
 
 const isEditing = computed(() => !!props.hubId);
 
+const utilizationError = computed(() => {
+  if (currentUtilization.value > capacity.value)
+    return `Cannot exceed capacity (${capacity.value})`;
+  return "";
+});
+
 watch([currentUtilization, capacity], ([util, cap]) => {
-  if (util > cap) {
-    utilizationError.value = `Cannot exceed capacity (${cap})`;
-  } else {
-    utilizationError.value = "";
-  }
   if (util === cap) {
     status.value = "full";
   }

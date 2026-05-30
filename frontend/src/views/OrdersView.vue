@@ -3,9 +3,7 @@ import { ref, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import { toast } from "vue-sonner";
-import { Search, Filter, ArrowRight, Plus, Pencil, Trash2, Eye } from "lucide-vue-next";
-import Input from "@/components/ui/Input.vue";
-import StatusBadge from "@/components/StatusBadge.vue";
+import { Plus } from "lucide-vue-next";
 import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import { fetchOrdersPaginated, deleteOrder } from "@/lib/api/orders";
 import { orderKeys, deliveryKeys } from "@/lib/api/queryKeys";
@@ -14,16 +12,17 @@ import {
   Table,
   TableHeader,
   TableBody,
-  TableRow,
   TableHead,
   TableCell,
+  TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 import AuthModal from "@/components/AuthModal.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
 import Pagination from "@/components/Pagination.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import ShipmentFilters from "@/components/ShipmentFilters.vue";
+import OrderTableRow from "@/components/OrderTableRow.vue";
 
 const authStore = useAuthStore();
 const showAuthModal = ref(false);
@@ -36,20 +35,21 @@ const searchInput = ref("");
 const debouncedSearch = ref("");
 const filter = ref<ShipmentStatus | "all">("all");
 
-let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-watch(searchInput, (v) => {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
+watch(searchInput, (v, _old, onCleanup) => {
+  const timer = setTimeout(() => {
     debouncedSearch.value = v;
     currentPage.value = 1;
   }, 300);
+  onCleanup(() => clearTimeout(timer));
 });
 
 watch(filter, () => {
   currentPage.value = 1;
 });
 
-const queryKey = computed(() => orderKeys.list({ page: currentPage.value, search: debouncedSearch.value, status: filter.value }));
+const queryKey = computed(() =>
+  orderKeys.list({ page: currentPage.value, search: debouncedSearch.value, status: filter.value }),
+);
 
 const { data: pageData, isLoading } = useQuery({
   queryKey,
@@ -99,6 +99,10 @@ function onGuest() {
   showAuthModal.value = false;
   router.push({ name: "order-create" });
 }
+
+function onDeleteOrder(id: string) {
+  deleteTarget.value = id;
+}
 </script>
 
 <template>
@@ -136,37 +140,14 @@ function onGuest() {
       </section>
 
       <section class="mx-auto max-w-7xl px-6 py-10">
-        <!-- Controls -->
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 md:w-96">
-            <Search class="h-4 w-4 text-muted-foreground" />
-            <Input
-              v-model="searchInput"
-              placeholder="Search by ID, tracking, customer, destination"
-              class="h-11 border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
-            />
-          </div>
-          <div class="flex items-center gap-2 overflow-x-auto">
-            <Filter class="h-4 w-4 shrink-0 text-muted-foreground" />
-            <button
-              v-for="f in FILTERS"
-              :key="f.key"
-              @click="filter = f.key"
-              :class="
-                cn(
-                  'rounded-full border cursor-pointer px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition-colors',
-                  filter === f.key
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border text-muted-foreground hover:text-foreground',
-                )
-              "
-            >
-              {{ f.label }}
-            </button>
-          </div>
-        </div>
+        <ShipmentFilters
+          :search="searchInput"
+          :filter="filter"
+          :filters="FILTERS"
+          @update:search="searchInput = $event"
+          @update:filter="filter = $event"
+        />
 
-        <!-- Table -->
         <div class="mt-8 overflow-hidden rounded-xl border border-border bg-card shadow-elegant">
           <Table>
             <TableHeader>
@@ -179,62 +160,18 @@ function onGuest() {
                 <TableHead class="hidden md:table-cell">Route</TableHead>
                 <TableHead class="hidden md:table-cell">Status</TableHead>
                 <TableHead class="hidden md:table-cell">ETA</TableHead>
-                <TableHead class="hidden md:table-cell"> Actions </TableHead>
+                <TableHead class="hidden md:table-cell">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow
+              <OrderTableRow
                 v-for="o in pageItems"
                 :key="o.id"
-                class="border-b border-border transition-colors hover:bg-secondary/40"
-              >
-                <TableCell>
-                  <RouterLink
-                    :to="{ name: 'order-detail', params: { orderId: o.id } }"
-                    class="font-mono text-sm text-primary"
-                  >
-                    {{ o.id }}
-                  </RouterLink>
-                </TableCell>
-                <TableCell class="font-mono text-sm text-muted-foreground">
-                  {{ o.trackingNumber }}
-                </TableCell>
-                <TableCell class="text-sm">{{ o.customer.name }}</TableCell>
-                <TableCell>
-                  <span class="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-                    <span>{{ o.origin }}</span>
-                    <ArrowRight class="h-3 w-3 text-primary" />
-                    <span>{{ o.destination }}</span>
-                  </span>
-                </TableCell>
-                <TableCell><StatusBadge :status="o.status" /></TableCell>
-                <TableCell class="font-mono text-xs text-muted-foreground">
-                  {{ o.estimatedDelivery }}
-                </TableCell>
-                <TableCell class="flex">
-                  <RouterLink
-                    :to="{ name: 'order-detail', params: { orderId: o.id } }"
-                    class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
-                    title="View details"
-                  >
-                    <Eye class="h-4 w-4" />
-                  </RouterLink>
-                  <div v-if="authStore.user">
-                    <button
-                      @click.stop="router.push({ name: 'order-edit', params: { orderId: o.id } })"
-                      class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-primary"
-                    >
-                      <Pencil class="h-4 w-4" />
-                    </button>
-                    <button
-                      @click.stop="deleteTarget = o.id"
-                      class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 class="h-4 w-4" />
-                    </button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                :order="o"
+                :is-authenticated="!!authStore.user"
+                @edit="router.push({ name: 'order-edit', params: { orderId: $event } })"
+                @delete="onDeleteOrder($event)"
+              />
             </TableBody>
           </Table>
 

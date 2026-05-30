@@ -5,32 +5,28 @@ import { VueQueryPlugin, QueryClient } from "@tanstack/vue-query";
 import { createPinia, setActivePinia } from "pinia";
 
 vi.mock("@/lib/api/hubs", () => ({
-  fetchHubs: vi
-    .fn()
-    .mockResolvedValue([
-      {
-        id: "h1",
-        name: "Bangkok Hub",
-        carrierId: "c1",
-        address: "123 St",
-        coords: { lat: 13.75, lng: 100.5 },
-        capacity: 1000,
-        currentUtilization: 500,
-        status: "active",
-      },
-    ]),
-  createHub: vi
-    .fn()
-    .mockResolvedValue({
-      id: "h-new",
-      name: "New Hub",
+  fetchHubs: vi.fn().mockResolvedValue([
+    {
+      id: "h1",
+      name: "Bangkok Hub",
       carrierId: "c1",
-      address: "456 St",
-      coords: { lat: 0, lng: 0 },
-      capacity: 500,
-      currentUtilization: 0,
+      address: "123 St",
+      coords: { lat: 13.75, lng: 100.5 },
+      capacity: 1000,
+      currentUtilization: 500,
       status: "active",
-    }),
+    },
+  ]),
+  createHub: vi.fn().mockResolvedValue({
+    id: "h-new",
+    name: "New Hub",
+    carrierId: "c1",
+    address: "456 St",
+    coords: { lat: 0, lng: 0 },
+    capacity: 500,
+    currentUtilization: 0,
+    status: "active",
+  }),
   deleteHub: vi.fn().mockResolvedValue(undefined),
 }));
 

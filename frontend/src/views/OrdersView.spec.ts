@@ -75,6 +75,8 @@ describe("OrdersView", () => {
           TableRow: true,
           TableHead: true,
           TableCell: true,
+          ShipmentFilters: true,
+          OrderTableRow: true,
         },
       },
     });
@@ -106,6 +108,7 @@ describe("OrdersView", () => {
           TableRow: true,
           TableHead: true,
           TableCell: true,
+          OrderTableRow: true,
         },
       },
     });

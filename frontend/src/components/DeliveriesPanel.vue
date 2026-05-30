@@ -2,11 +2,11 @@
 import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import { useQuery } from "@tanstack/vue-query";
 import { toast } from "vue-sonner";
-import { Search, RefreshCw, Check, Eye } from "lucide-vue-next";
+import { Search, RefreshCw } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
 import { hubKeys } from "@/lib/api/queryKeys";
 import { fetchHubs } from "@/lib/api/hubs";
-import { statusLabels, type ShipmentStatus } from "@/lib/orders";
+import { type ShipmentStatus } from "@/lib/orders";
 import { useAuthStore } from "@/stores/auth";
 import Input from "@/components/ui/Input.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";
@@ -19,16 +19,9 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import Pagination from "@/components/Pagination.vue";
 import { usePagination } from "@/composables/usePagination";
+import DeliveryTableRow from "@/components/DeliveryTableRow.vue";
 
 const ShipmentMap = defineAsyncComponent(() => import("@/components/ShipmentMap.vue"));
 
@@ -89,31 +82,16 @@ const selectedOrder = computed(() => {
 
 const mapOrder = computed(() => selectedOrder.value ?? filtered.value[0] ?? null);
 
-function usesHubSelector(status: ShipmentStatus) {
-  return (
-    status === "departed" ||
-    status === "in_transit" ||
-    status === "out_for_delivery" ||
-    status === "delayed"
-  );
-}
-
-function canUpdate(orderId: string) {
-  const o = deliveries.value?.find((d) => d.id === orderId);
-  if (!o) return false;
-  const ds = draftStatus.value[orderId] ?? o.status;
-  const dh = draftHubId.value[orderId] ?? "";
-  const changed = ds !== o.status || (usesHubSelector(ds) && dh !== "");
-  if (!changed) return false;
-  if (usesHubSelector(ds) && !dh) return false;
-  return true;
-}
-
 function handleUpdate(orderId: string) {
   const o = deliveries.value?.find((d) => d.id === orderId);
   if (!o) return;
   const status = draftStatus.value[orderId] ?? o.status;
-  if (usesHubSelector(status) && !draftHubId.value[orderId]) return;
+  const needsHub =
+    status === "departed" ||
+    status === "in_transit" ||
+    status === "out_for_delivery" ||
+    status === "delayed";
+  if (needsHub && !draftHubId.value[orderId]) return;
   updateStatus.mutate(
     { orderId, status, hubId: draftHubId.value[orderId] },
     {
@@ -180,82 +158,18 @@ function handleUpdate(orderId: string) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow
+          <DeliveryTableRow
             v-for="o in pageItems"
             :key="o.id"
-            class="cursor-pointer border-b border-border transition-colors hover:bg-secondary/40"
-            :class="selectedOrderId === o.id ? 'bg-secondary/60' : ''"
-            @click="selectedOrderId = o.id"
-          >
-            <TableCell class="font-mono text-sm text-primary">{{ o.id }}</TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{{
-              o.trackingNumber
-            }}</TableCell>
-            <TableCell class="font-mono text-sm">{{ o.customer.name }}</TableCell>
-            <TableCell class="font-mono text-sm text-muted-foreground">{{ o.carrier }}</TableCell>
-            <TableCell>
-              <Select
-                :model-value="draftStatus[o.id] ?? o.status"
-                @update:model-value="(v) => (draftStatus[o.id] = v as ShipmentStatus)"
-                :disabled="!auth.isAuthenticated"
-              >
-                <SelectTrigger
-                  class="h-7 rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem v-for="(label, key) in statusLabels" :key="key" :value="key">
-                      {{ label }}
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <Select
-                v-if="usesHubSelector(draftStatus[o.id] ?? o.status)"
-                :model-value="draftHubId[o.id] ?? o.hubId ?? ''"
-                @update:model-value="(v) => (draftHubId[o.id] = (v ?? '') as string)"
-                :disabled="!auth.isAuthenticated"
-              >
-                <SelectTrigger
-                  class="h-7 w-full rounded-lg border border-border bg-background px-2 font-mono text-xs disabled:opacity-40"
-                >
-                  <SelectValue placeholder="Select hub..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem v-for="h in hubOptions" :key="h.id" :value="h.id">
-                      {{ h.name }}
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <span v-else class="font-mono text-xs text-muted-foreground">&mdash;</span>
-            </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">
-              {{ o.estimatedDelivery }}
-            </TableCell>
-            <TableCell class="flex gap-1">
-              <RouterLink
-                :to="{ name: 'order-detail', params: { orderId: o.id } }"
-                class="rounded p-1.5 text-muted-foreground transition-colors hover:text-foreground"
-                title="View details"
-              >
-                <Eye class="h-4 w-4" />
-              </RouterLink>
-              <button
-                @click="handleUpdate(o.id)"
-                :disabled="!auth.isAuthenticated || !canUpdate(o.id)"
-                class="rounded cursor-pointer p-1.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30 disabled:pointer-events-none"
-                title="Update"
-              >
-                <Check class="h-4 w-4" />
-              </button>
-            </TableCell>
-          </TableRow>
+            :order="o"
+            :hubs="hubOptions"
+            :is-authenticated="auth.isAuthenticated"
+            :status-draft="draftStatus[o.id]"
+            :hub-draft="draftHubId[o.id]"
+            @update:status-draft="draftStatus[o.id] = $event"
+            @update:hub-draft="draftHubId[o.id] = $event"
+            @update="handleUpdate($event)"
+          />
         </TableBody>
       </Table>
 

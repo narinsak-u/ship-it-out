@@ -18,6 +18,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import HubFormModal from "@/components/HubFormModal.vue";
+import HubStatsCards from "@/components/HubStatsCards.vue";
 import Pagination from "@/components/Pagination.vue";
 import { usePagination } from "@/composables/usePagination";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -54,12 +55,20 @@ function openEdit(id: string) {
   showForm.value = true;
 }
 
+interface HubCounts {
+  total: number;
+  active: number;
+  maintenance: number;
+  closed: number;
+  full: number;
+}
+
 const hubStatusCounts = computed(() => {
   if (!hubs.value) return { total: 0, active: 0, maintenance: 0, closed: 0, full: 0 };
-  return hubs.value.reduce(
+  return hubs.value.reduce<HubCounts>(
     (acc, h) => {
       acc.total++;
-      acc[h.status as keyof typeof acc]++;
+      if (h.status in acc) acc[h.status as keyof HubCounts]++;
       return acc;
     },
     { total: 0, active: 0, maintenance: 0, closed: 0, full: 0 },
@@ -81,46 +90,7 @@ const hubStatusCounts = computed(() => {
   </div>
 
   <div v-else>
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Total Hubs
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold">{{ hubStatusCounts.total }}</div>
-      </div>
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Active
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-success">
-          {{ hubStatusCounts.active }}
-        </div>
-      </div>
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Maintenance
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-warning">
-          {{ hubStatusCounts.maintenance }}
-        </div>
-      </div>
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Full
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-destructive">
-          {{ hubStatusCounts.full }}
-        </div>
-      </div>
-      <div class="rounded-lg border border-border bg-secondary/50 p-4">
-        <div class="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Closed
-        </div>
-        <div class="mt-1 font-mono text-3xl font-semibold text-destructive">
-          {{ hubStatusCounts.closed }}
-        </div>
-      </div>
-    </div>
+    <HubStatsCards :counts="hubStatusCounts" />
 
     <div class="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 md:w-72">

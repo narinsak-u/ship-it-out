@@ -19,3 +19,8 @@ export const analyticsKeys = {
   all: ["analytics"] as const,
   timeseries: () => [...analyticsKeys.all, "timeseries"] as const,
 };
+
+export const eventKeys = {
+  all: ["events"] as const,
+  byTracking: (tn: string) => [...eventKeys.all, tn] as const,
+};
