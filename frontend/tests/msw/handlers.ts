@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
-
-const BASE = "http://localhost:8080/api";
+import { BASE_URL } from "../../src/lib/api/client";
 
 const mockUser = {
   id: 1,
@@ -83,11 +82,11 @@ const mockTimeseries = {
 };
 
 export const handlers = [
-  http.get(`${BASE}/auth/me`, () => HttpResponse.json({ data: mockUser })),
-  http.post(`${BASE}/auth/login`, () => HttpResponse.json({ data: { user: mockUser } })),
-  http.post(`${BASE}/auth/register`, () => HttpResponse.json({ data: { user: mockUser } })),
-  http.post(`${BASE}/auth/logout`, () => HttpResponse.json({ data: { success: true } })),
-  http.get(`${BASE}/shipments`, ({ request }) => {
+  http.get(`${BASE_URL}/auth/me`, () => HttpResponse.json({ data: mockUser })),
+  http.post(`${BASE_URL}/auth/login`, () => HttpResponse.json({ data: { user: mockUser } })),
+  http.post(`${BASE_URL}/auth/register`, () => HttpResponse.json({ data: { user: mockUser } })),
+  http.post(`${BASE_URL}/auth/logout`, () => HttpResponse.json({ data: { success: true } })),
+  http.get(`${BASE_URL}/shipments`, ({ request }) => {
     const url = new URL(request.url);
     const limit = url.searchParams.get("limit");
     const excludeStatus = url.searchParams.get("exclude_status");
@@ -103,34 +102,34 @@ export const handlers = [
       pagination: { page: 1, limit: 10, total: data.length, totalPages: 1 },
     });
   }),
-  http.get(`${BASE}/shipments/:id`, () => HttpResponse.json({ data: mockShipments[0] })),
-  http.post(`${BASE}/shipments`, async ({ request }) => {
+  http.get(`${BASE_URL}/shipments/:id`, () => HttpResponse.json({ data: mockShipments[0] })),
+  http.post(`${BASE_URL}/shipments`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({ data: { ...mockShipments[0], ...body } }, { status: 201 });
   }),
-  http.put(`${BASE}/shipments/:id`, async ({ request }) => {
+  http.put(`${BASE_URL}/shipments/:id`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({ data: { ...mockShipments[0], ...body } });
   }),
-  http.patch(`${BASE}/shipments/:id/status`, async ({ request }) => {
+  http.patch(`${BASE_URL}/shipments/:id/status`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({ data: { ...mockShipments[0], ...body } });
   }),
-  http.delete(`${BASE}/shipments/:id`, () => HttpResponse.json({ data: { success: true } })),
-  http.get(`${BASE}/track/:trackingNumber`, () =>
+  http.delete(`${BASE_URL}/shipments/:id`, () => HttpResponse.json({ data: { success: true } })),
+  http.get(`${BASE_URL}/track/:trackingNumber`, () =>
     HttpResponse.json({ data: { shipment: { id: "ORD-001" }, events: [] } }),
   ),
-  http.get(`${BASE}/hubs`, () => HttpResponse.json({ data: mockHubs })),
-  http.get(`${BASE}/hubs/:id`, () => HttpResponse.json({ data: mockHubs[0] })),
-  http.post(`${BASE}/hubs`, async ({ request }) => {
+  http.get(`${BASE_URL}/hubs`, () => HttpResponse.json({ data: mockHubs })),
+  http.get(`${BASE_URL}/hubs/:id`, () => HttpResponse.json({ data: mockHubs[0] })),
+  http.post(`${BASE_URL}/hubs`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({ data: { ...mockHubs[0], ...body } }, { status: 201 });
   }),
-  http.put(`${BASE}/hubs/:id`, async ({ request }) => {
+  http.put(`${BASE_URL}/hubs/:id`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({ data: { ...mockHubs[0], ...body } });
   }),
-  http.delete(`${BASE}/hubs/:id`, () => HttpResponse.json({ data: { success: true } })),
-  http.get(`${BASE}/analytics/overview`, () => HttpResponse.json({ data: mockAnalytics })),
-  http.get(`${BASE}/analytics/timeseries`, () => HttpResponse.json({ data: mockTimeseries })),
+  http.delete(`${BASE_URL}/hubs/:id`, () => HttpResponse.json({ data: { success: true } })),
+  http.get(`${BASE_URL}/analytics/overview`, () => HttpResponse.json({ data: mockAnalytics })),
+  http.get(`${BASE_URL}/analytics/timeseries`, () => HttpResponse.json({ data: mockTimeseries })),
 ];

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
-import { createRouter, createWebHistory } from "vue-router";
+import { mount, flushPromises } from "@vue/test-utils";
+import { createRouter, createMemoryHistory } from "vue-router";
 import { VueQueryPlugin, QueryClient } from "@tanstack/vue-query";
 import { createPinia, setActivePinia } from "pinia";
 
@@ -26,41 +26,36 @@ vi.mock("@/lib/api/orders", () => ({
   updateOrder: vi.fn().mockResolvedValue({ id: "ORD-001" }),
 }));
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    { path: "/orders/create", name: "order-create", component: { template: "<div>Create</div>" } },
-    {
-      path: "/orders/:orderId/edit",
-      name: "order-edit",
-      component: { template: "<div>Edit</div>" },
-    },
-    {
-      path: "/orders/:orderId",
-      name: "order-detail",
-      component: { template: "<div>Detail</div>" },
-    },
-    { path: "/orders", name: "orders", component: { template: "<div>Orders</div>" } },
-  ],
-});
-
 describe("OrderFormView", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
   });
 
-  it("renders create mode", async () => {
+  async function createView(route: string) {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/orders/create", name: "order-create", component: { template: "<div>Create</div>" } },
+        { path: "/orders/:orderId/edit", name: "order-edit", component: { template: "<div>Edit</div>" } },
+        { path: "/orders/:orderId", name: "order-detail", component: { template: "<div>Detail</div>" } },
+        { path: "/orders", name: "orders", component: { template: "<div>Orders</div>" } },
+      ],
+    });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    await router.push("/orders/create");
+    await router.push(route);
     await router.isReady();
     const { default: OrderFormView } = await import("./OrderFormView.vue");
-    const wrapper = mount(OrderFormView, {
+    return mount(OrderFormView, {
       global: {
         plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],
         stubs: { OrderForm: true, Skeleton: true },
       },
     });
-    await new Promise((r) => setTimeout(r, 200));
+  }
+
+  it("renders create mode", async () => {
+    const wrapper = await createView("/orders/create");
+    await flushPromises();
     expect(wrapper.text()).toContain("Create Order");
   });
 });

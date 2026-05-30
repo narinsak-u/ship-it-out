@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
 interface ApiSuccess<T> {
   data: T;
@@ -18,7 +18,7 @@ async function request<T = unknown>(
   raw = false,
 ): Promise<ApiResult<T>> {
   try {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await fetch(`${BASE_URL}${path}`, {
       credentials: "include",
       headers: { "Content-Type": "application/json", ...options?.headers },
       ...options,

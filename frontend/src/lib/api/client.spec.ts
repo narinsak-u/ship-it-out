@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { http, HttpResponse } from "msw";
 import { server } from "../../../tests/msw/server";
-import { api } from "./client";
+import { api, BASE_URL } from "./client";
 
 describe("api client", () => {
   it("GET returns data on success", async () => {
@@ -15,7 +15,7 @@ describe("api client", () => {
   });
   it("returns error object on 4xx response", async () => {
     server.use(
-      http.get("http://localhost:8080/api/auth/me", () =>
+      http.get(`${BASE_URL}/auth/me`, () =>
         HttpResponse.json({ error: "Unauthorized" }, { status: 401 }),
       ),
     );
@@ -24,7 +24,7 @@ describe("api client", () => {
     expect(result.data).toBeUndefined();
   });
   it("returns network error when fetch fails", async () => {
-    server.use(http.get("http://localhost:8080/api/auth/me", () => HttpResponse.error()));
+    server.use(http.get(`${BASE_URL}/auth/me`, () => HttpResponse.error()));
     const result = await api.get("/auth/me");
     expect(result.error).toContain("Network error");
   });

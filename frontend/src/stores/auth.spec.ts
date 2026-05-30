@@ -35,6 +35,14 @@ describe("auth store", () => {
     expect(store.loading).toBe(false);
   });
 
+  it("init() handles API failure gracefully", async () => {
+    vi.mocked(api.get).mockRejectedValue(new Error("Network error"));
+    const store = useAuthStore();
+    await store.init();
+    expect(store.user).toBeNull();
+    expect(store.loading).toBe(false);
+  });
+
   it("init() with guest mode skips API call", async () => {
     sessionStorage.setItem("harborops_guest", "true");
     const store = useAuthStore();

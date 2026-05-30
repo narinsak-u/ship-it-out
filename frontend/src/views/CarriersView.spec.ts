@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { nextTick } from "vue";
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import { VueQueryPlugin, QueryClient } from "@tanstack/vue-query";
 import { createPinia, setActivePinia } from "pinia";
 
@@ -18,7 +17,7 @@ describe("CarriersView", () => {
         stubs: { Card: true, CardContent: true },
       },
     });
-    await new Promise((r) => setTimeout(r, 200));
+    await flushPromises();
     expect(wrapper.text()).toContain("Active Deliveries");
     expect(wrapper.text()).toContain("Hubs");
     expect(wrapper.text()).toContain("Analytics");
@@ -33,14 +32,14 @@ describe("CarriersView", () => {
         stubs: { Card: true, CardContent: true },
       },
     });
-    await new Promise((r) => setTimeout(r, 200));
+    await flushPromises();
 
     const buttons = wrapper.findAll("button");
     const hubsBtn = buttons.find((b) => b.text().includes("Hubs"));
     expect(hubsBtn).toBeDefined();
 
     await hubsBtn!.trigger("click");
-    await nextTick();
+    await flushPromises();
 
     const updatedButtons = wrapper.findAll("button");
     const activeBtn = updatedButtons.find((b) => b.classes().includes("bg-card"));

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { toast } from "vue-sonner";
 import AuthModal from "./AuthModal.vue";
@@ -53,11 +53,10 @@ describe("AuthModal", () => {
       props: { open: true },
       global: { plugins: [pinia], stubs },
     });
-    const signupBtns = wrapper.findAll("button").filter((b) => b.text().includes("Sign Up"));
-    if (signupBtns.length > 0) {
-      await signupBtns[0].trigger("click");
-      await wrapper.vm.$nextTick();
-    }
+    const signUpButton = wrapper.findAll("button").find((b) => b.text().includes("Sign Up"));
+    expect(signUpButton).toBeDefined();
+    await signUpButton!.trigger("click");
+    await flushPromises();
     expect(wrapper.text()).toContain("Create Account");
   });
 
@@ -74,13 +73,12 @@ describe("AuthModal", () => {
       props: { open: true },
       global: { plugins: [pinia], stubs },
     });
-    const signupBtns = wrapper.findAll("button").filter((b) => b.text().includes("Sign Up"));
-    if (signupBtns.length > 0) {
-      await signupBtns[0].trigger("click");
-      await wrapper.vm.$nextTick();
-    }
+    const signUpButton = wrapper.findAll("button").find((b) => b.text().includes("Sign Up"));
+    expect(signUpButton).toBeDefined();
+    await signUpButton!.trigger("click");
+    await flushPromises();
     await wrapper.find("form").trigger("submit");
-    await wrapper.vm.$nextTick();
+    await flushPromises();
     expect(wrapper.text()).toContain("Please fill in all fields");
   });
 
@@ -89,18 +87,17 @@ describe("AuthModal", () => {
       props: { open: true },
       global: { plugins: [pinia], stubs },
     });
-    const signupBtns = wrapper.findAll("button").filter((b) => b.text().includes("Sign Up"));
-    if (signupBtns.length > 0) {
-      await signupBtns[0].trigger("click");
-      await wrapper.vm.$nextTick();
-    }
+    const signUpButton = wrapper.findAll("button").find((b) => b.text().includes("Sign Up"));
+    expect(signUpButton).toBeDefined();
+    await signUpButton!.trigger("click");
+    await flushPromises();
     const inputs = wrapper.findAll("input");
     await inputs[0].setValue("John");
     await inputs[1].setValue("john@test.com");
     await inputs[2].setValue("password123");
     await inputs[3].setValue("different");
     await wrapper.find("form").trigger("submit");
-    await wrapper.vm.$nextTick();
+    await flushPromises();
     expect(wrapper.text()).toContain("Passwords do not match");
   });
 
@@ -112,7 +109,7 @@ describe("AuthModal", () => {
       global: { plugins: [pinia], stubs },
     });
     await wrapper.find("form").trigger("submit");
-    await new Promise((r) => setTimeout(r, 50));
+    await flushPromises();
     expect(toast.success).toHaveBeenCalledWith("Signed in successfully");
     expect(wrapper.emitted("authenticated")).toBeTruthy();
   });
@@ -124,7 +121,7 @@ describe("AuthModal", () => {
       global: { plugins: [pinia], stubs },
     });
     await wrapper.find("form").trigger("submit");
-    await new Promise((r) => setTimeout(r, 50));
+    await flushPromises();
     expect(wrapper.text()).toContain("Invalid credentials");
     expect(wrapper.emitted("authenticated")).toBeFalsy();
   });

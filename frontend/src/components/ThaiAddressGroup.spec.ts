@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import ThaiAddressGroup from "./ThaiAddressGroup.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -210,7 +210,7 @@ describe("ThaiAddressGroup", () => {
         global: { stubs },
       });
 
-      await wrapper.vm.$nextTick();
+      await flushPromises();
       // Should not emit update:modelValue because:
       // 1. subDistrict "Klong Tan" IS in results (no stale clear)
       // 2. subDistrict is already set (auto-select guard prevents it)

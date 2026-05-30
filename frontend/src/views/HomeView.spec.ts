@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
-import { createRouter, createWebHistory } from "vue-router";
+import { mount, flushPromises } from "@vue/test-utils";
+import { createRouter, createMemoryHistory } from "vue-router";
 import { VueQueryPlugin, QueryClient } from "@tanstack/vue-query";
 import { createPinia, setActivePinia } from "pinia";
 
@@ -35,46 +35,45 @@ vi.mock("@/lib/api/tracking", () => ({
   trackShipment: vi.fn().mockResolvedValue({ shipment: { id: "ORD-001" } }),
 }));
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    { path: "/", name: "home", component: { template: "<div>Home</div>" } },
-    {
-      path: "/orders/:orderId",
-      name: "order-detail",
-      component: { template: "<div>Detail</div>" },
+async function createView() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/", name: "home", component: { template: "<div>Home</div>" } },
+      {
+        path: "/orders/:orderId",
+        name: "order-detail",
+        component: { template: "<div>Detail</div>" },
+      },
+    ],
+  });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const { default: HomeView } = await import("./HomeView.vue");
+  await router.push("/");
+  await router.isReady();
+  return mount(HomeView, {
+    global: {
+      plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],
+      stubs: { StatusBadge: true, Input: true, Button: true },
     },
-  ],
-});
+  });
+}
 
 describe("HomeView", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    vi.clearAllMocks();
   });
 
   it("renders hero section", async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { default: HomeView } = await import("./HomeView.vue");
-    const wrapper = mount(HomeView, {
-      global: {
-        plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],
-        stubs: { StatusBadge: true, Input: true, Button: true },
-      },
-    });
-    await new Promise((r) => setTimeout(r, 200));
+    const wrapper = await createView();
+    await flushPromises();
     expect(wrapper.text()).toContain("Move fast");
   });
 
   it("shows tracking search form", async () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { default: HomeView } = await import("./HomeView.vue");
-    const wrapper = mount(HomeView, {
-      global: {
-        plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],
-        stubs: { StatusBadge: true, Input: true, Button: true },
-      },
-    });
-    await new Promise((r) => setTimeout(r, 200));
+    const wrapper = await createView();
+    await flushPromises();
     expect(wrapper.find("form").exists()).toBe(true);
   });
 });

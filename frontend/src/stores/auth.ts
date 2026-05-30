@@ -18,18 +18,21 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isAuthenticated = computed(() => user.value !== null);
 
-  function init() {
+  async function init() {
     loading.value = true;
     if (isGuest.value) {
       loading.value = false;
       return;
     }
-    api.get<AuthUser>("/auth/me").then((res) => {
+    try {
+      const res = await api.get<AuthUser>("/auth/me");
       if (res.data) {
         user.value = res.data;
       }
-      loading.value = false;
-    });
+    } catch {
+      // API failure — user stays null
+    }
+    loading.value = false;
   }
 
   async function login(email: string, password: string): Promise<string | null> {
