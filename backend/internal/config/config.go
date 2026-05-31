@@ -12,6 +12,7 @@ import (
 type Config struct {
 	Port        string
 	DatabaseURL string
+	CORSOrigin  string
 	JWTSecret   string
 	JWTTTL      time.Duration
 }
@@ -27,6 +28,7 @@ func Load() {
 	App = Config{
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/shipments"),
+		CORSOrigin:  getEnv("CORS_ORIGIN", "http://localhost:5173"),
 		JWTSecret:   getEnv("JWT_SECRET", ""),
 		JWTTTL:      24 * time.Hour,
 	}
