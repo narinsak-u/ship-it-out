@@ -21,7 +21,9 @@ services:
     environment:
       PORT: "8080"
       DATABASE_URL: "postgres://user:pass@db:5432/shipments"
-      JWT_SECRET: "change-me"
+      CORS_ORIGIN: "http://localhost:5173"
+      # Override JWT_SECRET with a 64-char hex string for production
+      JWT_SECRET: "b333310df93f8974ae8dd3ef938e1345ebfafb02137e52b729ad98caacffd8f3"
     depends_on:
       - db
 
