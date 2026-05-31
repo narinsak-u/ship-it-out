@@ -10,6 +10,30 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: [
+            "vue",
+            "vue-router",
+            "pinia",
+            "@tanstack/vue-query",
+            "lucide-vue-next",
+            "vue-sonner",
+          ] as string[],
+          ui: [
+            "radix-vue",
+            "reka-ui",
+            "cmdk-vue",
+            "vaul-vue",
+            "class-variance-authority",
+          ] as string[],
+          maps: ["leaflet"] as string[],
+        } as Record<string, string[]>,
+      },
+    },
+  },
   test: {
     environment: "happy-dom",
     globals: true,
