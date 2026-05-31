@@ -48,6 +48,8 @@ func main() {
 
 	// CORS allows the frontend (different origin) to call these APIs
 	app.Use(middleware.CORS())
+	// Security headers protect against common web vulnerabilities
+	app.Use(middleware.SecurityHeaders())
 	// Logger prints every incoming request (method, path, status, duration)
 	app.Use(middleware.Logger())
 
