@@ -26,7 +26,7 @@ vi.mock("@/lib/api/orders", () => ({
   updateShipmentStatus: vi.fn().mockResolvedValue({ id: "ORD-001", status: "delivered" }),
 }));
 
-import { useActiveDeliveries, useUpdateShipmentStatus } from "./useDeliveries";
+import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
 
 function mountComposable<T>(setup: () => T) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

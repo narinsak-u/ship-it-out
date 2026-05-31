@@ -30,7 +30,7 @@ vi.mock("@/lib/api/hubs", () => ({
   deleteHub: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { useHubs, useCreateHub } from "./useHubs";
+import { useHubs, useCreateHub } from "@/hooks/useHubs";
 
 function mountComposable<T>(setup: () => T) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

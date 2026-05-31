@@ -9,7 +9,7 @@ vi.mock("@/lib/api/orders", () => ({
   updateOrder: vi.fn().mockResolvedValue({ id: "ORD-001", trackingNumber: "TH202600001" }),
 }));
 
-import { useCreateOrder, useUpdateOrder } from "./useOrders";
+import { useCreateOrder, useUpdateOrder } from "@/hooks/useOrders";
 
 function mountComposable<T>(setup: () => T) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
