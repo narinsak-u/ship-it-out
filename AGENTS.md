@@ -18,11 +18,11 @@ ship-simple/
 │   │   └── styles.css        # Tailwind v4 + Ocean Deep oklch theme
 │   ├── package.json
 │   └── vite.config.ts
-├── backend/                   # Go API (Fiber v2, GORM, PostgreSQL, Redis)
+├── backend/                   # Go API (Fiber v2, GORM, PostgreSQL)
 │   ├── cmd/server/main.go
 │   ├── internal/
 │   │   ├── config/            # Env-based configuration
-│   │   ├── database/          # GORM + Redis connections
+│   │   ├── database/          # GORM (PostgreSQL) connection
 │   │   ├── models/            # User, Shipment, ShipmentEvent, Hub
 │   │   ├── middleware/        # Auth (JWT), CORS, Logger
 │   │   ├── auth/              # Register, Login, Me, Logout
@@ -34,7 +34,7 @@ ship-simple/
 │   │   └── websocket/         # Real-time tracking (Gorilla WebSockets)
 │   ├── pkg/utils/             # Response writers, bcrypt helpers
 │   ├── go.mod
-│   └── docker-compose.yml     # Postgres 16 + Redis 7
+│   └── docker-compose.yml     # Postgres 16
 ├── docs/
 ├── specs/PROJECT-PLAN.md      # Feature roadmap
 ├── GEMINI.md                  # AI context
@@ -59,8 +59,8 @@ ship-simple/
 
 | Command | Purpose |
 |---------|---------|
-| `go run .` | Start API server (needs Postgres + Redis) |
-| `docker compose up -d` | Start Postgres 16 + Redis 7 |
+| `go run .` | Start API server (needs Postgres) |
+| `docker compose up -d` | Start Postgres 16 |
 | `go build ./...` | Compile all packages |
 | `go vet ./...` | Static analysis |
 | `go test ./...` | Run all tests |
@@ -93,7 +93,7 @@ Backend: `http://localhost:8080`, Frontend: `http://localhost:5173`.
 - **Responses:** Always `pkg/utils` — `Success(c, data)`, `Error(c, status, msg)`, `SuccessWithPagination(c, data, page, limit, total)`.
 - **Models:** GORM struct tags (`gorm:"..."`, `json:"..."`). Lifecycle hooks: `BeforeSave`, `AfterFind`.
 - **Config:** Global `config.App` singleton via `config.Load()`.
-- **Database:** Global `database.DB` (*gorm.DB) and `database.Redis` (*redis.Client).
+- **Database:** Global `database.DB` (*gorm.DB).
 - **Logging:** `zerolog` with `.Str().Err().Msg()` chaining.
 - **Auth:** JWT (HS256), HTTP-only cookies, bcrypt.
 - **API:** All routes under `/api/`.
@@ -112,7 +112,6 @@ Backend: `http://localhost:8080`, Frontend: `http://localhost:5173`.
 |----------|---------|-------------|
 | `PORT` | `8080` | Server port |
 | `DATABASE_URL` | `postgres://user:pass@localhost:5432/shipments` | PostgreSQL DSN |
-| `REDIS_URL` | `redis://localhost:6379` | Redis URL |
 | `JWT_SECRET` | `change-me` | JWT HMAC secret |
 
 ### Frontend (`frontend/.env`)
