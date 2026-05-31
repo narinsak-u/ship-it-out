@@ -1,7 +1,7 @@
 # Carriers Page Design
 
 **Date:** 2026-05-22
-**Project:** ship-simple / Harbor Ops
+**Project:** ship-it-out / Harbor Ops
 **Status:** Approved
 
 ## Overview

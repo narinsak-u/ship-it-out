@@ -54,7 +54,7 @@ Run from the `backend/` directory:
 ## Project Structure
 
 ```text
-ship-simple/
+ship-it-out/
 ├── frontend/          # Vue 3 SPA
 │   ├── src/
 │   │   ├── components/  # Shared Vue components

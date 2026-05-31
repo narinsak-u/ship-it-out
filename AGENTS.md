@@ -1,9 +1,9 @@
-# AGENTS.md — ship-simple
+# AGENTS.md — ship-it-out
 
 ## Project Structure
 
 ```
-ship-simple/
+ship-it-out/
 ├── frontend/                 # Vue 3 SPA (Vite, Tailwind v4, shadcn-vue)
 │   ├── src/
 │   │   ├── components/ui/    # shadcn-vue primitives (auto-generated; don't edit)

@@ -44,7 +44,7 @@ Real-time shipment tracking platform with a **Vue 3** frontend and **Go** backen
 ## Project Structure
 
 ```
-ship-simple/
+ship-it-out/
 ├── frontend/                     # Vue 3 SPA
 │   ├── src/
 │   │   ├── components/           # Shared Vue components

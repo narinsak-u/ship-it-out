@@ -1,4 +1,4 @@
-# Testing Setup Design — ship-simple Frontend
+# Testing Setup Design — ship-it-out Frontend
 
 **Date:** 2026-05-29
 **Goal:** Add comprehensive unit, integration, and end-to-end tests targeting 70-90% coverage on business logic layers.

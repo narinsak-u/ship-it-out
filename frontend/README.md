@@ -1,4 +1,4 @@
-# ship-simple Frontend
+# ship-it-out Frontend
 
 Vue 3 SPA for Thun-u-der Express — a shipment tracking dashboard with interactive maps, real-time status updates, and logistics analytics.
 

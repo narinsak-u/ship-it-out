@@ -1,4 +1,4 @@
-# ship-simple Frontend Overview
+# ship-it-out Frontend Overview
 
 Vue 3 SPA — shipment tracking dashboard with Tailwind CSS v4, shadcn-vue (New York style), TanStack Vue Query, Pinia, and Vue Router.
 
