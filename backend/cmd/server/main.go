@@ -25,7 +25,7 @@ import (
 //     - /auth/* — public auth endpoints (register, login, me, logout)
 //     - /shipments/* — CRUD for shipments (requires auth)
 //     - /track/:trackingNumber — public tracking lookup
-//     - /analytics/overview — dashboard stats (requires auth)
+//     - /analytics/overview — dashboard stats
 //  5. Starts the HTTP server on the configured port
 func main() {
 	// Use Unix timestamps (e.g. 1700000000) in log output instead of RFC3339
@@ -90,10 +90,10 @@ func main() {
 	trackingHandler := tracking.NewHandler(shipmentRepo)
 	api.Get("/track/:trackingNumber", trackingHandler.Track)
 
-	// --- Analytics (auth required) ---
+	// --- Analytics (no auth required) ---
 	analyticsHandler := analytics.NewHandler(shipmentRepo)
-	api.Get("/analytics/overview", middleware.AuthRequired(), analyticsHandler.Overview)
-	api.Get("/analytics/timeseries", middleware.AuthRequired(), analyticsHandler.TimeSeries)
+	api.Get("/analytics/overview", analyticsHandler.Overview)
+	api.Get("/analytics/timeseries", analyticsHandler.TimeSeries)
 
 	// --- Start the server ---
 	log.Info().Str("port", config.App.Port).Msg("server starting")

@@ -10,10 +10,14 @@ import (
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
+// Handler routes HTTP requests to the auth repository. Each method corresponds to a single
+// API endpoint (Register, Login, Me, Logout). Create via NewHandler — never instantiate directly.
 type Handler struct {
 	repo Repository
 }
 
+// NewHandler creates an auth Handler backed by the given Repository (typically a GormRepository).
+// The same constructor works with mock repositories in tests.
 func NewHandler(repo Repository) *Handler {
 	return &Handler{repo: repo}
 }

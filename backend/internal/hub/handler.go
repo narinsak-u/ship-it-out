@@ -7,15 +7,19 @@ import (
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
+// Handler routes HTTP requests to the hub repository. Public routes (List, GetByID) need no auth;
+// write routes (Create, Update, Delete) are protected by AuthRequired middleware in main.go.
+// Create via NewHandler — never instantiate directly.
 type Handler struct {
 	repo Repository
 }
 
+// NewHandler creates a hub Handler backed by the given Repository (typically a GormRepository).
 func NewHandler(repo Repository) *Handler {
 	return &Handler{repo: repo}
 }
 
-// List returns all hubs from the database.
+// List handles GET /api/hubs. Returns every hub in the database. Public endpoint (no auth).
 func (h *Handler) List(c *fiber.Ctx) error {
 	hubs, err := h.repo.FindAll()
 	if err != nil {
@@ -24,7 +28,8 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	return utils.Success(c, hubs)
 }
 
-// GetByID fetches a single hub by its primary key ID.
+// GetByID handles GET /api/hubs/:id. Looks up a single hub by its string ID (e.g. "HUB-001").
+// Returns 404 if not found. Public endpoint (no auth).
 func (h *Handler) GetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	hub, err := h.repo.FindByID(id)
@@ -34,7 +39,9 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 	return utils.Success(c, hub)
 }
 
-// Create adds a new hub to the database. Auto-generates a "HUB-xxx" ID if not provided.
+// Create handles POST /api/hubs. Parses the JSON body into a Hub model and inserts it.
+// If the JSON body does not include an "id" field, the repository auto-generates "HUB-NNN".
+// Requires JWT auth. Request body: { name, carrierId, address, coords, capacity, ... }.
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var hub models.Hub
 	if err := c.BodyParser(&hub); err != nil {
@@ -46,7 +53,9 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	return utils.Success(c, hub)
 }
 
-// Update modifies an existing hub's fields.
+// Update handles PUT /api/hubs/:id. Finds the existing hub, overwrites its fields with the
+// request body, re-sets the ID from the URL param (BodyParser clears the PK field), then saves.
+// Requires JWT auth.
 func (h *Handler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if _, err := h.repo.FindByID(id); err != nil {
@@ -63,7 +72,8 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	return utils.Success(c, hub)
 }
 
-// Delete removes a hub from the database.
+// Delete handles DELETE /api/hubs/:id. Removes the hub row from Postgres by its string ID.
+// Returns a confirmation message. Requires JWT auth.
 func (h *Handler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := h.repo.Delete(id); err != nil {

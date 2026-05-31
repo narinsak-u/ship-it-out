@@ -15,12 +15,16 @@ Handles user registration, login, session verification, and logout using JWT tok
 **Flow:**
 ```
 Client → POST /api/auth/register { name, email, password, role? }
-         │
-         ├─ 1. Parse JSON body into RegisterRequest
-         ├─ 2. Validate required fields (name, email, password)
-         ├─ 3. Hash password with bcrypt
-         ├─ 4. Default role to "customer" if omitted
-         ├─ 5. Insert User into Postgres
+          │
+          ├─ RateLimitAuth middleware runs first
+          │    ├─ In-memory sliding-window per IP: 5 req / 60s
+          │    └─ If exceeded → 429 "too many requests"
+          │
+          ├─ 1. Parse JSON body into RegisterRequest
+          ├─ 2. Validate required fields (name, email, password)
+          ├─ 3. Hash password with bcrypt
+          ├─ 4. Default role to "customer" if omitted
+          ├─ 5. Insert User into Postgres
          │     └─ If email exists → 409 "email already registered"
          ├─ 6. Build JWT with claims: { user_id, role, exp (24h) }
          ├─ 7. Sign JWT with HS256 using JWTSecret
@@ -37,9 +41,13 @@ Client → POST /api/auth/register { name, email, password, role? }
 **Flow:**
 ```
 Client → POST /api/auth/login { email, password }
-         │
-         ├─ 1. Parse JSON body into LoginRequest
-         ├─ 2. Look up user by email in Postgres
+          │
+          ├─ RateLimitAuth middleware runs first
+          │    ├─ 5 req / 60s per IP sliding window
+          │    └─ If exceeded → 429 "too many requests"
+          │
+          ├─ 1. Parse JSON body into LoginRequest
+          ├─ 2. Look up user by email in Postgres
          │     └─ If not found → 401 "invalid email or password"
          ├─ 3. Compare password against stored bcrypt hash
          │     └─ If mismatch → 401 "invalid email or password"
@@ -405,16 +413,19 @@ Client → DELETE /api/hubs/HUB-001 (JWT required)
 
 **Flow:**
 ```
-Client → GET /api/analytics/overview (JWT required)
-         │
-         ├─ 1. Count total shipments → total
-         ├─ 2. Count shipments NOT in (DELIVERED, RETURNED) → active
-         ├─ 3. Count shipments with status = "DELIVERED" → delivered
-         ├─ 4. Group all shipments by status, count each → by_status
-         └─ 5. Return { total, active, delivered, by_status } → 200
+Client → GET /api/analytics/overview
+          │
+          ├─ 1. Count total shipments → total
+          ├─ 2. Count shipments NOT in (DELIVERED, RETURNED) → active
+          ├─ 3. Count shipments with status = "DELIVERED" → delivered
+          ├─ 4. Group all shipments by status, count each → by_status
+          ├─ 5. Group shipments by province, map to 6 Thai regions → by_region
+          └─ 6. Return { total, active, delivered, by_status, by_region } → 200
 ```
 
-**Note:** The `by_status` array is a GROUP BY via GORM's `Select().Group().Scan()`.
+**Notes:**
+- `by_status` is a GROUP BY via GORM's `Select().Group().Scan()`.
+- `by_region` maps each shipment's destination province to one of 6 Thai regions (Central, East, North, West, North-east, South) via `internal/data/regions.go`.
 
 **Response shape:**
 ```json
@@ -428,10 +439,75 @@ Client → GET /api/analytics/overview (JWT required)
       { "status": "in_transit", "count": 4 },
       { "status": "pending", "count": 2 },
       ...
+    ],
+    "by_region": [
+      { "name": "Central", "total": 5 },
+      { "name": "East", "total": 4 },
+      ...
     ]
   }
 }
 ```
+
+### 5.2 TimeSeries (`GET /api/analytics/timeseries`)
+
+**Purpose:** Return shipment creation trends grouped by month and day of week for dashboard charts.
+
+**Flow:**
+```
+Client → GET /api/analytics/timeseries
+         │
+         ├─ 1. Group shipments by month (created_at truncated to YYYY-MM),
+         │     count each → by_month
+         ├─ 2. Group shipments by day-of-week (0=Sunday..6=Saturday),
+         │     count each → by_day_of_week
+         └─ 3. Return { by_month, by_day_of_week } → 200
+```
+
+**Response shape:**
+```json
+{
+  "success": true,
+  "data": {
+    "by_month": [
+      { "month": "2026-05", "count": 5 },
+      { "month": "2026-06", "count": 7 }
+    ],
+    "by_day_of_week": [
+      { "day_of_week": 1, "count": 3 },
+      { "day_of_week": 3, "count": 5 }
+    ]
+  }
+}
+```
+
+---
+
+## 6. Rate Limiting Middleware
+
+**Purpose:** Prevent brute-force attacks on authentication endpoints using an in-memory sliding-window rate limiter keyed by client IP.
+
+**Configuration:**
+
+| Setting | Value |
+|---------|-------|
+| Limit | 5 requests |
+| Window | 60 seconds (sliding) |
+| Applied to | `POST /api/auth/register`, `POST /api/auth/login` |
+| Storage | In-memory map (single instance; replace with Redis for horizontal scaling) |
+
+**Flow:**
+```
+Request arrives at login or register
+         │
+         ├─ 1. Extract client IP via c.IP()
+         ├─ 2. Prune timestamps older than 60s for this IP
+         ├─ 3. If remaining count >= 5 → 429 "too many requests"
+         ├─ 4. Otherwise → record timestamp, call c.Next()
+         └─ 5. Background cleanup goroutine evicts stale IPs every 60s
+```
+
+**Note:** Single-instance in-process limiter. For horizontally-scaled deployments, replace with a shared Redis-based implementation.
 
 ---
 
