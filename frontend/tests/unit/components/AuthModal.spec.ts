@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { toast } from "vue-sonner";
-import AuthModal from "./AuthModal.vue";
+import AuthModal from "@/components/AuthModal.vue";
 
 vi.mock("@/lib/api/client", () => ({
   api: { get: vi.fn(), post: vi.fn() },

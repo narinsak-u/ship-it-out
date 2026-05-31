@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
-import ConfirmDialog from "./ConfirmDialog.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 const stubs = {
   Dialog: { template: "<div><slot /></div>", props: ["open"] },

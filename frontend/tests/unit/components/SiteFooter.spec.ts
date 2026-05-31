@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
-import SiteFooter from "./SiteFooter.vue";
+import SiteFooter from "@/components/SiteFooter.vue";
 
 describe("SiteFooter", () => {
   it("renders copyright text", () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import OrderForm from "./OrderForm.vue";
+import OrderForm from "@/components/OrderForm.vue";
 
 vi.mock("@/lib/geocode", () => ({
   geocodeAddress: vi.fn().mockResolvedValue({ lat: 13.75, lng: 100.5 }),

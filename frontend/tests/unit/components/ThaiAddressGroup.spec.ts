@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import ThaiAddressGroup from "./ThaiAddressGroup.vue";
+import ThaiAddressGroup from "@/components/ThaiAddressGroup.vue";
 
 const mocks = vi.hoisted(() => ({
   getSubDistrictNames: vi.fn(),

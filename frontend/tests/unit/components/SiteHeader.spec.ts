@@ -3,7 +3,7 @@ import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
-import SiteHeader from "./SiteHeader.vue";
+import SiteHeader from "@/components/SiteHeader.vue";
 
 function createTestRouter() {
   return createRouter({
