@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { ref, nextTick } from "vue";
-import { usePagination } from "./usePagination";
+import { usePagination } from "@/composables/usePagination";
 
 describe("usePagination", () => {
   it("returns correct page count for 25 items with 10 per page", () => {

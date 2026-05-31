@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { ref } from "vue";
-import { useSearchFilter } from "./useSearchFilter";
+import { useSearchFilter } from "@/composables/useSearchFilter";
 
 interface TestItem {
   id: number;

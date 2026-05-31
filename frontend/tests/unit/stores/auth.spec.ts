@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
-import { useAuthStore } from "./auth";
+import { useAuthStore } from "@/stores/auth";
 
 const mockUser = {
   id: 1,
