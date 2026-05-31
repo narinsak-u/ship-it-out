@@ -6,7 +6,7 @@ Comprehensive instructional context for AI agents working on the Harbor Ops ship
 Harbor Ops is a real-time shipment tracking dashboard featuring a modern Vue 3 SPA frontend and a high-performance Go API server. It is designed to provide a portfolio-grade logistics platform with real-time updates, interactive maps, and analytics.
 
 - **Frontend:** Vue 3.5+ (Composition API, Vite 6, Tailwind CSS v4, shadcn-vue).
-- **Backend:** Go 1.24+ (Fiber v2, GORM, PostgreSQL, Redis, WebSockets).
+- **Backend:** Go 1.24+ (Fiber v2, GORM, PostgreSQL, WebSockets).
 
 ---
 
@@ -27,7 +27,7 @@ Harbor Ops is a real-time shipment tracking dashboard featuring a modern Vue 3 S
 - **Language:** Go 1.24+
 - **Framework:** Fiber v2 (Fast HTTP framework)
 - **ORM:** GORM with PostgreSQL (pgx driver)
-- **Cache/PubSub:** Redis (for real-time events and data persistence)
+- **Rate Limiting:** In-memory sliding window (5 req/min per IP on auth endpoints)
 - **Auth:** JWT (JSON Web Tokens)
 - **Real-time:** Gorilla WebSockets
 - **Logging:** Zerolog
@@ -47,7 +47,7 @@ Run from the `frontend/` directory:
 ### Backend
 Run from the `backend/` directory:
 - `go run ./cmd/server/main.go` — Start the API server.
-- `docker-compose up -d` — Start PostgreSQL and Redis (required for local development).
+- `docker-compose up -d` — Start PostgreSQL (required for local development).
 
 ---
 
@@ -116,4 +116,4 @@ ship-simple/
 ## Feature Roadmap (Summary)
 1. **Phase 1 (MVP):** Auth (JWT), Shipment CRUD, Public Tracking Page, Real-time status via WebSockets.
 2. **Phase 2 (Advanced):** Driver System (Dashboard & Navigation), Live Map Tracking (GPS), ETA Prediction, Hub/Warehouse System.
-3. **Phase 3 (WOW):** Event-Driven Architecture (Redis Pub/Sub), Background Workers, Optimistic UI, Barcode/QR scanning.
+3. **Phase 3 (WOW):** Event-Driven Architecture (message queue), Background Workers, Optimistic UI, Barcode/QR scanning.

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mount } from "@vue/test-utils";
-import { createRouter, createWebHistory } from "vue-router";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mount, flushPromises } from "@vue/test-utils";
+import { createRouter, createMemoryHistory } from "vue-router";
 import { VueQueryPlugin, QueryClient } from "@tanstack/vue-query";
 import { createPinia, setActivePinia } from "pinia";
 
@@ -31,24 +31,37 @@ vi.mock("@/lib/api/orders", () => ({
 
 import { fetchOrdersPaginated } from "@/lib/api/orders";
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    { path: "/", name: "home", component: { template: "<div>Home</div>" } },
-    { path: "/orders", name: "orders", component: { template: "<div>Orders</div>" } },
-    { path: "/orders/create", name: "order-create", component: { template: "<div>Create</div>" } },
-    {
-      path: "/orders/:orderId",
-      name: "order-detail",
-      component: { template: "<div>Detail</div>" },
-    },
-    {
-      path: "/orders/:orderId/edit",
-      name: "order-edit",
-      component: { template: "<div>Edit</div>" },
-    },
-  ],
-});
+async function buildRouter() {
+  const { createRouter, createMemoryHistory } = await import("vue-router");
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/", name: "home", component: { template: "<div>Home</div>" } },
+      { path: "/orders", name: "orders", component: { template: "<div>Orders</div>" } },
+      { path: "/orders/create", name: "order-create", component: { template: "<div>Create</div>" } },
+      { path: "/orders/:orderId", name: "order-detail", component: { template: "<div>Detail</div>" } },
+      { path: "/orders/:orderId/edit", name: "order-edit", component: { template: "<div>Edit</div>" } },
+    ],
+  });
+}
+
+const defaultStubs = {
+  StatusBadge: true,
+  Pagination: true,
+  AuthModal: true,
+  ConfirmDialog: true,
+  Skeleton: true,
+  Input: true,
+  Button: true,
+  Table: true,
+  TableHeader: true,
+  TableBody: true,
+  TableRow: true,
+  TableHead: true,
+  TableCell: true,
+  ShipmentFilters: true,
+  OrderTableRow: true,
+};
 
 describe("OrdersView", () => {
   beforeEach(() => {
@@ -56,69 +69,51 @@ describe("OrdersView", () => {
   });
 
   it("renders shipment manifest title", async () => {
+    const router = await buildRouter();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { default: OrdersView } = await import("./OrdersView.vue");
     const wrapper = mount(OrdersView, {
       global: {
         plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],
-        stubs: {
-          StatusBadge: true,
-          Pagination: true,
-          AuthModal: true,
-          ConfirmDialog: true,
-          Skeleton: true,
-          Input: true,
-          Button: true,
-          Table: true,
-          TableHeader: true,
-          TableBody: true,
-          TableRow: true,
-          TableHead: true,
-          TableCell: true,
-        },
+        stubs: defaultStubs,
       },
     });
-    await new Promise((r) => setTimeout(r, 300));
+    await flushPromises();
     expect(wrapper.text()).toContain("Shipment manifest");
   });
 
   it("debounces search input before fetching", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const router = await buildRouter();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const { default: OrdersView } = await import("./OrdersView.vue");
     const wrapper = mount(OrdersView, {
       global: {
         plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],
         stubs: {
-          StatusBadge: true,
-          Pagination: true,
-          AuthModal: true,
-          ConfirmDialog: true,
-          Skeleton: true,
+          ...defaultStubs,
           Input: {
             template:
               '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
             props: ["modelValue"],
           },
-          Button: true,
-          Table: true,
-          TableHeader: true,
-          TableBody: true,
-          TableRow: true,
-          TableHead: true,
-          TableCell: true,
+          ShipmentFilters: false,
         },
       },
     });
-    await new Promise((r) => setTimeout(r, 300));
+    await flushPromises();
     vi.mocked(fetchOrdersPaginated).mockClear();
 
     const searchInput = wrapper.find("input");
     await searchInput.setValue("test");
 
-    await new Promise((r) => setTimeout(r, 200));
+    vi.advanceTimersByTime(200);
     expect(fetchOrdersPaginated).not.toHaveBeenCalled();
 
-    await new Promise((r) => setTimeout(r, 200));
+    vi.advanceTimersByTime(300);
+    await flushPromises();
     expect(fetchOrdersPaginated).toHaveBeenCalled();
+
+    vi.useRealTimers();
   });
 });

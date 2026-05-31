@@ -34,10 +34,10 @@ Real-time shipment tracking platform with a **Vue 3** frontend and **Go** backen
 | ORM | GORM v2 with PostgreSQL |
 | Auth | JWT (HS256), HTTP-only cookies |
 | Password hashing | bcrypt |
-| Cache | go-redis/v9 |
+| Cache | N/A (in-memory rate limiter) |
 | WebSocket | gorilla/websocket via fiber/contrib |
 | Logging | zerolog |
-| Containerization | Docker Compose (Postgres 16 + Redis 7) |
+| Containerization | Docker Compose (Postgres 16) |
 
 ---
 
@@ -68,7 +68,7 @@ ship-simple/
 │   ├── cmd/server/main.go        # Entry point: bootstrap, migrate, seed, routes
 │   ├── internal/
 │   │   ├── config/               # Environment-based configuration
-│   │   ├── database/             # GORM + Redis connections
+│   │   ├── database/             # GORM (PostgreSQL) connection
 │   │   ├── models/               # User, Shipment, ShipmentEvent, Hub
 │   │   ├── middleware/           # Auth (JWT), CORS, Logger
 │   │   ├── auth/                 # Register, Login, Me, Logout
@@ -109,7 +109,7 @@ npm run format     # Prettier auto-format
 cd backend
 docker compose up
 
-# Or manually (Postgres + Redis required)
+# Or manually (Postgres required)
 cd backend
 go run .
 ```
@@ -166,7 +166,9 @@ The backend starts on `http://localhost:8080` and the frontend dev server on `ht
 | POST | `/api/hubs` | JWT | Create a hub |
 | PUT | `/api/hubs/:id` | JWT | Update hub fields |
 | DELETE | `/api/hubs/:id` | JWT | Delete a hub |
-| GET | `/api/analytics/overview` | JWT | Dashboard aggregate stats |
+| GET | `/api/health` | No | Container liveness probe |
+| GET | `/api/analytics/overview` | No | Dashboard aggregate stats |
+| GET | `/api/analytics/timeseries` | No | Shipment trends by month and day-of-week |
 | GET | `/ws/tracking/:trackingNumber` | No | Real-time tracking WebSocket |
 
 ---
@@ -196,7 +198,6 @@ CSS custom properties defined in `frontend/src/styles.css` under the `:root` blo
 |----------|---------|-------------|
 | `PORT` | `8080` | Server listen port |
 | `DATABASE_URL` | `postgres://user:pass@localhost:5432/shipments` | PostgreSQL DSN |
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `JWT_SECRET` | `change-me` | HMAC secret for JWT |
 
 ### Frontend (`frontend/.env`)

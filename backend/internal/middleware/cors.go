@@ -1,6 +1,9 @@
 package middleware
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/narinsak-u/backend/internal/config"
+)
 
 // CORS returns middleware that sets Cross-Origin Resource Sharing (CORS)
 // headers on every response. CORS is a browser security mechanism that
@@ -21,7 +24,7 @@ import "github.com/gofiber/fiber/v2"
 //     so the browser knows the actual request is safe to send
 func CORS() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		c.Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		c.Set("Access-Control-Allow-Origin", config.App.CORSOrigin)
 		c.Set("Access-Control-Allow-Credentials", "true")
 		c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 		c.Set("Access-Control-Allow-Headers", "Content-Type,Authorization")

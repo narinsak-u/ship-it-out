@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import OrderForm from "./OrderForm.vue";
 
 vi.mock("@/lib/geocode", () => ({
@@ -53,10 +53,9 @@ describe("OrderForm", () => {
       global: { stubs },
     });
     const cancelBtns = wrapper.findAll("button").filter((b) => b.text().includes("Cancel"));
-    if (cancelBtns.length > 0) {
-      await cancelBtns[0].trigger("click");
-      expect(wrapper.emitted("cancel")).toBeTruthy();
-    }
+    expect(cancelBtns.length).toBeGreaterThan(0);
+    await cancelBtns[0].trigger("click");
+    expect(wrapper.emitted("cancel")).toBeTruthy();
   });
 
   it("renders save changes in edit mode", () => {
@@ -109,7 +108,7 @@ describe("OrderForm", () => {
       global: { stubs },
     });
     await wrapper.find("form").trigger("submit");
-    await new Promise((r) => setTimeout(r, 0));
+    await flushPromises();
     expect(wrapper.text()).toContain("Location lookup failed");
   });
 
@@ -143,7 +142,7 @@ describe("OrderForm", () => {
       global: { stubs },
     });
     await wrapper.find("form").trigger("submit");
-    await new Promise((r) => setTimeout(r, 0));
+    await flushPromises();
     expect(wrapper.emitted("submit")).toBeTruthy();
   });
 });

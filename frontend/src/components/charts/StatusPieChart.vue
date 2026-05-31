@@ -30,8 +30,8 @@ const chartConfig = computed<ChartConfig>(() => {
   return config;
 });
 
-const tooltipFn = (d: Record<string, any>) => {
-  const item = d?.data ?? d;
+const tooltipFn = (raw: { data?: StatusPieEntry }) => {
+  const item = raw.data;
   if (!item?.label) return "";
   return `<div class="flex items-center gap-2 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
     <div class="h-2.5 w-2.5 shrink-0 rounded-[2px]" style="background:${item.fill}"></div>

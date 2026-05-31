@@ -2,7 +2,11 @@ import { describe, it, expect } from "vitest";
 import { ref } from "vue";
 import { useSearchFilter } from "./useSearchFilter";
 
-interface TestItem { id: number; name: string; email: string; }
+interface TestItem {
+  id: number;
+  name: string;
+  email: string;
+}
 
 const testData: TestItem[] = [
   { id: 1, name: "Alice Wonderland", email: "alice@example.com" },

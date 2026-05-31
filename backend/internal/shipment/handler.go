@@ -9,15 +9,23 @@ import (
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
+// HubRepository is the interface the shipment handler uses to look up a hub by its ID
+// when updating status (e.g. to set CurrentCoords to the hub's location). It's defined here
+// rather than in the hub package to avoid an import cycle — the handler depends on both.
 type HubRepository interface {
 	FindByID(id string) (*models.Hub, error)
 }
 
+// Handler holds the repository and hub-repository dependencies needed by all shipment
+// HTTP handlers. Create one via NewHandler — never instantiate this struct directly.
 type Handler struct {
 	repo    Repository
 	hubRepo HubRepository
 }
 
+// NewHandler creates a Handler with the given shipment Repository and optional HubRepository
+// (used by UpdateStatus to resolve hub locations). Both should be real GormRepository instances
+// or mocks in tests.
 func NewHandler(repo Repository, hubRepo HubRepository) *Handler {
 	return &Handler{repo: repo, hubRepo: hubRepo}
 }
@@ -32,8 +40,8 @@ type CreateRequest struct {
 	Items    int                `json:"items"`
 }
 
-// List returns shipments from the database with optional pagination and filtering.
-// Query params: page (default 1), limit (default 10), search, status, exclude_status.
+// List handles GET /api/shipments. Reads query params (page, limit, search, status, exclude_status),
+// passes them to the repository, and returns paginated results. Public endpoint (no auth required).
 func (h *Handler) List(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))
@@ -51,7 +59,10 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	return utils.SuccessWithPagination(c, shipments, filter.Page, filter.Limit, int(total))
 }
 
-// Create adds a new shipment to the database.
+// Create handles POST /api/shipments. Validates the JSON body, builds a Shipment model with
+// auto-generated OrderID/TrackingNumber, sets origin/destination from customer/receiver addresses,
+// sets status to "pending" with a 72h estimated delivery, creates an initial "Label Created"
+// tracking event, and saves everything to Postgres. Requires JWT auth.
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var req CreateRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -108,7 +119,8 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
-// GetByID fetches a single shipment by its order ID.
+// GetByID handles GET /api/shipments/:orderId. Looks up a single shipment by its ORD-xxxxx
+// order ID and returns it directly. Returns 404 if not found. Public endpoint (no auth required).
 func (h *Handler) GetByID(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 	shipment, err := h.repo.FindByOrderID(orderID)
@@ -118,8 +130,15 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
-// statusToEvent builds the tracking event details (status label, description, location)
-// for a given shipment status. Some statuses require a hub reference for location.
+// statusToEvent translates a raw status string (e.g. "in_transit", "delivered") into a
+// human-readable ShipmentEvent with a label, description, and location. Location logic:
+//   - pending/picked_up → customer's address
+//   - delivered → receiver's address
+//   - departed/in_transit/out_for_delivery/delayed → hub location if hub is provided,
+//     otherwise falls back to current coords, origin, or destination
+//   - any unknown status → generic "Status updated." at destination
+//
+// This is a pure helper function — it does not save anything to the database.
 func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus string) models.ShipmentEvent {
 	var eventStatus, description string
 	var location models.Location
@@ -194,8 +213,10 @@ func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus strin
 	}
 }
 
-// UpdateStatus changes the status of a shipment and records a tracking event
-// with context-aware status label, description, and location.
+// UpdateStatus handles PATCH /api/shipments/:orderId/status. Changes the shipment's status,
+// optionally links a hub (updating CurrentCoords to the hub's lat/lng), saves the shipment,
+// and creates a tracking event via statusToEvent with context-aware location.
+// Requires JWT auth. Request body: { "status": "in_transit", "hubId": "HUB-003" }.
 func (h *Handler) UpdateStatus(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
@@ -243,7 +264,9 @@ func (h *Handler) UpdateStatus(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
-// UpdateRequest is the JSON body for updating an existing shipment.
+// UpdateRequest is the JSON body for updating an existing shipment. ALL fields are optional
+// (pointer types) — only non-nil fields are applied. This lets callers send partial updates
+// without accidentally zeroing out unset fields.
 type UpdateRequest struct {
 	Customer          *models.ContactInfo `json:"customer,omitempty"`
 	Receiver          *models.ContactInfo `json:"receiver,omitempty"`
@@ -253,7 +276,9 @@ type UpdateRequest struct {
 	EstimatedDelivery *time.Time          `json:"estimatedDelivery,omitempty"`
 }
 
-// Update modifies an existing shipment's fields.
+// Update handles PUT /api/shipments/:orderId. Finds the existing shipment, applies only the
+// fields the caller provided in the JSON body (pointer fields allow partial updates), recalculates
+// Origin/Destination/CurrentCoords when customer or receiver changes, then saves. Requires JWT auth.
 func (h *Handler) Update(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
@@ -293,7 +318,9 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
-// Delete removes a shipment and its events from the database.
+// Delete handles DELETE /api/shipments/:orderId. Deletes all tracking events first (to avoid
+// foreign-key constraint errors), then deletes the shipment itself. Returns a success message.
+// Requires JWT auth.
 func (h *Handler) Delete(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 

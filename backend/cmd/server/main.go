@@ -9,6 +9,7 @@ import (
 	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/config"
 	"github.com/narinsak-u/backend/internal/database"
+	"github.com/narinsak-u/backend/internal/health"
 	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
@@ -25,7 +26,7 @@ import (
 //     - /auth/* — public auth endpoints (register, login, me, logout)
 //     - /shipments/* — CRUD for shipments (requires auth)
 //     - /track/:trackingNumber — public tracking lookup
-//     - /analytics/overview — dashboard stats (requires auth)
+//     - /analytics/overview — dashboard stats
 //  5. Starts the HTTP server on the configured port
 func main() {
 	// Use Unix timestamps (e.g. 1700000000) in log output instead of RFC3339
@@ -33,6 +34,7 @@ func main() {
 
 	// --- Bootstrap: load config, connect database, migrate schemas ---
 	config.Load()
+	config.Validate()
 	database.ConnectPostgres(config.App.DatabaseURL)
 
 	// Auto-create/update tables so they match our model structs
@@ -47,6 +49,8 @@ func main() {
 
 	// CORS allows the frontend (different origin) to call these APIs
 	app.Use(middleware.CORS())
+	// Security headers protect against common web vulnerabilities
+	app.Use(middleware.SecurityHeaders())
 	// Logger prints every incoming request (method, path, status, duration)
 	app.Use(middleware.Logger())
 
@@ -54,6 +58,9 @@ func main() {
 
 	// Everything under /api will have the /api prefix
 	api := app.Group("/api")
+
+	// Health check for container orchestrators (Docker, K8s liveness probe)
+	api.Get("/health", health.Check)
 
 	// --- Auth routes (public — no auth required) ---
 	authHandler := auth.NewHandler(auth.NewGormRepository(database.DB))
@@ -90,10 +97,10 @@ func main() {
 	trackingHandler := tracking.NewHandler(shipmentRepo)
 	api.Get("/track/:trackingNumber", trackingHandler.Track)
 
-	// --- Analytics (auth required) ---
+	// --- Analytics (no auth required) ---
 	analyticsHandler := analytics.NewHandler(shipmentRepo)
-	api.Get("/analytics/overview", middleware.AuthRequired(), analyticsHandler.Overview)
-	api.Get("/analytics/timeseries", middleware.AuthRequired(), analyticsHandler.TimeSeries)
+	api.Get("/analytics/overview", analyticsHandler.Overview)
+	api.Get("/analytics/timeseries", analyticsHandler.TimeSeries)
 
 	// --- Start the server ---
 	log.Info().Str("port", config.App.Port).Msg("server starting")

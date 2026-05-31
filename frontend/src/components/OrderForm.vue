@@ -5,7 +5,7 @@ import type { OrderFormData } from "@/lib/api/orders";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
 import ThaiAddressGroup from "./ThaiAddressGroup.vue";
-import { geocodeAddress } from "@/lib/geocode";
+import { useGeocodeSubmit } from "@/composables/useGeocodeSubmit";
 
 const props = defineProps<{
   initial?: Partial<OrderFormData> & { estimatedDeliveryRaw?: string };
@@ -34,7 +34,6 @@ const receiver = ref({
   province: props.initial?.receiver?.province ?? "",
 });
 
-// Parcel
 const carrier = ref(props.initial?.carrier ?? "Thun-u-der Express");
 const weight = ref(props.initial?.weight ?? 0);
 const items = ref(props.initial?.items ?? 1);
@@ -42,8 +41,7 @@ const estimatedDelivery = ref(props.initial?.estimatedDelivery ?? "");
 const estimatedDeliveryRaw = ref(props.initial?.estimatedDeliveryRaw ?? "");
 
 const errors = ref<Record<string, string>>({});
-const geocodeErrors = ref<Record<string, string>>({});
-const geocoding = ref(false);
+const { geocoding, geocodeErrors, geocodeBoth } = useGeocodeSubmit();
 
 const filled = computed(() => {
   return (
@@ -121,40 +119,18 @@ const receiverErrorMap = computed(() => {
 
 async function handleSubmit() {
   if (!validate()) return;
-  geocodeErrors.value = {};
-  geocoding.value = true;
 
-  try {
-    const [senderRes, receiverRes] = await Promise.allSettled([
-      geocodeAddress(sender.value.subDistrict, sender.value.district, sender.value.province),
-      geocodeAddress(receiver.value.subDistrict, receiver.value.district, receiver.value.province),
-    ]);
+  const coords = await geocodeBoth(sender.value, receiver.value);
+  if (!coords) return;
 
-    if (senderRes.status === "rejected") {
-      geocodeErrors.value.sender = senderRes.reason.message;
-    }
-    if (receiverRes.status === "rejected") {
-      geocodeErrors.value.receiver = receiverRes.reason.message;
-    }
-
-    if (senderRes.status === "rejected" || receiverRes.status === "rejected") {
-      return;
-    }
-
-    emit("submit", {
-      customer: { ...sender.value, coords: senderRes.value },
-      receiver: { ...receiver.value, coords: receiverRes.value },
-      carrier: carrier.value,
-      weight: weight.value,
-      items: items.value,
-      estimatedDelivery: estimatedDeliveryRaw.value || "",
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Could not resolve address.";
-    geocodeErrors.value = { sender: msg, receiver: msg };
-  } finally {
-    geocoding.value = false;
-  }
+  emit("submit", {
+    customer: { ...sender.value, coords: coords.senderCoords },
+    receiver: { ...receiver.value, coords: coords.receiverCoords },
+    carrier: carrier.value,
+    weight: weight.value,
+    items: items.value,
+    estimatedDelivery: estimatedDeliveryRaw.value || "",
+  });
 }
 </script>
 
@@ -196,7 +172,14 @@ async function handleSubmit() {
           <label class="font-mono text-xs uppercase tracking-widest text-muted-foreground"
             >Weight/Kg</label
           >
-          <Input v-model.number="weight" type="number" step="0.1" min="0" class="mt-1.5 font-mono text-sm" placeholder="e.g. 12.4" />
+          <Input
+            v-model.number="weight"
+            type="number"
+            step="0.1"
+            min="0"
+            class="mt-1.5 font-mono text-sm"
+            placeholder="e.g. 12.4"
+          />
           <p v-if="errors.weight" class="mt-1 font-mono text-xs text-destructive">
             {{ errors.weight }}
           </p>
