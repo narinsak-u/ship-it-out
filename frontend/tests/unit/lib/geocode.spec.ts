@@ -6,7 +6,7 @@ vi.mock("opencage-api-client", () => ({
   geocode: mockGeocode,
 }));
 
-import { geocodeAddress } from "./geocode";
+import { geocodeAddress } from "@/lib/geocode";
 
 describe("geocodeAddress", () => {
   beforeEach(() => {

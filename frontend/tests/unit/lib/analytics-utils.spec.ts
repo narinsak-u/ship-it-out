@@ -5,7 +5,7 @@ import {
   computeStatusDistribution,
   computeStatusPieData,
   computeCumulativeData,
-} from "./analytics-utils";
+} from "@/lib/analytics-utils";
 import type { AnalyticsOverview, TimeSeriesData } from "@/lib/api/analytics";
 
 const mockAnalytics: AnalyticsOverview = {
