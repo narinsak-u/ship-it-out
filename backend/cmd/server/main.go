@@ -9,6 +9,7 @@ import (
 	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/config"
 	"github.com/narinsak-u/backend/internal/database"
+	"github.com/narinsak-u/backend/internal/health"
 	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
@@ -57,6 +58,9 @@ func main() {
 
 	// Everything under /api will have the /api prefix
 	api := app.Group("/api")
+
+	// Health check for container orchestrators (Docker, K8s liveness probe)
+	api.Get("/health", health.Check)
 
 	// --- Auth routes (public — no auth required) ---
 	authHandler := auth.NewHandler(auth.NewGormRepository(database.DB))
