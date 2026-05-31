@@ -169,6 +169,7 @@ function handleUpdate(orderId: string) {
             @update:status-draft="draftStatus[o.id] = $event"
             @update:hub-draft="draftHubId[o.id] = $event"
             @update="handleUpdate($event)"
+            @select="selectedOrderId = $event"
           />
         </TableBody>
       </Table>

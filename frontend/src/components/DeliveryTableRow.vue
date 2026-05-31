@@ -37,6 +37,7 @@ const emit = defineEmits<{
   "update:statusDraft": [value: ShipmentStatus];
   "update:hubDraft": [value: string];
   update: [orderId: string];
+  select: [orderId: string];
 }>();
 
 const selectedStatus = computed(() => props.statusDraft ?? props.order.status);
@@ -64,17 +65,22 @@ const canUpdate = computed(() => {
 </script>
 
 <template>
-  <TableRow class="cursor-pointer border-b border-border transition-colors hover:bg-secondary/40">
+  <TableRow
+    class="cursor-pointer border-b border-border transition-colors hover:bg-secondary/40"
+    @click="emit('select', order.id)"
+  >
     <TableCell class="font-mono text-sm text-primary">{{ order.id }}</TableCell>
-    <TableCell class="font-mono text-xs text-muted-foreground">{{
-      order.trackingNumber
-    }}</TableCell>
+    <TableCell class="font-mono text-xs text-muted-foreground">
+      {{ order.trackingNumber }}
+    </TableCell>
     <TableCell class="font-mono text-sm">{{ order.customer.name }}</TableCell>
     <TableCell class="font-mono text-sm text-muted-foreground">{{ order.carrier }}</TableCell>
     <TableCell>
       <Select
         :model-value="selectedStatus"
-        @update:model-value="(v: AcceptableValue) => emit('update:statusDraft', v as ShipmentStatus)"
+        @update:model-value="
+          (v: AcceptableValue) => emit('update:statusDraft', v as ShipmentStatus)
+        "
         :disabled="!isAuthenticated"
       >
         <SelectTrigger
