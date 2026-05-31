@@ -21,7 +21,9 @@ const { data: order, isLoading } = useQuery({
 });
 
 const { data: events } = useQuery({
-  queryKey: computed(() => (order.value ? eventKeys.byTracking(order.value.trackingNumber) : ["order-events", orderId])),
+  queryKey: computed(() =>
+    order.value ? eventKeys.byTracking(order.value.trackingNumber) : ["order-events", orderId],
+  ),
   queryFn: () => {
     if (!order.value) return [];
     return fetchOrderEvents(order.value.trackingNumber);
@@ -177,7 +179,7 @@ const meta = computed(() => {
             <h2 class="font-mono text-sm uppercase tracking-widest text-muted-foreground">
               Shipment status
             </h2>
-            <ol class="relative mt-5 space-y-5 border-l border-border pl-6">
+            <ol class="relative mt-5 space-y-5 border-l border-border pl-[22.5px]">
               <li v-for="(e, i) in timeline" :key="i" class="relative">
                 <span
                   :class="[
@@ -262,9 +264,9 @@ const meta = computed(() => {
     <div class="mx-auto max-w-2xl px-6 py-32 text-center">
       <h1 class="font-mono text-4xl">404</h1>
       <p class="mt-3 text-muted-foreground">Shipment not found.</p>
-      <RouterLink to="/orders" class="mt-6 inline-block font-mono text-sm text-primary"
-        >← Back to orders</RouterLink
-      >
+      <RouterLink to="/orders" class="mt-6 inline-block font-mono text-sm text-primary">
+        ← Back to orders
+      </RouterLink>
     </div>
   </div>
 </template>

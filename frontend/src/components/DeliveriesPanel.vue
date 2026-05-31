@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import { useQuery } from "@tanstack/vue-query";
-import { toast } from "vue-sonner";
 import { Search, RefreshCw } from "lucide-vue-next";
 import { useActiveDeliveries, useUpdateShipmentStatus } from "@/hooks/useDeliveries";
 import { hubKeys } from "@/lib/api/queryKeys";
@@ -92,16 +91,10 @@ function handleUpdate(orderId: string) {
     status === "out_for_delivery" ||
     status === "delayed";
   if (needsHub && !draftHubId.value[orderId]) return;
-  updateStatus.mutate(
-    { orderId, status, hubId: draftHubId.value[orderId] },
-    {
-      onSuccess: () => {
-        toast.success("Delivery status updated");
-        delete draftStatus.value[orderId];
-        delete draftHubId.value[orderId];
-      },
-    },
-  );
+  updateStatus.mutateAsync({ orderId, status, hubId: draftHubId.value[orderId] }).then(() => {
+    delete draftStatus.value[orderId];
+    delete draftHubId.value[orderId];
+  });
 }
 </script>
 

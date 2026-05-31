@@ -17,6 +17,15 @@ interface Props {
 const props = defineProps<Props>();
 const mapContainer = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
+let originMarker: L.Marker | null = null;
+let destMarker: L.Marker | null = null;
+let currentMarker: L.Marker | null = null;
+let lineA: L.Polyline | null = null;
+let lineB: L.Polyline | null = null;
+
+function point(p: GeoPoint): [number, number] {
+  return [p.lat, p.lng];
+}
 
 const originIcon = L.divIcon({
   className: "",
@@ -60,39 +69,36 @@ onMounted(() => {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO',
   }).addTo(map);
 
-  const points = [
-    [props.origin.lat, props.origin.lng] as [number, number],
-    [props.current.lat, props.current.lng] as [number, number],
-    [props.destination.lat, props.destination.lng] as [number, number],
-  ];
+  const ori = point(props.origin);
+  const cur = point(props.current);
+  const dst = point(props.destination);
 
-  L.polyline([points[0], points[1]], {
+  lineA = L.polyline([ori, cur], {
     color: "oklch(0.78 0.11 195)",
     weight: 3,
     opacity: 0.9,
   }).addTo(map);
 
-  L.polyline([points[1], points[2]], {
+  lineB = L.polyline([cur, dst], {
     color: "oklch(0.78 0.11 195)",
     weight: 2,
     opacity: 0.6,
     dashArray: "6 8",
   }).addTo(map);
 
-  L.marker([props.origin.lat, props.origin.lng], { icon: originIcon })
+  originMarker = L.marker(ori, { icon: originIcon })
     .bindPopup(`Origin · ${props.originLabel}`)
     .addTo(map);
 
-  L.marker([props.destination.lat, props.destination.lng], { icon: destIcon })
+  destMarker = L.marker(dst, { icon: destIcon })
     .bindPopup(`Destination · ${props.destinationLabel}`)
     .addTo(map);
 
-  L.marker([props.current.lat, props.current.lng], { icon: currentIcon })
+  currentMarker = L.marker(cur, { icon: currentIcon })
     .bindPopup(`<strong>${props.carrier}</strong><br>Current location`)
     .addTo(map);
 
-  const bounds = L.latLngBounds(points);
-  map.fitBounds(bounds, { padding: [50, 50] });
+  map.fitBounds(L.latLngBounds([ori, cur, dst]), { padding: [50, 50] });
 });
 
 onUnmounted(() => {
@@ -100,14 +106,22 @@ onUnmounted(() => {
     map.remove();
     map = null;
   }
+  originMarker = null;
+  destMarker = null;
+  currentMarker = null;
+  lineA = null;
+  lineB = null;
 });
 
 watch(
   () => props.current,
-  (newVal) => {
-    if (map) {
-      map.setView([newVal.lat, newVal.lng]);
-    }
+  (cur) => {
+    if (!map) return;
+    const curLatLng = L.latLng(cur.lat, cur.lng);
+    currentMarker?.setLatLng(curLatLng);
+    lineA?.setLatLngs([point(props.origin), curLatLng]);
+    lineB?.setLatLngs([curLatLng, point(props.destination)]);
+    map.setView(curLatLng);
   },
   { deep: true },
 );
