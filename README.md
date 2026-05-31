@@ -166,7 +166,9 @@ The backend starts on `http://localhost:8080` and the frontend dev server on `ht
 | POST | `/api/hubs` | JWT | Create a hub |
 | PUT | `/api/hubs/:id` | JWT | Update hub fields |
 | DELETE | `/api/hubs/:id` | JWT | Delete a hub |
-| GET | `/api/analytics/overview` | JWT | Dashboard aggregate stats |
+| GET | `/api/health` | No | Container liveness probe |
+| GET | `/api/analytics/overview` | No | Dashboard aggregate stats |
+| GET | `/api/analytics/timeseries` | No | Shipment trends by month and day-of-week |
 | GET | `/ws/tracking/:trackingNumber` | No | Real-time tracking WebSocket |
 
 ---
