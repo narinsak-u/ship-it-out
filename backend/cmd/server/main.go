@@ -33,6 +33,7 @@ func main() {
 
 	// --- Bootstrap: load config, connect database, migrate schemas ---
 	config.Load()
+	config.Validate()
 	database.ConnectPostgres(config.App.DatabaseURL)
 
 	// Auto-create/update tables so they match our model structs

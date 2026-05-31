@@ -6,6 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type Config struct {
@@ -26,8 +27,14 @@ func Load() {
 	App = Config{
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/shipments"),
-		JWTSecret:   getEnv("JWT_SECRET", "change-me"),
+		JWTSecret:   getEnv("JWT_SECRET", ""),
 		JWTTTL:      24 * time.Hour,
+	}
+}
+
+func Validate() {
+	if App.JWTSecret == "" || App.JWTSecret == "change-me" {
+		log.Panic().Msg("JWT_SECRET must be set to a strong, non-default value in .env or environment")
 	}
 }
 
