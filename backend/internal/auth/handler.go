@@ -39,20 +39,13 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// setAuthCookie writes the JWT token into an HTTP-only cookie on the response.
-// The cookie is:
-//   - HTTP-only (JavaScript can't read it — prevents XSS attacks)
-//   - SameSite=Lax (sent on same-site navigation but not cross-site)
-//   - Secure (only sent over HTTPS in production)
-//   - MaxAge=86400 (24 hours — after that the browser deletes it)
-//   - Path="/" (sent to every page on this domain)
 func setAuthCookie(c *fiber.Ctx, token string) {
 	c.Cookie(&fiber.Cookie{
 		Name:     cookieName,
 		Value:    token,
 		Path:     "/",
 		HTTPOnly: true,
-		SameSite: "Lax",
+		SameSite: "None",
 		Secure:   true,
 		MaxAge:   int(config.App.JWTTTL.Seconds()),
 	})
@@ -211,9 +204,9 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 		Value:    "",
 		Path:     "/",
 		HTTPOnly: true,
-		SameSite: "Lax",
+		SameSite: "None",
 		Secure:   true,
-		MaxAge:   0, // 0 = delete the cookie right now
+		MaxAge:   0,
 	})
 	return utils.Success(c, fiber.Map{"message": "logged out"})
 }
