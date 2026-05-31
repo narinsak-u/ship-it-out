@@ -44,7 +44,7 @@ describe("OrderFormView", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await router.push(route);
     await router.isReady();
-    const { default: OrderFormView } = await import("./OrderFormView.vue");
+    const { default: OrderFormView } = await import("@/views/OrderFormView.vue");
     return mount(OrderFormView, {
       global: {
         plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],

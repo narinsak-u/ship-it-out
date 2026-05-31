@@ -71,7 +71,7 @@ describe("OrdersView", () => {
   it("renders shipment manifest title", async () => {
     const router = await buildRouter();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { default: OrdersView } = await import("./OrdersView.vue");
+    const { default: OrdersView } = await import("@/views/OrdersView.vue");
     const wrapper = mount(OrdersView, {
       global: {
         plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],
@@ -86,7 +86,7 @@ describe("OrdersView", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const router = await buildRouter();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { default: OrdersView } = await import("./OrdersView.vue");
+    const { default: OrdersView } = await import("@/views/OrdersView.vue");
     const wrapper = mount(OrdersView, {
       global: {
         plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()],

@@ -21,7 +21,7 @@ async function createView(orderId = "ORD-001") {
     ],
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const { default: OrderDetailView } = await import("./OrderDetailView.vue");
+  const { default: OrderDetailView } = await import("@/views/OrderDetailView.vue");
   await router.push(`/orders/${orderId}`);
   await router.isReady();
   return mount(OrderDetailView, {

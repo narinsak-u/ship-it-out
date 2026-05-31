@@ -10,7 +10,7 @@ describe("CarriersView", () => {
 
   it("renders tab headers", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { default: CarriersView } = await import("./CarriersView.vue");
+    const { default: CarriersView } = await import("@/views/CarriersView.vue");
     const wrapper = mount(CarriersView, {
       global: {
         plugins: [[VueQueryPlugin, { queryClient }], createPinia()],
@@ -25,7 +25,7 @@ describe("CarriersView", () => {
 
   it("switches tabs on click", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { default: CarriersView } = await import("./CarriersView.vue");
+    const { default: CarriersView } = await import("@/views/CarriersView.vue");
     const wrapper = mount(CarriersView, {
       global: {
         plugins: [[VueQueryPlugin, { queryClient }], createPinia()],

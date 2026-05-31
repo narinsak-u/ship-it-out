@@ -48,7 +48,7 @@ async function createView() {
     ],
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const { default: HomeView } = await import("./HomeView.vue");
+  const { default: HomeView } = await import("@/views/HomeView.vue");
   await router.push("/");
   await router.isReady();
   return mount(HomeView, {
