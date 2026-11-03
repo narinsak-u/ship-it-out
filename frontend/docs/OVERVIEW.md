@@ -34,7 +34,7 @@ frontend/
 ├── components.json        # shadcn-vue config
 ├── eslint.config.js       # Flat config (typescript-eslint + Prettier)
 ├── .prettierrc            # printWidth: 100, semi, double quotes, trailingComma all
-└── .env                   # VITE_OPENCAGE_API_KEY
+└── .env                   # VITE_OPENCAGE_API_KEY, VITE_CARTO_API_KEY
 ```
 
 ---

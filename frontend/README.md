@@ -24,7 +24,7 @@ Vue 3 SPA for Thun-u-der Express — a shipment tracking dashboard with interact
 ```bash
 cd frontend
 bun install
-cp .env.example .env   # Add VITE_OPENCAGE_API_KEY
+cp .env.example .env   # Add VITE_OPENCAGE_API_KEY and VITE_CARTO_API_KEY
 npm run dev            # http://localhost:5173
 ```
 
@@ -98,6 +98,7 @@ Pagination: server-side (`OrdersView`) sends `page`/`limit`/`search` as query pa
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_OPENCAGE_API_KEY` | Yes | OpenCage Geocoding API key |
+| `VITE_CARTO_API_KEY` | Yes | CARTO Basemaps API key for dark map tiles |
 
 ## Conventions
 
