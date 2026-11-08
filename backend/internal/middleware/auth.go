@@ -4,10 +4,11 @@
 package middleware
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/config"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/pkg/utils"
@@ -32,12 +33,12 @@ type UserRepository interface {
 func AuthRequired() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// --- Try to get the token from the Authorization header first ---
-		auth := c.Get("Authorization")
+		authorization := c.Get("Authorization")
 		tokenStr := ""
 
-		if auth != "" && strings.HasPrefix(auth, "Bearer ") {
+		if authorization != "" && strings.HasPrefix(authorization, "Bearer ") {
 			// Extract just the token part after "Bearer "
-			tokenStr = strings.TrimPrefix(auth, "Bearer ")
+			tokenStr = strings.TrimPrefix(authorization, "Bearer ")
 		} else {
 			// Fallback: check for the "jwt" cookie (set by auth handlers on login/register)
 			tokenStr = c.Cookies("jwt")
@@ -48,29 +49,16 @@ func AuthRequired() fiber.Handler {
 			return utils.Error(c, 401, "missing or invalid token")
 		}
 
-		// --- Parse and verify the JWT signature ---
-		// jwt.Parse() automatically validates the HMAC signature using our secret
-		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			return []byte(config.App.JWTSecret), nil
-		})
-		if err != nil || !token.Valid {
+		claims, err := auth.ParseToken(tokenStr, []byte(config.App.JWTSecret))
+		if errors.Is(err, auth.ErrInvalidTokenClaims) {
+			return utils.Error(c, 401, "invalid token claims")
+		}
+		if err != nil {
 			return utils.Error(c, 401, "invalid or expired token")
 		}
 
-		// --- Extract the claims (the data we embedded when creating the token) ---
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			return utils.Error(c, 401, "invalid token claims")
-		}
-
-		// --- Store user info in the request context for downstream handlers ---
-		// JSON numbers decode as float64, so we convert to uint
-		uid, ok := claims["user_id"].(float64)
-		if !ok || uid <= 0 {
-			return utils.Error(c, 401, "invalid token claims")
-		}
-		c.Locals("user_id", uint(uid))
-		c.Locals("role", claims["role"])
+		c.Locals("user_id", claims.UserID)
+		c.Locals("role", claims.Role)
 
 		return c.Next() // Pass control to the next handler
 	}

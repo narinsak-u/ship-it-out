@@ -43,7 +43,8 @@ backend/
 │   │   ├── logger.go           # Request logging via zerolog
 │   │   └── ratelimit.go        # In-memory sliding-window rate limiter (5 req/min on auth)
 │   ├── auth/
-│   │   ├── handler.go          # Handler struct (Register, Login, Me, Logout)
+│   │   ├── handler.go          # Fiber request/response and cookie handling
+│   │   ├── service.go          # Registration, credential, profile, and token workflows
 │   │   ├── repository.go       # Repository interface
 │   │   └── gorm_repository.go  # GORM implementation
 │   ├── shipment/
@@ -145,7 +146,7 @@ This gives clean JSON with nested objects while keeping normal DB columns for qu
 
 ## Architecture Notes
 
-- **Repository pattern:** Each domain package (auth, hub, shipment) defines a `Repository` interface and a GORM implementation. Handlers receive their repository via constructor injection (`NewHandler(repo)`), making them testable without a real database.
+- **Repository pattern:** Each domain package (auth, hub, shipment) defines a `Repository` interface and a GORM implementation. Auth handlers call a Fiber-independent service; shipment and hub handlers receive their repositories via constructor injection.
 - **Dependency injection:** `main.go` wires GORM repositories → handlers → routes. No packages call `database.DB` directly except repositories and seed code.
 - **Cross-domain dependency:** The shipment handler receives both a `shipment.Repository` and a `HubRepository` interface (defined locally in the shipment package to avoid circular imports) for status updates that need hub location data.
 - **Standardized responses:** All endpoints return `{"success": true/false, "data": ...}` or `{"success": false, "error": "..."}`. Paginated endpoints include a `pagination` block.

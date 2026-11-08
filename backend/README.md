@@ -41,7 +41,8 @@ backend/
 │   │   ├── logger.go        # Request logging via zerolog
 │   │   └── ratelimit.go     # In-memory rate limiter (5 req/min on auth)
 │   ├── auth/
-│   │   ├── handler.go       # Handler (Register, Login, Me, Logout)
+│   │   ├── handler.go       # Fiber handlers (Register, Login, Me, Logout)
+│   │   ├── service.go       # Registration, credential, profile, and token workflows
 │   │   ├── repository.go    # Repository interface
 │   │   └── gorm_repository.go
 │   ├── shipment/
@@ -160,7 +161,7 @@ go test ./internal/seed -run TestAdminCutoverHTTPAndPersistence -count=1
 
 ## Testing
 
-Tests use [testify](https://github.com/stretchr/testify) (assert, require, mock) with Fiber's `app.Test()` for HTTP integration. Handler tests mock the repository layer — **no database required**.
+Tests use [testify](https://github.com/stretchr/testify) (assert, require, mock). Auth service tests use fake repositories; Fiber handler tests cover HTTP responses and error mapping without a database.
 
 ### Run all tests
 
