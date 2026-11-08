@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 
-const shipment = {
+let shipment = {
   id: "ORD-TEST1",
   trackingNumber: "TH-TEST-1",
   status: "in_transit",
@@ -29,6 +29,16 @@ const shipment = {
   createdAt: "2026-11-01T00:00:00Z",
   progress: 55,
 };
+const activeDeliveries = [
+  shipment,
+  ...Array.from({ length: 10 }, (_, index) => ({
+    ...shipment,
+    id: `ORD-TEST${index + 2}`,
+    trackingNumber: `TH-TEST-${index + 2}`,
+    customer: { ...shipment.customer, name: `Sender ${index + 2}` },
+  })),
+];
+let deliveryReads = 0;
 
 let analyticsMode = "normal";
 const authUsers = new Map([
@@ -50,6 +60,36 @@ let nextUserId = 3;
 
 createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
+  if (req.url === "/__test/delivery-reads")
+    return res.end(JSON.stringify({ reads: deliveryReads }));
+  if (req.url === "/api/auth/me") {
+    const session = req.headers.cookie?.match(/(?:^|; )jwt=([^;]+)/)?.[1];
+    const user = authSessions.get(session);
+    if (!user) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ error: "unauthorized" }));
+    }
+    return res.end(JSON.stringify({ success: true, data: user }));
+  }
+  if (req.method === "POST" && req.url === "/api/auth/login") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const { email, password } = JSON.parse(body);
+    if (authPasswords.get(email) !== password) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ error: "invalid credentials" }));
+    }
+    const session = `preview-${email}`;
+    authSessions.set(session, authUsers.get(email));
+    res.setHeader("set-cookie", `jwt=${session}; Path=/; HttpOnly; SameSite=Lax`);
+    return res.end(JSON.stringify({ success: true, data: { user: authUsers.get(email) } }));
+  }
+  if (req.method === "POST" && req.url === "/api/auth/logout") {
+    const session = req.headers.cookie?.match(/(?:^|; )jwt=([^;]+)/)?.[1];
+    authSessions.delete(session);
+    res.setHeader("set-cookie", "jwt=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
+    return res.end(JSON.stringify({ success: true }));
+  }
   if (req.method === "POST" && req.url?.startsWith("/__test/analytics?mode=")) {
     analyticsMode = new URL(req.url, "http://localhost").searchParams.get("mode") ?? "normal";
     res.statusCode = 204;
@@ -124,7 +164,11 @@ createServer(async (req, res) => {
         },
       }),
     );
-  if (req.url?.startsWith("/api/shipments?"))
+  if (req.url?.startsWith("/api/shipments?")) {
+    if (req.url.includes("limit=-1&exclude_status=delivered")) {
+      deliveryReads++;
+      return res.end(JSON.stringify({ success: true, data: activeDeliveries }));
+    }
     return res.end(
       JSON.stringify({
         success: true,
@@ -132,6 +176,7 @@ createServer(async (req, res) => {
         pagination: { page: 1, limit: 3, total: 1, totalPages: 1 },
       }),
     );
+  }
   if (req.url === "/api/hubs")
     return res.end(
       JSON.stringify({
@@ -272,6 +317,30 @@ createServer(async (req, res) => {
         ],
       }),
     );
+  if (req.method === "PATCH" && req.url === "/api/shipments/ORD-TEST1/status") {
+    const session = req.headers.cookie?.match(/(?:^|; )jwt=([^;]+)/)?.[1];
+    const user = authSessions.get(session);
+    if (!user) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ error: "unauthorized" }));
+    }
+    if (user.role !== "staff" && user.role !== "admin") {
+      res.statusCode = 403;
+      return res.end(JSON.stringify({ error: "forbidden" }));
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const update = JSON.parse(body);
+    shipment = {
+      ...shipment,
+      status: update.status,
+      ...(update.hubId === "HUB-001"
+        ? { hubId: "HUB-001", currentCoords: { lat: 13.7563, lng: 100.5018 } }
+        : {}),
+    };
+    activeDeliveries[0] = shipment;
+    return res.end(JSON.stringify({ success: true, data: shipment }));
+  }
   if (req.url === "/api/shipments/ORD-TEST1")
     return res.end(JSON.stringify({ success: true, data: shipment }));
   if (req.url === "/api/shipments/missing") {

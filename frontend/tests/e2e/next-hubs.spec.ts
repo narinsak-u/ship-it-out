@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Next carrier hubs", () => {
   test("renders public hubs on a direct carrier URL", async ({ page }) => {
-    const response = await page.goto("/carriers");
+    const response = await page.goto("/carriers?tab=hubs");
     expect(response).not.toBeNull();
     const html = await response!.text();
     expect(html).toContain("Bangkok Hub");
@@ -16,7 +16,7 @@ test.describe("Next carrier hubs", () => {
   test("paginates hub rows, filters hubs, and shows status counts and empty state", async ({
     page,
   }) => {
-    await page.goto("/carriers");
+    await page.goto("/carriers?tab=hubs");
     const counts = page.getByLabel("Hub status counts");
     await expect(counts).toContainText("active");
     await expect(counts).toContainText("maintenance");
