@@ -48,7 +48,8 @@ func registerRoutes(app *fiber.App, db *gorm.DB) {
 	shipmentGroup.Put("/:orderId", shipmentHandler.Update)
 	shipmentGroup.Delete("/:orderId", shipmentHandler.Delete)
 
-	trackingHandler := tracking.NewHandler(shipmentRepo)
+	trackingHandler := tracking.NewHandler(tracking.NewService(shipmentRepo))
+
 	api.Get("/track/:trackingNumber", trackingHandler.Track)
 
 	analyticsHandler := analytics.NewHandler(shipmentRepo)
