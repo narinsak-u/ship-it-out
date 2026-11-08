@@ -185,24 +185,14 @@ Client → GET /api/shipments/ORD-10245
 ```
 Client → POST /api/shipments (staff required)
          │
-         ├─ 1. Parse JSON into CreateRequest
-         ├─ 2. Build Shipment model:
-         │     ├─ OrderID = "ORD-" + max suffix + 1 (e.g. "ORD-10261")
-         │     ├─ TrackingNumber = "TH" + year + 5-digit ms hash
-         │     ├─ Customer/Receiver from request body
-         │     ├─ Origin = "subDistrict, district, province" (customer)
-         │     ├─ Destination = "subDistrict, district, province" (receiver)
-         │     ├─ CurrentCoords = customer's coords
-         │     ├─ Status = "pending"
-         │     ├─ EstimatedDelivery = now + 72h
-         │     └─ Progress = 0
-         ├─ 3. GORM BeforeSave hook → copies Coords to flat columns
-         ├─ 4. Insert Shipment into Postgres
-         │     └─ If error → 500 "failed to create shipment"
-         ├─ 5. Create initial tracking event:
-         │     ├─ Status = "Label Created"
-         │     ├─ Description = "Awaiting pickup."
-         │     └─ Location = customer address + coords
+         ├─ 1. Parse JSON into CreateRequest; service validates required shipment fields
+         ├─ 2. Build shipment with address-derived origin/destination, customer coordinates,
+         │     pending status, 72-hour ETA, and zero progress
+         ├─ 3. Repository opens a PostgreSQL transaction and takes transaction-scoped
+         │     advisory lock before allocating ORD-<number> and TH<year><5 digits>
+         ├─ 4. GORM hooks map nested coordinates to flat DB columns
+         ├─ 5. Insert shipment and initial "Label Created" event in same transaction
+         │     └─ Any write failure rolls back both records
          └─ 6. Return Shipment → 200
 ```
 
@@ -264,18 +254,10 @@ Client → PATCH /api/shipments/ORD-10245/status (staff required)
          │     └─ If found:
          │          ├─ Set shipment.HubID = body.hubId
          │          └─ Set shipment.CurrentCoords = hub.Lat/Lng
-         ├─ 6. Save shipment (BeforeSave fires → syncs coords)
-         ├─ 7. Build ShipmentEvent via statusToEvent():
-         │     ├─ Status changed to a hub-based status (departed, in_transit,
-         │       out_for_delivery, delayed):
-         │       Location = hub's name, address, lat, lng (if hub provided)
-         │       Falls back to shipment's current coords / origin / destination
-         │     ├─ Status = "pending" → location = customer address
-         │     ├─ Status = "picked_up" → location = customer address
-         │     ├─ Status = "delivered" → location = receiver address
-         │     └─ Each status maps to a human-readable label + description
-         ├─ 8. Insert event (ShipmentID = shipment.ID)
-         └─ 9. Return updated Shipment → 200
+         ├─ 6. Build ShipmentEvent using existing status label/description/location rules
+         ├─ 7. Save shipment and insert event in one PostgreSQL transaction
+         │     └─ Any write failure rolls back both changes
+         └─ 8. Return updated Shipment → 200
 ```
 
 **Status-to-event mapping:**
@@ -300,9 +282,9 @@ Client → DELETE /api/shipments/ORD-10245 (staff required)
          │
          ├─ 1. Extract orderId from URL param
          ├─ 2. Find Shipment by OrderID → 404 if missing
-         ├─ 3. Delete all ShipmentEvents WHERE shipment_id = shipment.ID
-         ├─ 4. Delete the Shipment itself
-         └─ 5. Return { message: "shipment deleted" } → 200
+         ├─ 3. Repository deletes events and shipment in one PostgreSQL transaction
+         │     └─ Any write failure rolls back both deletes
+         └─ 4. Return { message: "shipment deleted" } → 200
 ```
 
 ---

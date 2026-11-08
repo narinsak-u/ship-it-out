@@ -54,6 +54,29 @@ func TestGormRepositoryTransactionsAndConcurrentIDs(t *testing.T) {
 		t.Fatalf("shipment persisted after event failure: %d", count)
 	}
 
+	mapped := testShipment()
+	mapped.Customer.Coords = models.GeoPoint{Lat: 13.75, Lng: 100.5}
+	mapped.Receiver.Coords = models.GeoPoint{Lat: 18.79, Lng: 98.98}
+	mapped.CurrentCoords = models.GeoPoint{Lat: 15.87, Lng: 100.99}
+	if err := first.CreateWithEvent(&mapped, &models.ShipmentEvent{Status: "Label Created"}); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := first.FindByOrderID(mapped.OrderID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Customer.Coords != mapped.Customer.Coords || loaded.Receiver.Coords != mapped.Receiver.Coords || loaded.CurrentCoords != mapped.CurrentCoords {
+		t.Fatalf("coordinate mapping did not round-trip: %+v", loaded)
+	}
+	duplicate := models.Shipment{OrderID: mapped.OrderID, TrackingNumber: "TH202699999", Origin: "Origin", Destination: "Destination"}
+	if err := db.Create(&duplicate).Error; err == nil {
+		t.Fatal("expected unique order ID constraint")
+	}
+	duplicate = models.Shipment{OrderID: "ORD-99999", TrackingNumber: mapped.TrackingNumber, Origin: "Origin", Destination: "Destination"}
+	if err := db.Create(&duplicate).Error; err == nil {
+		t.Fatal("expected unique tracking number constraint")
+	}
+
 	const concurrentCreates = 12
 	var wg sync.WaitGroup
 	errs := make(chan error, concurrentCreates)
@@ -85,5 +108,8 @@ func TestGormRepositoryTransactionsAndConcurrentIDs(t *testing.T) {
 }
 
 func testShipment() models.Shipment {
-	return models.Shipment{Origin: "Origin", Destination: "Destination", Status: "pending"}
+	return models.Shipment{
+		Origin: "Origin", Destination: "Destination", Status: "pending",
+		Customer: models.ContactInfo{Name: "Sender"}, Receiver: models.ContactInfo{Name: "Recipient"},
+	}
 }
