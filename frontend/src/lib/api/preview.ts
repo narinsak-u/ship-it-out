@@ -18,6 +18,7 @@ export interface Shipment {
   status: string;
   carrier: string;
   weight: number;
+  items: number;
   estimatedDelivery: string;
   createdAt: string;
   progress: number;

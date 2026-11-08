@@ -182,16 +182,16 @@ export function ShipmentForm({ initial }: { initial?: Order }) {
             carrier: initial?.carrier ?? "Thun-u-der Express",
             weight,
             items,
-            ...(editing ? { estimatedDelivery } : {}),
+            ...(editing ? { estimatedDelivery: new Date(estimatedDelivery).toISOString() } : {}),
           }),
         },
       );
       const result = await response.json();
       if (!response.ok || !result.success)
         throw new Error(result.error || `Shipment save failed (${response.status})`);
-      if (initial) router.push(`/orders/${encodeURIComponent(initial.id)}`);
-      else router.push("/orders?created=1");
-      router.refresh();
+      window.location.assign(
+        initial ? `/orders/${encodeURIComponent(initial.id)}?updated=1` : "/orders?created=1",
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Shipment could not be saved.");
     } finally {
