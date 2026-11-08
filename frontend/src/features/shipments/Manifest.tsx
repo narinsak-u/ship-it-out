@@ -66,9 +66,11 @@ function formatDate(value: string) {
 export default function Manifest({
   initialData,
   initialError,
+  initialMessage,
 }: {
   initialData: ShipmentPage | null;
   initialError: string | null;
+  initialMessage?: string;
 }) {
   const { isStaff } = useAuth();
   const [data, setData] = useState(initialData);
@@ -78,7 +80,7 @@ export default function Manifest({
   const [status, setStatus] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage ?? "");
   const [deleteTarget, setDeleteTarget] = useState<Shipment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -90,6 +92,9 @@ export default function Manifest({
     }, 300);
     return () => window.clearTimeout(timer);
   }, [search]);
+  useEffect(() => {
+    if (initialMessage) setMessage(initialMessage);
+  }, [initialMessage]);
 
   useEffect(() => {
     if (firstFetch.current && initialData && !initialError) {
