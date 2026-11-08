@@ -6,7 +6,7 @@ test.describe("Next carrier analytics", () => {
     await page.request.post("http://127.0.0.1:8081/__test/analytics?mode=normal");
   });
   test("opens from hubs, deep-links, refreshes, and shows API-backed charts", async ({ page }) => {
-    await page.goto("/carriers");
+    await page.goto("/carriers?tab=hubs");
     await expect(page.getByText("Bangkok Hub")).toBeVisible();
     await page.getByRole("link", { name: "Analytics" }).click();
     await expect(page).toHaveURL(/\/carriers\?tab=analytics$/);
@@ -26,7 +26,7 @@ test.describe("Next carrier analytics", () => {
 
     await page.reload();
     await page.getByRole("link", { name: "Hubs" }).click();
-    await expect(page).toHaveURL(/\/carriers$/);
+    await expect(page).toHaveURL(/\/carriers\?tab=hubs$/);
     await expect(page.getByText("Bangkok Hub")).toBeVisible();
   });
 
