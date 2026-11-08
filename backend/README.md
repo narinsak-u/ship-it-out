@@ -70,18 +70,18 @@ backend/
 | POST   | `/api/auth/logout`            | No   | Clear auth cookie              |
 | GET    | `/api/shipments`              | No   | List shipments (paginated)     |
 | GET    | `/api/shipments/:orderId`     | No   | Get shipment by order ID       |
-| POST   | `/api/shipments`              | JWT  | Create shipment                |
-| PATCH  | `/api/shipments/:orderId/status` | JWT | Update status + log event     |
-| PUT    | `/api/shipments/:orderId`     | JWT  | Update shipment fields         |
-| DELETE | `/api/shipments/:orderId`     | JWT  | Delete shipment + events       |
+| POST   | `/api/shipments`              | Staff | Create shipment                |
+| PATCH  | `/api/shipments/:orderId/status` | Staff | Update status + log event     |
+| PUT    | `/api/shipments/:orderId`     | Staff | Update shipment fields         |
+| DELETE | `/api/shipments/:orderId`     | Staff | Delete shipment + events       |
 | GET    | `/api/hubs`                   | No   | List all hubs                  |
 | GET    | `/api/hubs/:id`               | No   | Get hub by ID                  |
-| POST   | `/api/hubs`                   | JWT  | Create hub                     |
-| PUT    | `/api/hubs/:id`               | JWT  | Update hub                     |
-| DELETE | `/api/hubs/:id`               | JWT  | Delete hub                     |
+| POST   | `/api/hubs`                   | Staff | Create hub                     |
+| PUT    | `/api/hubs/:id`               | Staff | Update hub                     |
+| DELETE | `/api/hubs/:id`               | Staff | Delete hub                     |
 | GET    | `/api/track/:trackingNumber`  | No   | Public tracking lookup         |
-| GET    | `/api/analytics/overview`     | JWT  | Dashboard aggregate stats      |
-| GET    | `/api/analytics/timeseries`   | JWT  | Monthly + day-of-week trends   |
+| GET    | `/api/analytics/overview`     | No   | Dashboard aggregate stats      |
+| GET    | `/api/analytics/timeseries`   | No   | Monthly + day-of-week trends   |
 
 \* Rate-limited to 5 requests/minute per IP.
 
@@ -105,13 +105,50 @@ psql $DATABASE_URL -c "TRUNCATE hubs, shipments, shipment_events RESTART IDENTIT
 go run .
 ```
 
+
+## Admin bootstrap and one-time role cutover
+
+The server always requires `ADMIN_EMAIL` and `ADMIN_PASSWORD`, supplied through the deployment secret manager. `ADMIN_NAME` is optional and defaults to `Administrator`. The password is hashed before storage and is never logged. `ADMIN_ROLE_CUTOVER=true` is required only for the first cutover; remove or set it to `false` after successful startup.
+
+Before the first production deployment with these settings, back up the target database and verify the backup:
+
+```bash
+export DATABASE_URL='postgres://user:password@db.example:5432/shipments?sslmode=require'
+export BACKUP_FILE="shipments-before-admin-cutover-$(date -u +%Y%m%dT%H%M%SZ).dump"
+pg_dump --format=custom --file="$BACKUP_FILE" "$DATABASE_URL"
+pg_restore --list "$BACKUP_FILE" >/dev/null
+```
+
+Set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and optionally `ADMIN_NAME` in the deployment secret manager. Then set `ADMIN_ROLE_CUTOVER=true` and deploy. First startup atomically rejects an existing email collision, demotes every current `admin` account, creates the configured admin, and records completion. A collision aborts startup without changing roles or credentials; choose an unused email and retry. Once startup succeeds, remove `ADMIN_ROLE_CUTOVER` or set it to `false`; the durable marker keeps later startups from demoting roles or resetting credentials. Do not remove or change the seeded account: a completed marker with a missing configured admin intentionally fails startup.
+
+To restore the pre-cutover database after an unsuccessful deployment, stop API instances first, then restore the verified backup to the intended database:
+
+```bash
+pg_restore --clean --if-exists --no-owner --dbname="$DATABASE_URL" "$BACKUP_FILE"
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'DROP TABLE IF EXISTS admin_bootstrap_states'
+```
+
+Restore overwrites database objects. Confirm the database target and stop writers before running it. The explicit marker-table drop removes cutover completion; it is required before another cutover. Correct deployment settings before restarting. Never run this against a persistent database unless restoring it is intended.
+
+The optional integration test uses only an explicitly supplied PostgreSQL test database and creates/drops a private schema:
+
+```bash
+export ADMIN_BOOTSTRAP_TEST_DATABASE_URL='postgres://user:pass@127.0.0.1:55432/shipments_ticket13?sslmode=disable'
+go test ./internal/seed -run TestAdminCutoverHTTPAndPersistence -count=1
+```
+
 ## Configuration
 
-| Variable       | Default                                                      | Description                |
-| -------------- | ------------------------------------------------------------ | -------------------------- |
-| `PORT`         | `8080`                                                       | Server listen port         |
-| `DATABASE_URL` | `postgres://user:pass@localhost:5432/shipments`              | PostgreSQL DSN             |
-| `JWT_SECRET`   | `change-me`                                                  | HMAC secret for JWT        |
+| Variable            | Default                                         | Description                                      |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------ |
+| `PORT`              | `8080`                                          | Server listen port                               |
+| `DATABASE_URL`      | `postgres://user:pass@localhost:5432/shipments` | PostgreSQL DSN                                   |
+| `CORS_ORIGIN`       | `http://localhost:5173`                         | Allowed browser origin                          |
+| `JWT_SECRET`        | `change-me`                                     | HMAC secret for JWT                              |
+| `ADMIN_NAME`        | `Administrator`                                | Seeded staff display name                        |
+| `ADMIN_EMAIL`       | none                                            | Required deployment-provided staff email         |
+| `ADMIN_PASSWORD`    | none                                            | Required deployment-provided staff password      |
+| `ADMIN_ROLE_CUTOVER`| `false`                                         | Set `true` for first cutover after verified backup; then disable |
 
 ## Testing
 

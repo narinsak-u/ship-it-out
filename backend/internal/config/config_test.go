@@ -25,7 +25,10 @@ func TestLoad_FromEnv(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:9999/testdb")
 	t.Setenv("CORS_ORIGIN", "https://myapp.com")
 	t.Setenv("JWT_SECRET", "my-secret-key")
-
+	t.Setenv("ADMIN_NAME", "Test Admin")
+	t.Setenv("ADMIN_EMAIL", "admin@example.test")
+	t.Setenv("ADMIN_PASSWORD", "test-secret")
+	t.Setenv("ADMIN_ROLE_CUTOVER", "true")
 	oldCfg := config.App
 	t.Cleanup(func() { config.App = oldCfg })
 
@@ -58,6 +61,9 @@ func TestValidate_PassesWithValidSecret(t *testing.T) {
 	t.Cleanup(func() { config.App = oldCfg })
 
 	t.Setenv("JWT_SECRET", "a-strong-random-secret-that-is-at-least-32-chars-long!!")
+	t.Setenv("ADMIN_EMAIL", "admin@example.test")
+	t.Setenv("ADMIN_PASSWORD", "test-secret")
+	t.Setenv("ADMIN_ROLE_CUTOVER", "true")
 	config.Load()
 	assert.NotPanics(t, func() { config.Validate() })
 	assert.Equal(t, "a-strong-random-secret-that-is-at-least-32-chars-long!!", config.App.JWTSecret)
