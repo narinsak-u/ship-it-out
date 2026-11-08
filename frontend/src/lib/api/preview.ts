@@ -59,9 +59,12 @@ export async function getShipment(orderId: string): Promise<Shipment | null> {
 }
 
 export async function getShipmentEvents(trackingNumber: string): Promise<ShipmentEvent[]> {
-  const response = await fetch(`${getApiOrigin()}/api/track/${encodeURIComponent(trackingNumber)}`, {
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `${getApiOrigin()}/api/track/${encodeURIComponent(trackingNumber)}`,
+    {
+      cache: "no-store",
+    },
+  );
   if (!response.ok) throw new Error(`Tracking API returned ${response.status}`);
   const result = await response.json();
   return (result.data?.events ?? []) as ShipmentEvent[];
