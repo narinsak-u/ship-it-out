@@ -30,7 +30,7 @@ npm run dev            # http://localhost:5173
 
 ## Next.js preview
 
-The migration preview serves `/` and `/orders/:orderId` on port 3000 while Vue remains the default app. Start the Go API first, then run:
+The migration preview serves `/`, `/orders/:orderId`, and `/carriers` on port 3000 while Vue remains the default app. Start the Go API first, then run:
 
 ```bash
 API_BASE_URL=http://localhost:8080 bun run dev:next

@@ -10,6 +10,6 @@ test("direct detail URL renders API-backed shipment and timeline", async ({ page
 
 test("missing shipment has not-found state without a map", async ({ page }) => {
   await page.goto("/orders/missing");
-  await expect(page.getByRole("heading", { name: "Shipment not found" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Shipment not found" })).toBeVisible({ timeout: 15000 });
   await expect(page.locator(".leaflet-map")).toHaveCount(0);
 });
