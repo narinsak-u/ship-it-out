@@ -14,7 +14,10 @@ export default defineConfig({
       command: "bun run dev",
       port: 3000,
       reuseExistingServer: true,
-      env: { API_BASE_URL: "http://127.0.0.1:8081" },
+      env: {
+        API_BASE_URL: "http://127.0.0.1:8081",
+        NEXT_PUBLIC_CARTO_API_KEY: "",
+      },
     },
   ],
 });

@@ -231,7 +231,7 @@ export function DeliveriesPanel({
                         ))}
                       </select>
                     ) : (
-                      (statusLabels[order.status] ?? order.status.replaceAll("_", " "))
+                      statusLabels[order.status].toLowerCase()
                     )}
                   </td>
                   <td>

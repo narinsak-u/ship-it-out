@@ -55,7 +55,7 @@ test.describe("Active deliveries", () => {
 
     await row.getByLabel("Hub for ORD-TEST1", { exact: true }).selectOption("HUB-001");
     await row.getByRole("button", { name: "Save ORD-TEST1 status" }).click();
-    await expect(page.getByRole("status")).toContainText("Delivery status updated");
+    await expect(page.getByText("Delivery status updated.", { exact: true })).toBeVisible();
     await expect(row.getByLabel("Status for ORD-TEST1", { exact: true })).toHaveValue(
       "out_for_delivery",
     );
