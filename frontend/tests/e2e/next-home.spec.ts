@@ -8,8 +8,8 @@ test("direct home URL renders public metrics and recent shipment in server HTML"
   expect(html).toContain("Move fast");
   expect(html).toContain("ORD-TEST1");
   expect(html).toContain("TH-TEST-1");
-  expect(html).toContain(">9<");
   await expect(page.getByRole("heading", { name: "Recent shipments" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Key metrics" })).toContainText("44");
 });
 
 test("tracking number and order ID open shipment detail", async ({ page }) => {

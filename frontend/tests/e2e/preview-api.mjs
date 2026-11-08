@@ -30,13 +30,82 @@ const shipment = {
   progress: 55,
 };
 
+let analyticsMode = "normal";
+
 createServer((req, res) => {
   res.setHeader("content-type", "application/json");
+  if (req.method === "POST" && req.url?.startsWith("/__test/analytics?mode=")) {
+    analyticsMode = new URL(req.url, "http://localhost").searchParams.get("mode") ?? "normal";
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (analyticsMode === "failure" && req.url?.startsWith("/api/analytics/")) {
+    res.statusCode = 503;
+    return res.end(JSON.stringify({ success: false, error: "unavailable" }));
+  }
+  if (analyticsMode === "empty" && req.url === "/api/analytics/overview")
+    return res.end(
+      JSON.stringify({
+        success: true,
+        data: {
+          total: 0,
+          active: 0,
+          delivered: 0,
+          by_status: null,
+          by_region: ["Central", "East", "North", "West", "North-east", "South"].map((name) => ({
+            name,
+            total: 0,
+          })),
+        },
+      }),
+    );
+  if (analyticsMode === "empty" && req.url === "/api/analytics/timeseries")
+    return res.end(
+      JSON.stringify({ success: true, data: { by_month: null, by_day_of_week: null } }),
+    );
   if (req.url === "/api/analytics/overview")
     return res.end(
       JSON.stringify({
         success: true,
-        data: { total: 14, active: 9, delivered: 5, by_status: [], by_region: [] },
+        data: {
+          total: 126,
+          active: 44,
+          delivered: 82,
+          by_status: [
+            { status: "delivered", count: 82 },
+            { status: "in_transit", count: 28 },
+            { status: "pending", count: 16 },
+          ],
+          by_region: [
+            { name: "Bangkok", total: 64 },
+            { name: "Chonburi", total: 38 },
+            { name: "Chiang Mai", total: 24 },
+          ],
+        },
+      }),
+    );
+  if (req.url === "/api/analytics/timeseries")
+    return res.end(
+      JSON.stringify({
+        success: true,
+        data: {
+          by_month: [
+            { month: "Jun", count: 18 },
+            { month: "Jul", count: 24 },
+            { month: "Aug", count: 31 },
+            { month: "Sep", count: 26 },
+            { month: "Oct", count: 27 },
+          ],
+          by_day_of_week: [
+            { day: "Mon", count: 21 },
+            { day: "Tue", count: 18 },
+            { day: "Wed", count: 26 },
+            { day: "Thu", count: 16 },
+            { day: "Fri", count: 24 },
+            { day: "Sat", count: 13 },
+            { day: "Sun", count: 8 },
+          ],
+        },
       }),
     );
   if (req.url?.startsWith("/api/shipments?"))

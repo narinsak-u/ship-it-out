@@ -1,0 +1,44 @@
+import { test, expect } from "@playwright/test";
+
+test.describe("Next carrier analytics", () => {
+  test.describe.configure({ mode: "serial" });
+  test.afterEach(async ({ page }) => {
+    await page.request.post("http://127.0.0.1:8081/__test/analytics?mode=normal");
+  });
+  test("opens from hubs, deep-links, refreshes, and shows API-backed charts", async ({ page }) => {
+    await page.goto("/carriers");
+    await expect(page.getByText("Bangkok Hub")).toBeVisible();
+    await page.getByRole("link", { name: "Analytics" }).click();
+    await expect(page).toHaveURL(/\/carriers\?tab=analytics$/);
+    const response = await page.goto("/carriers?tab=analytics");
+    expect(response).not.toBeNull();
+    const html = await response!.text();
+    expect(html).toContain("126");
+    expect(html).toContain("Cumulative shipments:");
+    await expect(page.getByText("126", { exact: true })).toBeVisible();
+    await expect(page.getByText("Bangkok", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: /Cumulative shipments:.*Jun 18.*Oct 126/ }),
+    ).toBeVisible();
+    await expect(page.getByRole("img", { name: /Shipments by day:.*Wed 26/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /Monthly shipments:.*Aug 31/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /Shipment statuses:.*delivered 82/ })).toBeVisible();
+
+    await page.reload();
+    await page.getByRole("link", { name: "Hubs" }).click();
+    await expect(page).toHaveURL(/\/carriers$/);
+    await expect(page.getByText("Bangkok Hub")).toBeVisible();
+  });
+
+  test("shows clear API failure and empty states", async ({ page }) => {
+    await page.request.post("http://127.0.0.1:8081/__test/analytics?mode=failure");
+    await page.goto("/carriers?tab=analytics");
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Failed to load analytics data." }),
+    ).toBeVisible();
+
+    await page.request.post("http://127.0.0.1:8081/__test/analytics?mode=empty");
+    await page.reload();
+    await expect(page.getByRole("status")).toContainText("No analytics data available yet.");
+  });
+});
