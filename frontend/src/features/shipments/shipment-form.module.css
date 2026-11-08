@@ -1,0 +1,133 @@
+.form {
+  display: grid;
+  gap: 24px;
+}
+
+.group {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: transparent;
+}
+
+.group legend {
+  padding: 0 8px;
+  color: var(--accent);
+  font:
+    600 12px var(--font-mono),
+    monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.fields label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted-foreground);
+  font:
+    500 11px var(--font-mono),
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fields input,
+.fields select {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--foreground);
+  font:
+    400 14px var(--font-mono),
+    monospace;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.fields input:focus-visible,
+.fields select:focus-visible,
+.actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.fields input:read-only,
+.fields select:disabled {
+  color: var(--muted-foreground);
+  opacity: 0.75;
+}
+
+.fields [role="alert"] {
+  margin: -10px 0 0;
+  color: var(--error);
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.error,
+.denied {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--error);
+  border-radius: 8px;
+  color: var(--error);
+  font:
+    13px var(--font-mono),
+    monospace;
+}
+
+.denied {
+  border-color: var(--border);
+  color: var(--muted-foreground);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.actions button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--foreground);
+  font:
+    500 12px var(--font-mono),
+    monospace;
+  cursor: pointer;
+}
+
+.actions button[type="submit"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--background);
+}
+
+.actions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .group {
+    padding: 16px 12px;
+  }
+
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

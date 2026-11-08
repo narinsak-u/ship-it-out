@@ -15,7 +15,7 @@ func TestLoad_Defaults(t *testing.T) {
 	config.Load()
 	assert.Equal(t, "8080", config.App.Port)
 	assert.Equal(t, "postgres://user:pass@localhost:5432/shipments", config.App.DatabaseURL)
-	assert.Equal(t, "http://localhost:5173", config.App.CORSOrigin)
+	assert.Equal(t, "http://localhost:3000", config.App.CORSOrigin)
 	assert.Equal(t, "", config.App.JWTSecret)
 	assert.Equal(t, 24*time.Hour, config.App.JWTTTL)
 }
@@ -25,7 +25,10 @@ func TestLoad_FromEnv(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:9999/testdb")
 	t.Setenv("CORS_ORIGIN", "https://myapp.com")
 	t.Setenv("JWT_SECRET", "my-secret-key")
-
+	t.Setenv("ADMIN_NAME", "Test Admin")
+	t.Setenv("ADMIN_EMAIL", "admin@example.test")
+	t.Setenv("ADMIN_PASSWORD", "test-secret")
+	t.Setenv("ADMIN_ROLE_CUTOVER", "true")
 	oldCfg := config.App
 	t.Cleanup(func() { config.App = oldCfg })
 
@@ -34,6 +37,14 @@ func TestLoad_FromEnv(t *testing.T) {
 	assert.Equal(t, "postgres://test:test@localhost:9999/testdb", config.App.DatabaseURL)
 	assert.Equal(t, "https://myapp.com", config.App.CORSOrigin)
 	assert.Equal(t, "my-secret-key", config.App.JWTSecret)
+}
+
+func TestLoad_InvalidAdminRoleCutoverPanics(t *testing.T) {
+	oldCfg := config.App
+	t.Cleanup(func() { config.App = oldCfg })
+	t.Setenv("ADMIN_ROLE_CUTOVER", "sometimes")
+
+	assert.PanicsWithValue(t, "ADMIN_ROLE_CUTOVER must be a boolean", config.Load)
 }
 
 func TestValidate_PanicsOnEmptySecret(t *testing.T) {
@@ -58,6 +69,9 @@ func TestValidate_PassesWithValidSecret(t *testing.T) {
 	t.Cleanup(func() { config.App = oldCfg })
 
 	t.Setenv("JWT_SECRET", "a-strong-random-secret-that-is-at-least-32-chars-long!!")
+	t.Setenv("ADMIN_EMAIL", "admin@example.test")
+	t.Setenv("ADMIN_PASSWORD", "test-secret")
+	t.Setenv("ADMIN_ROLE_CUTOVER", "true")
 	config.Load()
 	assert.NotPanics(t, func() { config.Validate() })
 	assert.Equal(t, "a-strong-random-secret-that-is-at-least-32-chars-long!!", config.App.JWTSecret)

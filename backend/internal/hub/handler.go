@@ -8,7 +8,7 @@ import (
 )
 
 // Handler routes HTTP requests to the hub repository. Public routes (List, GetByID) need no auth;
-// write routes (Create, Update, Delete) are protected by AuthRequired middleware in main.go.
+// write routes (Create, Update, Delete) require a current database admin role in main.go.
 // Create via NewHandler — never instantiate directly.
 type Handler struct {
 	repo Repository
@@ -41,7 +41,7 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 
 // Create handles POST /api/hubs. Parses the JSON body into a Hub model and inserts it.
 // If the JSON body does not include an "id" field, the repository auto-generates "HUB-NNN".
-// Requires JWT auth. Request body: { name, carrierId, address, coords, capacity, ... }.
+// Requires staff authorization. Request body: { name, carrierId, address, coords, capacity, ... }.
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var hub models.Hub
 	if err := c.BodyParser(&hub); err != nil {
@@ -55,7 +55,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 
 // Update handles PUT /api/hubs/:id. Finds the existing hub, overwrites its fields with the
 // request body, re-sets the ID from the URL param (BodyParser clears the PK field), then saves.
-// Requires JWT auth.
+// Requires staff authorization.
 func (h *Handler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if _, err := h.repo.FindByID(id); err != nil {
@@ -73,7 +73,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 }
 
 // Delete handles DELETE /api/hubs/:id. Removes the hub row from Postgres by its string ID.
-// Returns a confirmation message. Requires JWT auth.
+// Returns a confirmation message. Requires staff authorization.
 func (h *Handler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if err := h.repo.Delete(id); err != nil {

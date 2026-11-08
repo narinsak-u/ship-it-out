@@ -62,7 +62,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 // Create handles POST /api/shipments. Validates the JSON body, builds a Shipment model with
 // auto-generated OrderID/TrackingNumber, sets origin/destination from customer/receiver addresses,
 // sets status to "pending" with a 72h estimated delivery, creates an initial "Label Created"
-// tracking event, and saves everything to Postgres. Requires JWT auth.
+// tracking event, and saves everything to Postgres. Requires staff authorization.
 func (h *Handler) Create(c *fiber.Ctx) error {
 	var req CreateRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -216,7 +216,7 @@ func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus strin
 // UpdateStatus handles PATCH /api/shipments/:orderId/status. Changes the shipment's status,
 // optionally links a hub (updating CurrentCoords to the hub's lat/lng), saves the shipment,
 // and creates a tracking event via statusToEvent with context-aware location.
-// Requires JWT auth. Request body: { "status": "in_transit", "hubId": "HUB-003" }.
+// Requires staff authorization. Request body: { "status": "in_transit", "hubId": "HUB-003" }.
 func (h *Handler) UpdateStatus(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
@@ -278,7 +278,7 @@ type UpdateRequest struct {
 
 // Update handles PUT /api/shipments/:orderId. Finds the existing shipment, applies only the
 // fields the caller provided in the JSON body (pointer fields allow partial updates), recalculates
-// Origin/Destination/CurrentCoords when customer or receiver changes, then saves. Requires JWT auth.
+// Origin/Destination/CurrentCoords when customer or receiver changes, then saves. Requires staff authorization.
 func (h *Handler) Update(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 
@@ -320,7 +320,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 
 // Delete handles DELETE /api/shipments/:orderId. Deletes all tracking events first (to avoid
 // foreign-key constraint errors), then deletes the shipment itself. Returns a success message.
-// Requires JWT auth.
+// Requires staff authorization.
 func (h *Handler) Delete(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
 

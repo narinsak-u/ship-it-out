@@ -14,7 +14,7 @@ Handles user registration, login, session verification, and logout using JWT tok
 
 **Flow:**
 ```
-Client → POST /api/auth/register { name, email, password, role? }
+Client → POST /api/auth/register { name, email, password }
           │
           ├─ RateLimitAuth middleware runs first
           │    ├─ In-memory sliding-window per IP: 5 req / 60s
@@ -23,7 +23,7 @@ Client → POST /api/auth/register { name, email, password, role? }
           ├─ 1. Parse JSON body into RegisterRequest
           ├─ 2. Validate required fields (name, email, password)
           ├─ 3. Hash password with bcrypt
-          ├─ 4. Default role to "customer" if omitted
+          ├─ 4. Assign "customer" role (request-supplied role is ignored)
           ├─ 5. Insert User into Postgres
          │     └─ If email exists → 409 "email already registered"
          ├─ 6. Build JWT with claims: { user_id, role, exp (24h) }
@@ -54,7 +54,9 @@ Client → POST /api/auth/login { email, password }
          ├─ 4. Build + sign JWT with { user_id, role, exp }
          ├─ 5. Set "jwt" cookie
          └─ 6. Return { token, user } → 200
+
 ```
+The public read-only demo account is seeded at startup with `demo@shipitout.example` / `demo-read-only-2026`. These public credentials are shown in the frontend. Demo and registered customers can read public data but receive 403 for shipment and hub writes. Admin and staff roles can write; never log private passwords.
 
 **Note:** The token string is returned in the JSON body too, for mobile/CLI clients that can't use cookies.
 
@@ -108,6 +110,12 @@ Request arrives at protected route
          ├─ 5. Store in c.Locals("user_id") and c.Locals("role")
          └─ 6. Call c.Next() → route handler executes
 ```
+
+Shipment and hub writes additionally require `StaffOnly`: it loads the user's current role
+from Postgres and requires `admin` or `staff`. Missing or invalid credentials return
+401; a valid customer account returns 403. JWT role claims cannot grant write access
+after an account is demoted. Public shipment, tracking, hub, and analytics reads
+remain available without a session.
 
 ---
 
@@ -175,7 +183,7 @@ Client → GET /api/shipments/ORD-10245
 
 **Flow:**
 ```
-Client → POST /api/shipments (JWT required)
+Client → POST /api/shipments (staff required)
          │
          ├─ 1. Parse JSON into CreateRequest
          ├─ 2. Build Shipment model:
@@ -216,7 +224,7 @@ Client → POST /api/shipments (JWT required)
 
 **Flow:**
 ```
-Client → PUT /api/shipments/ORD-10245 (JWT required)
+Client → PUT /api/shipments/ORD-10245 (staff required)
          │
          ├─ 1. Extract orderId from URL param
          ├─ 2. Parse JSON body into UpdateRequest (all pointer fields)
@@ -245,7 +253,7 @@ Client → PUT /api/shipments/ORD-10245 (JWT required)
 
 **Flow:**
 ```
-Client → PATCH /api/shipments/ORD-10245/status (JWT required)
+Client → PATCH /api/shipments/ORD-10245/status (staff required)
          │
          ├─ 1. Extract orderId from URL param
          ├─ 2. Parse JSON body { status, hubId? }
@@ -288,7 +296,7 @@ Client → PATCH /api/shipments/ORD-10245/status (JWT required)
 
 **Flow:**
 ```
-Client → DELETE /api/shipments/ORD-10245 (JWT required)
+Client → DELETE /api/shipments/ORD-10245 (staff required)
          │
          ├─ 1. Extract orderId from URL param
          ├─ 2. Find Shipment by OrderID → 404 if missing
@@ -366,7 +374,7 @@ Client → GET /api/hubs/HUB-001
 
 **Flow:**
 ```
-Client → POST /api/hubs (JWT required)
+Client → POST /api/hubs (staff required)
          │
          ├─ 1. Parse JSON body into Hub
          ├─ 2. If ID not provided, generate "HUB-NNN" (max suffix + 1)
@@ -382,7 +390,7 @@ Client → POST /api/hubs (JWT required)
 
 **Flow:**
 ```
-Client → PUT /api/hubs/HUB-001 (JWT required)
+Client → PUT /api/hubs/HUB-001 (staff required)
          │
          ├─ 1. Find existing Hub by ID → 404 if missing
          ├─ 2. Parse JSON body into existing Hub (BodyParser overwrites fields)
@@ -397,7 +405,7 @@ Client → PUT /api/hubs/HUB-001 (JWT required)
 
 **Flow:**
 ```
-Client → DELETE /api/hubs/HUB-001 (JWT required)
+Client → DELETE /api/hubs/HUB-001 (staff required)
          ├─ 1. Delete Hub by ID
          │     └─ If error → 500
          └─ 2. Return { message: "hub deleted" } → 200

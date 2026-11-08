@@ -51,15 +51,8 @@ func setAuthCookie(c *fiber.Ctx, token string) {
 	})
 }
 
-// Register creates a new user account. Steps:
-//  1. Read the JSON body (name, email, password, optional role) from the request
-//  2. Validate that required fields are present
-//  3. Hash the password so we never store it in plain text
-//  4. If no role was provided, default to "customer"
-//  5. Save the new user to the database (fails with 409 if email already exists)
-//  6. Create a signed JWT token containing user_id, role, and expiry time
-//  7. Set the JWT as an HTTP-only cookie so the browser remembers the session
-//  8. Return the new user object as JSON
+// Register creates a read-only customer account. It validates the request,
+// hashes the password, rejects duplicate emails, and issues a session cookie.
 func (h *Handler) Register(c *fiber.Ctx) error {
 	// --- Parse + validate the incoming JSON ---
 	var req RegisterRequest
@@ -76,11 +69,8 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return utils.Error(c, 500, "failed to hash password")
 	}
 
-	// --- Default to "customer" role if not specified ---
-	role := req.Role
-	if role == "" {
-		role = "customer"
-	}
+	// Public registration always creates a read-only customer account.
+	role := "customer"
 
 	// --- Build the user model and insert into Postgres ---
 	user := models.User{

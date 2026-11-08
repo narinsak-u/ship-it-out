@@ -1,0 +1,47 @@
+import { expect, test } from "@playwright/test";
+
+test("direct home URL renders public metrics and recent shipment in server HTML", async ({
+  page,
+}) => {
+  const response = await page.goto("/");
+  const html = await response?.text();
+  expect(html).toContain("Move fast");
+  expect(html).toContain("ORD-TEST1");
+  expect(html).toContain("TH-TEST-1");
+  await expect(page.getByRole("heading", { name: "Recent shipments" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Key metrics" })).toContainText("44");
+});
+
+test("tracking number and order ID open shipment detail", async ({ page }) => {
+  await page.goto("/");
+  const search = page.getByRole("textbox", { name: "Tracking number or order ID" });
+  await search.fill("TH-TEST-1");
+  await page.getByRole("button", { name: "Track" }).click();
+  await expect(page).toHaveURL(/\/orders\/ORD-TEST1$/);
+
+  await page.goto("/");
+  await page.getByRole("textbox", { name: "Tracking number or order ID" }).fill("ORD-TEST1");
+  await page.getByRole("button", { name: "Track" }).click();
+  await expect(page).toHaveURL(/\/orders\/ORD-TEST1$/);
+});
+
+test("failed search follows orders fallback", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("textbox", { name: "Tracking number or order ID" }).fill("not-found");
+  await page.getByRole("button", { name: "Track" }).click();
+  await expect(page).toHaveURL(/\/orders$/);
+});
+
+test("authenticated account details stay out of public server-rendered HTML", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Email").fill("staff@shipitout.example");
+  await page.getByLabel("Password").fill("preview-staff-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
+  await expect(page.getByText("staff (Preview Staff) · staff access")).toBeVisible();
+  expect((await page.context().cookies()).some(({ name }) => name === "jwt")).toBe(true);
+
+  const html = await page.evaluate(async () => await (await fetch("/", { cache: "no-store" })).text());
+  expect(html).not.toContain("staff@shipitout.example");
+  expect(html).not.toContain("staff (Preview Staff)");
+});
