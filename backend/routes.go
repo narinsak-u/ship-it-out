@@ -51,7 +51,9 @@ func registerRoutes(app *fiber.App, db *gorm.DB) {
 	trackingHandler := tracking.NewHandler(shipmentRepo)
 	api.Get("/track/:trackingNumber", trackingHandler.Track)
 
-	analyticsHandler := analytics.NewHandler(shipmentRepo)
+	analyticsRepo := analytics.NewGormRepository(db)
+	analyticsService := analytics.NewService(analyticsRepo)
+	analyticsHandler := analytics.NewHandler(analyticsService)
 	api.Get("/analytics/overview", analyticsHandler.Overview)
 	api.Get("/analytics/timeseries", analyticsHandler.TimeSeries)
 }
