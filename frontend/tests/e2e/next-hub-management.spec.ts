@@ -9,34 +9,65 @@ async function signIn(page: Page, email: string, password: string) {
 }
 
 async function mockHubApi(page: Page) {
-  let hubs = [{
-    id: "HUB-001", name: "Bangkok Hub", carrierId: "THUN", address: "Bang Rak, Bangkok",
-    coords: { lat: 13.7563, lng: 100.5018 }, capacity: 1200, currentUtilization: 840, status: "active",
-  }];
+  let hubs = [
+    {
+      id: "HUB-001",
+      name: "Bangkok Hub",
+      carrierId: "THUN",
+      address: "Bang Rak, Bangkok",
+      coords: { lat: 13.7563, lng: 100.5018 },
+      capacity: 1200,
+      currentUtilization: 840,
+      status: "active",
+    },
+  ];
   await page.route("**/api/geocode", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { lat: 13.75, lng: 100.5 } }) }),
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: { lat: 13.75, lng: 100.5 } }),
+    }),
   );
   await page.route("**/api/hubs**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     if (request.method() === "GET") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, data: hubs }) });
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: hubs }),
+      });
     }
     if (request.method() === "POST") {
       const body = request.postDataJSON();
       hubs = [...hubs, { ...body, id: "HUB-TEST" }];
-      return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true, data: hubs.at(-1) }) });
+      return route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: hubs.at(-1) }),
+      });
     }
     if (request.method() === "PUT") {
       const body = request.postDataJSON();
       const id = decodeURIComponent(url.pathname.split("/").at(-1)!);
-      hubs = hubs.map((hub) => hub.id === id ? { ...hub, ...body } : hub);
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, data: hubs.find(({ id: hubId }) => hubId === "HUB-TEST") }) });
+      hubs = hubs.map((hub) => (hub.id === id ? { ...hub, ...body } : hub));
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: hubs.find(({ id: hubId }) => hubId === "HUB-TEST"),
+        }),
+      });
     }
     if (request.method() === "DELETE") {
       const id = decodeURIComponent(url.pathname.split("/").at(-1)!);
       hubs = hubs.filter((hub) => hub.id !== id);
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, data: { message: "hub deleted" } }) });
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { message: "hub deleted" } }),
+      });
     }
     return route.fulfill({ status: 405, body: "unsupported" });
   });
@@ -61,8 +92,13 @@ test("staff can create, edit, and confirm deletion of a hub", async ({ page }) =
   await page.getByRole("dialog").getByRole("button", { name: "Update Hub" }).click();
   await expect(page.getByText("Updated Facility", { exact: true })).toBeVisible();
 
-  page.once("dialog", (confirmation) => confirmation.accept());
-  await page.getByRole("row", { name: /Updated Facility/ }).getByRole("button", { name: "Delete Updated Facility" }).click();
+  await page
+    .getByRole("row", { name: /Updated Facility/ })
+    .getByRole("button", { name: "Delete Updated Facility" })
+    .click();
+  const confirmation = page.getByRole("dialog", { name: "Delete Hub" });
+  await expect(confirmation).toContainText("This action cannot be undone");
+  await confirmation.getByRole("button", { name: "Delete Hub" }).click();
   await expect(page.getByText("Updated Facility", { exact: true })).toHaveCount(0);
 });
 
@@ -73,15 +109,21 @@ test("read-only demo cannot see hub management controls", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Add Hub" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Edit / })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Delete / })).toHaveCount(0);
+  const geocode = await page.request.post("/api/geocode", { data: { province: "Sakon Nakhon" } });
+  expect(geocode.status()).toBe(403);
 });
 
-test("hub form shows geocoding failures inline and does not save fake coordinates", async ({ page }) => {
+test("hub form shows geocoding failures inline and does not save fake coordinates", async ({
+  page,
+}) => {
   await mockHubApi(page);
   await page.route("**/api/geocode", (route) =>
     route.fulfill({
       status: 422,
       contentType: "application/json",
-      body: JSON.stringify({ error: "Could not resolve this address. Check the fields and try again." }),
+      body: JSON.stringify({
+        error: "Could not resolve this address. Check the fields and try again.",
+      }),
     }),
   );
   await signIn(page, "staff@shipitout.example", "preview-staff-password");

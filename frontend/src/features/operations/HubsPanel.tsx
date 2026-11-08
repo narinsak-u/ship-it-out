@@ -132,11 +132,21 @@ export function HubsPanel({
       </div>
       {isStaff && (
         <div className={styles.actions}>
-          <button type="button" onClick={() => setEditing(null)}>Add Hub</button>
+          <button type="button" onClick={() => setEditing(null)}>
+            Add Hub
+          </button>
         </div>
       )}
-      {actionError && <p role="alert" className={styles.message}>{actionError}</p>}
-      {notice && <p role="status" className={styles.message}>{notice}</p>}
+      {actionError && (
+        <p role="alert" className={styles.message}>
+          {actionError}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className={styles.message}>
+          {notice}
+        </p>
+      )}
       {filtered.length ? (
         <>
           <div className={styles.tableWrap}>
@@ -187,8 +197,20 @@ export function HubsPanel({
                       </td>
                       {isStaff && (
                         <td data-label="Actions">
-                          <button type="button" aria-label={`Edit ${hub.name}`} onClick={() => setEditing(hub)}>Edit</button>
-                          <button type="button" aria-label={`Delete ${hub.name}`} onClick={() => setDeleteTarget(hub)}>Delete</button>
+                          <button
+                            type="button"
+                            aria-label={`Edit ${hub.name}`}
+                            onClick={() => setEditing(hub)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete ${hub.name}`}
+                            onClick={() => setDeleteTarget(hub)}
+                          >
+                            Delete
+                          </button>
                         </td>
                       )}
                     </tr>
@@ -222,12 +244,21 @@ export function HubsPanel({
       ) : (
         <p className={styles.empty}>No hubs match your filters.</p>
       )}
-      <dialog ref={confirmRef} aria-labelledby="hub-delete-title" className={styles.dialog} onCancel={() => setDeleteTarget(null)}>
+      <dialog
+        ref={confirmRef}
+        aria-labelledby="hub-delete-title"
+        className={styles.dialog}
+        onCancel={() => setDeleteTarget(null)}
+      >
         <h2 id="hub-delete-title">Delete Hub</h2>
         <p>Are you sure you want to delete {deleteTarget?.name}? This action cannot be undone.</p>
         <div className={styles.formActions}>
-          <button type="button" onClick={() => setDeleteTarget(null)}>Cancel</button>
-          <button type="button" onClick={() => deleteTarget && void removeHub(deleteTarget)}>Delete Hub</button>
+          <button type="button" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </button>
+          <button type="button" onClick={() => deleteTarget && void removeHub(deleteTarget)}>
+            Delete Hub
+          </button>
         </div>
       </dialog>
       {editing !== undefined && (

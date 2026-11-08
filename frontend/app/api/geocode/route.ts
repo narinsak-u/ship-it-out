@@ -12,8 +12,10 @@ export async function POST(request: NextRequest) {
   } catch {
     return Response.json({ error: "Authentication service unavailable." }, { status: 502 });
   }
-  if (profile.status === 401) return Response.json({ error: "Not authenticated." }, { status: 401 });
-  if (!profile.ok) return Response.json({ error: "Authentication service unavailable." }, { status: 502 });
+  if (profile.status === 401)
+    return Response.json({ error: "Not authenticated." }, { status: 401 });
+  if (!profile.ok)
+    return Response.json({ error: "Authentication service unavailable." }, { status: 502 });
   const user = (await profile.json()).data;
   if (user?.role !== "admin" && user?.role !== "staff") {
     return Response.json({ error: "Staff role required." }, { status: 403 });
@@ -41,10 +43,16 @@ export async function POST(request: NextRequest) {
     const result = await response.json();
     const geometry = result.results?.[0]?.geometry;
     if (typeof geometry?.lat !== "number" || typeof geometry?.lng !== "number") {
-      return Response.json({ error: "Could not resolve this address. Check the fields and try again." }, { status: 422 });
+      return Response.json(
+        { error: "Could not resolve this address. Check the fields and try again." },
+        { status: 422 },
+      );
     }
     return Response.json({ data: { lat: geometry.lat, lng: geometry.lng } });
   } catch {
-    return Response.json({ error: "Location lookup failed. Please try again later." }, { status: 502 });
+    return Response.json(
+      { error: "Location lookup failed. Please try again later." },
+      { status: 502 },
+    );
   }
 }
