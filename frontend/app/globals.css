@@ -9,6 +9,10 @@
   --muted-foreground: oklch(0.72 0.03 220);
   --accent: oklch(0.65 0.12 210);
   --border: oklch(0.32 0.05 240);
+  --error: oklch(0.62 0.22 25);
+  --success: oklch(0.72 0.16 160);
+  --info: oklch(0.7 0.12 220);
+  --gradient-hero: linear-gradient(135deg, oklch(0.22 0.06 245) 0%, oklch(0.3 0.08 220) 100%);
   --font-mono: "JetBrains Mono", monospace;
   --font-sans: "Work Sans", system-ui, sans-serif;
 }

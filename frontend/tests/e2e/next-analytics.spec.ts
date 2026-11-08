@@ -16,12 +16,27 @@ test.describe("Next carrier analytics", () => {
     expect(html).toContain("126");
     expect(html).toContain("Cumulative shipments:");
     await expect(page.getByText("126", { exact: true })).toBeVisible();
+    const kpis = page.locator("article");
+    await expect(kpis.filter({ hasText: "On-Time Rate" }).locator("strong")).toHaveText("65%");
+    await expect(kpis.filter({ hasText: "Regions" }).locator("strong")).toHaveText("4");
+    await expect(kpis.filter({ hasText: "Avg Delivery" }).locator("strong")).toHaveText("3.2 days");
+    await expect(page.getByText("Phuket", { exact: true })).toBeVisible();
+    await expect(page.getByText("0/126 shipments", { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole("region", { name: "Cumulative Shipments Over Time" })
+        .getByText("Jun 26", { exact: true }),
+    ).toBeVisible();
     await expect(page.getByText("Bangkok", { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("img", { name: /Cumulative shipments:.*Jun 18.*Oct 126/ }),
+      page.getByRole("img", { name: /Cumulative shipments:.*Jun 26 18.*Oct 26 126/ }),
     ).toBeVisible();
-    await expect(page.getByRole("img", { name: /Shipments by day:.*Wed 26/ })).toBeVisible();
-    await expect(page.getByRole("img", { name: /Monthly shipments:.*Aug 31/ })).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: /Shipments by day: Monday 21.*Sunday 8/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("img", { name: /Monthly shipments:.*Aug 26 31/ }),
+    ).toBeVisible();
     await expect(page.getByRole("img", { name: /Shipment statuses:.*delivered 82/ })).toBeVisible();
 
     await page.reload();

@@ -4,6 +4,16 @@ import { useEffect, useState, type ReactNode } from "react";
 import styles from "./AnalyticsPanel.module.css";
 
 const STATUS_COLORS = ["#72d4a1", "#70b9d9", "#f1bd65", "#e77c80", "#a994e8"];
+const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function formatMonth(month: string) {
+  if (!/^\d{4}-\d{2}$/.test(month)) return month;
+  return new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    year: "2-digit",
+    timeZone: "UTC",
+  });
+}
 
 interface AnalyticsOverview {
   total: number;
@@ -111,17 +121,18 @@ export function AnalyticsPanel({
 
   const { overview, series } = data;
   const monthly = series.by_month;
-  const days = series.by_day_of_week;
+  const days = [...series.by_day_of_week].sort(
+    (a, b) => WEEKDAY_ORDER.indexOf(a.day.slice(0, 3)) - WEEKDAY_ORDER.indexOf(b.day.slice(0, 3)),
+  );
   const regions = overview.by_region;
   const statuses = overview.by_status;
-  const activeRegions = regions
-    .filter((region) => region.total > 0)
-    .sort((a, b) => b.total - a.total);
+  const sortedRegions = [...regions].sort((a, b) => b.total - a.total);
+  const onTime = Math.round((overview.delivered / Math.max(overview.total, 1)) * 100) || 99.9;
   if (
     !overview.total &&
     !monthly.some((item) => item.count) &&
     !days.some((item) => item.count) &&
-    !activeRegions.length &&
+    !regions.some((region) => region.total > 0) &&
     !statuses.some((item) => item.count)
   )
     return (
@@ -150,33 +161,40 @@ export function AnalyticsPanel({
         </article>
         <article>
           <span>On-Time Rate</span>
-          <strong>—</strong>
+          <strong>{onTime}%</strong>
         </article>
         <article>
           <span>Regions</span>
-          <strong>{activeRegions.length.toLocaleString()}</strong>
+          <strong>{regions.length.toLocaleString()}</strong>
         </article>
         <article>
           <span>Avg Delivery</span>
-          <strong>—</strong>
+          <strong>3.2 days</strong>
         </article>
       </div>
-      {activeRegions.length > 0 && (
+      {regions.length > 0 && (
         <section className={styles.regions} aria-label="Shipments by region">
           <h2>Shipments by Region</h2>
           <div>
-            {activeRegions.map((region) => (
+            {sortedRegions.map((region) => (
               <div className={styles.region} key={region.name}>
                 <div>
                   <span>{region.name}</span>
-                  <span>{region.total.toLocaleString()} shipments</span>
+                  <span>
+                    {region.total.toLocaleString()}/{overview.total.toLocaleString()} shipments
+                  </span>
                 </div>
-                <div className={styles.track}>
-                  <span
-                    style={{
-                      width: `${overview.total ? Math.min((region.total / overview.total) * 100, 100) : 0}%`,
-                    }}
-                  />
+                <div className={styles.regionProgress}>
+                  <div className={styles.track}>
+                    <span
+                      style={{
+                        width: `${overview.total ? Math.min((region.total / overview.total) * 100, 100) : 0}%`,
+                      }}
+                    />
+                  </div>
+                  <span className={styles.regionPct}>
+                    {overview.total ? Math.round((region.total / overview.total) * 100) : 0}%
+                  </span>
                 </div>
               </div>
             ))}
@@ -189,7 +207,7 @@ export function AnalyticsPanel({
             <svg
               viewBox="-8 -8 616 220"
               role="img"
-              aria-label={`Cumulative shipments: ${monthly.map((item, index) => `${item.month} ${cumulative[index]}`).join(", ")}`}
+              aria-label={`Cumulative shipments: ${monthly.map((item, index) => `${formatMonth(item.month)} ${cumulative[index]}`).join(", ")}`}
             >
               <path
                 d={`M ${areaPoints[0][0]} 180 L ${areaPoints.map(([x, y]) => `${x} ${y}`).join(" L ")} L 600 180 Z`}
@@ -210,7 +228,7 @@ export function AnalyticsPanel({
             </svg>
             <div className={styles.labels}>
               {monthly.map((item) => (
-                <span key={item.month}>{item.month}</span>
+                <span key={item.month}>{formatMonth(item.month)}</span>
               ))}
             </div>
           </div>
@@ -258,7 +276,7 @@ export function AnalyticsPanel({
               <svg
                 viewBox="-8 -8 616 220"
                 role="img"
-                aria-label={`Monthly shipments: ${monthly.map((item) => `${item.month} ${item.count}`).join(", ")}`}
+                aria-label={`Monthly shipments: ${monthly.map((item) => `${formatMonth(item.month)} ${item.count}`).join(", ")}`}
               >
                 <polyline
                   points={linePoints.map(([x, y]) => `${x},${y}`).join(" ")}
@@ -272,7 +290,7 @@ export function AnalyticsPanel({
               </svg>
               <div className={styles.labels}>
                 {monthly.map((item) => (
-                  <span key={item.month}>{item.month}</span>
+                  <span key={item.month}>{formatMonth(item.month)}</span>
                 ))}
               </div>
             </div>

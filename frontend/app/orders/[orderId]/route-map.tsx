@@ -81,10 +81,10 @@ export default function RouteMap(props: Props) {
     };
   }, [props, cartoKey]);
   return (
-    <div className="leaflet-map" ref={element} aria-label="Shipment route map">
+    <div className="leaflet-map" ref={element} role="region" aria-label="Shipment route map">
       {!cartoKey && (
         <p className="map-key-warning" role="status">
-          Map tiles unavailable. Configure VITE_CARTO_API_KEY.
+          Map tiles unavailable. Configure NEXT_PUBLIC_CARTO_API_KEY.
         </p>
       )}
     </div>

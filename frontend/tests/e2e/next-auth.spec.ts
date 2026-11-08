@@ -65,9 +65,35 @@ test("staff role comes from session and logout clears it", async ({ page }) => {
   await page.getByLabel("Password").fill("preview-staff-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
   await expect(page.getByText("staff (Preview Staff) · staff access")).toBeVisible();
-  expect(
-    await page.evaluate(async () => (await fetch("/api/shipments", { method: "POST" })).status),
-  ).toBe(201);
+  const createStatus = await page.evaluate(async () => {
+    const response = await fetch("/api/shipments", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        customer: {
+          name: "Staff sender",
+          zipcode: "10900",
+          subDistrict: "Lad Yao",
+          district: "Chatuchak",
+          province: "Bangkok",
+          coords: { lat: 13.8, lng: 100.5 },
+        },
+        receiver: {
+          name: "Staff receiver",
+          zipcode: "10800",
+          subDistrict: "Wong Sawang",
+          district: "Bang Sue",
+          province: "Bangkok",
+          coords: { lat: 13.8, lng: 100.5 },
+        },
+        carrier: "Flash Express",
+        weight: 1,
+        items: 1,
+      }),
+    });
+    return response.status;
+  });
+  expect(createStatus).toBe(201);
 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();

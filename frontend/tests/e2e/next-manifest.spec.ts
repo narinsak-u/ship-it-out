@@ -83,4 +83,19 @@ test.describe("shipment manifest", () => {
     await page.reload();
     await expect(page.getByRole("row").getByText("ORD-MANIFEST-01")).toBeVisible();
   });
+  test("keyboard keeps focus inside the delete dialog and Escape cancels", async ({ page }) => {
+    await resetManifest(page);
+    await page.goto("/orders");
+    await signIn(page, "staff@shipitout.example", "preview-staff-password");
+    await page.getByRole("button", { name: "Delete shipment ORD-MANIFEST-01" }).click();
+    const dialog = page.getByRole("dialog", { name: "Delete shipment?" });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("button", { name: "Delete shipment ORD-MANIFEST-01" })).toBeFocused();
+    await expect(page.getByRole("row").getByText("ORD-MANIFEST-01")).toBeVisible();
+  });
+
 });

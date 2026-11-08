@@ -31,8 +31,10 @@ test("staff creates a geocoded Shipment and returns to the updated manifest", as
   await page.getByRole("button", { name: "Create Shipment" }).click();
 
   await expect(page).toHaveURL(/\/orders\?created=1$/);
-  await expect(page.getByRole("status")).toContainText("Shipment created.");
-  await expect(page.getByRole("row").getByText("ORD-CREATED-1")).toBeVisible();
+  await expect(page.getByText("Shipment created.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "Sender One" })).toContainText(
+    /ORD-CREATED-\d+/,
+  );
 });
 
 test("invalid Thai address stays on form and does not geocode", async ({ page }) => {

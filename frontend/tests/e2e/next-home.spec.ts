@@ -31,3 +31,17 @@ test("failed search follows orders fallback", async ({ page }) => {
   await page.getByRole("button", { name: "Track" }).click();
   await expect(page).toHaveURL(/\/orders$/);
 });
+
+test("authenticated account details stay out of public server-rendered HTML", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Email").fill("staff@shipitout.example");
+  await page.getByLabel("Password").fill("preview-staff-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
+  await expect(page.getByText("staff (Preview Staff) · staff access")).toBeVisible();
+  expect((await page.context().cookies()).some(({ name }) => name === "jwt")).toBe(true);
+
+  const html = await page.evaluate(async () => await (await fetch("/", { cache: "no-store" })).text());
+  expect(html).not.toContain("staff@shipitout.example");
+  expect(html).not.toContain("staff (Preview Staff)");
+});

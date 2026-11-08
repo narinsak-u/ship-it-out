@@ -8,7 +8,7 @@
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--surface);
+  background: transparent;
 }
 
 .group legend {
@@ -30,7 +30,7 @@
 .fields label {
   display: grid;
   gap: 7px;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font:
     500 11px var(--font-mono),
     monospace;
@@ -45,8 +45,8 @@
   padding: 9px 11px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--surface);
-  color: var(--fg);
+  background: transparent;
+  color: var(--foreground);
   font:
     400 14px var(--font-mono),
     monospace;
@@ -63,7 +63,7 @@
 
 .fields input:read-only,
 .fields select:disabled {
-  color: var(--muted);
+  color: var(--muted-foreground);
   opacity: 0.75;
 }
 
@@ -89,7 +89,7 @@
 
 .denied {
   border-color: var(--border);
-  color: var(--muted);
+  color: var(--muted-foreground);
 }
 
 .actions {
@@ -103,8 +103,8 @@
   padding: 0 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--surface);
-  color: var(--fg);
+  background: transparent;
+  color: var(--foreground);
   font:
     500 12px var(--font-mono),
     monospace;
@@ -114,7 +114,7 @@
 .actions button[type="submit"] {
   border-color: var(--accent);
   background: var(--accent);
-  color: var(--surface);
+  color: var(--background);
 }
 
 .actions button:disabled {
