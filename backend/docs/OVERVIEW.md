@@ -81,22 +81,24 @@ backend/
 | POST   | `/api/auth/logout`                | No    | `auth.Handler.Logout`        | Clear auth cookie                    |
 | GET    | `/api/shipments`                  | No    | `shipment.Handler.List`      | List shipments (pagination, search, filter) |
 | GET    | `/api/shipments/:orderId`         | No    | `shipment.Handler.GetByID`   | Get shipment by order ID             |
-| POST   | `/api/shipments`                  | JWT   | `shipment.Handler.Create`    | Create a new shipment                |
-| PATCH  | `/api/shipments/:orderId/status`  | JWT   | `shipment.Handler.UpdateStatus` | Update shipment status + log event |
-| PUT    | `/api/shipments/:orderId`         | JWT   | `shipment.Handler.Update`    | Update shipment fields               |
-| DELETE | `/api/shipments/:orderId`         | JWT   | `shipment.Handler.Delete`    | Delete a shipment + its events       |
+| POST   | `/api/shipments`                  | Staff | `shipment.Handler.Create`    | Create a new shipment                |
+| PATCH  | `/api/shipments/:orderId/status`  | Staff | `shipment.Handler.UpdateStatus` | Update shipment status + log event |
+| PUT    | `/api/shipments/:orderId`         | Staff | `shipment.Handler.Update`    | Update shipment fields               |
+| DELETE | `/api/shipments/:orderId`         | Staff | `shipment.Handler.Delete`    | Delete a shipment + its events       |
 | GET    | `/api/track/:trackingNumber`      | No    | `tracking.Handler.Track`     | Public tracking lookup               |
 | GET    | `/api/hubs`                       | No    | `hub.Handler.List`           | List all hubs                        |
 | GET    | `/api/hubs/:id`                   | No    | `hub.Handler.GetByID`        | Get hub by ID                        |
-| POST   | `/api/hubs`                       | JWT   | `hub.Handler.Create`         | Create a new hub                     |
-| PUT    | `/api/hubs/:id`                   | JWT   | `hub.Handler.Update`         | Update hub fields                    |
-| DELETE | `/api/hubs/:id`                   | JWT   | `hub.Handler.Delete`         | Delete a hub                         |
+| POST   | `/api/hubs`                       | Staff | `hub.Handler.Create`         | Create a new hub                     |
+| PUT    | `/api/hubs/:id`                   | Staff | `hub.Handler.Update`         | Update hub fields                    |
+| DELETE | `/api/hubs/:id`                   | Staff | `hub.Handler.Delete`         | Delete a hub                         |
 | GET    | `/api/analytics/overview`         | JWT   | `analytics.Handler.Overview` | Dashboard aggregate stats            |
 | GET    | `/api/analytics/timeseries`       | JWT   | `analytics.Handler.TimeSeries` | Monthly + day-of-week trends       |
 
 \* Rate-limited to 5 requests/minute per IP.
 
-**Auth notes:** Read operations (GET shipments, hubs, tracking) are **public**. Write operations (POST, PUT, PATCH, DELETE) require JWT.
+**Auth notes:** Shipment, hub, tracking, and analytics reads are public. Every shipment and hub write requires a current database role of `admin` or `staff`; a signed-in customer receives 403.
+
+The Go API provisions the public read-only account `demo@shipitout.example` / `demo-read-only-2026` at startup. Its role is `customer`; the frontend shows these public credentials. Signup always creates a customer, even when a role is included in the request. Never log passwords or expose deployment-provisioned admin credentials.
 
 **Pagination (shipments List):** Query params `page` (default 1), `limit` (default 10, use `-1` for all), `search` (ILIKE on order_id, tracking_number, customer_name, destination), `status` (filter by status), `exclude_status` (exclude by status).
 

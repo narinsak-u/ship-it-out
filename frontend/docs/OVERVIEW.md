@@ -59,14 +59,14 @@ Tailwind CSS v4 entry (`@import "tailwindcss"`). Defines the "Ocean Deep" dark t
 
 6 routes, all lazy-loaded via dynamic `import()`:
 
-| Path | Name | View |
-|------|------|------|
-| `/` | `home` | `HomeView` |
-| `/orders` | `orders` | `OrdersView` |
-| `/orders/create` | `order-create` | `OrderFormView` |
-| `/orders/:orderId/edit` | `order-edit` | `OrderFormView` |
-| `/orders/:orderId` | `order-detail` | `OrderDetailView` |
-| `/carriers` | `carriers` | `CarriersView` |
+| Path                    | Name           | View              |
+| ----------------------- | -------------- | ----------------- |
+| `/`                     | `home`         | `HomeView`        |
+| `/orders`               | `orders`       | `OrdersView`      |
+| `/orders/create`        | `order-create` | `OrderFormView`   |
+| `/orders/:orderId/edit` | `order-edit`   | `OrderFormView`   |
+| `/orders/:orderId`      | `order-detail` | `OrderDetailView` |
+| `/carriers`             | `carriers`     | `CarriersView`    |
 
 Uses `createWebHistory()`.
 
@@ -100,38 +100,38 @@ Tabbed view with 3 panels: Hubs (`HubsPanel`), Analytics (`AnalyticsPanel`), Act
 
 ### Project components
 
-| Component | Purpose | Key behavior |
-|-----------|---------|--------------|
-| `StatusBadge` | Shipment status indicator | Renders `<Badge>` with variant matching status + colored dot |
-| `Pagination` | Page navigation | Smart ellipsis, sliding window (max 7 pages), "Showing X-Y of Z" |
-| `ShipmentMap` | Leaflet route map | CartoDB dark tiles, custom divIcon markers, polylines, animated pulse on current position, auto-fit bounds |
-| `SiteHeader` | Top navigation | Logo, nav links (Home/Orders/Carriers), auth state display, sign in/out |
-| `SiteFooter` | Footer | Copyright text |
-| `AuthModal` | Login/signup dialog | Tabbed login/signup, client-side validation, guest mode, toast on success |
-| `ConfirmDialog` | Delete confirmation | Generic confirm/cancel dialog with pending state |
-| `OrderForm` | Order create/edit form | Two `ThaiAddressGroup` (sender/receiver) + parcel info. Geocodes both addresses via OpenCage on submit before emitting. Shows geocode errors inline. Button has "Resolving addresses…" state. |
-| `ThaiAddressGroup` | Thai address form group | 5 fields (name, zipcode, subDistrict, district, province). Auto-lookup from `thai-data` package by zipcode. Sub-district shown as `<Select>` when results available. |
-| `HubFormModal` | Hub create/edit dialog | Geocodes address on submit before mutation; inline error display |
-| `HubsPanel` | Hubs listing tab | Stat cards, search, Table with CRUD, pagination |
-| `AnalyticsPanel` | Analytics tab | KPI cards, carrier performance bars, status distribution. Uses in-memory `orders` data. |
-| `DeliveriesPanel` | Active deliveries tab | Table with inline status/hub selectors, auto-refetch (15s), mini map |
+| Component          | Purpose                   | Key behavior                                                                                                                                                                                  |
+| ------------------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `StatusBadge`      | Shipment status indicator | Renders `<Badge>` with variant matching status + colored dot                                                                                                                                  |
+| `Pagination`       | Page navigation           | Smart ellipsis, sliding window (max 7 pages), "Showing X-Y of Z"                                                                                                                              |
+| `ShipmentMap`      | Leaflet route map         | CartoDB dark tiles, custom divIcon markers, polylines, animated pulse on current position, auto-fit bounds                                                                                    |
+| `SiteHeader`       | Top navigation            | Logo, nav links (Home/Orders/Carriers), auth state display, sign in/out                                                                                                                       |
+| `SiteFooter`       | Footer                    | Copyright text                                                                                                                                                                                |
+| `AuthModal`        | Login/signup dialog       | Tabbed login/signup, visible read-only demo credentials, client-side validation, toast on success                                                                                             |
+| `ConfirmDialog`    | Delete confirmation       | Generic confirm/cancel dialog with pending state                                                                                                                                              |
+| `OrderForm`        | Order create/edit form    | Two `ThaiAddressGroup` (sender/receiver) + parcel info. Geocodes both addresses via OpenCage on submit before emitting. Shows geocode errors inline. Button has "Resolving addresses…" state. |
+| `ThaiAddressGroup` | Thai address form group   | 5 fields (name, zipcode, subDistrict, district, province). Auto-lookup from `thai-data` package by zipcode. Sub-district shown as `<Select>` when results available.                          |
+| `HubFormModal`     | Hub create/edit dialog    | Geocodes address on submit before mutation; inline error display                                                                                                                              |
+| `HubsPanel`        | Hubs listing tab          | Stat cards, search, Table with CRUD, pagination                                                                                                                                               |
+| `AnalyticsPanel`   | Analytics tab             | KPI cards, carrier performance bars, status distribution. Uses in-memory `orders` data.                                                                                                       |
+| `DeliveriesPanel`  | Active deliveries tab     | Table with inline status/hub selectors, auto-refetch (15s), mini map                                                                                                                          |
 
 ### UI components (`src/components/ui/`)
 
 Generated by `shadcn-vue`. Primitives built on `reka-ui` (formerly radix-vue):
 
-| Package | Components |
-|---------|-----------|
-| `Badge` | Badge with CVA variants (default, secondary, destructive, outline + 7 shipment status variants) |
-| `Button` | Button with CVA variants (default, destructive, outline, secondary, ghost, link) and sizes |
-| `Card` | Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter |
-| `Dialog` | Dialog, DialogTrigger, DialogContent, DialogScrollContent, DialogOverlay, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose |
-| `Input` | Styled input with v-model |
-| `Select` | Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectGroup, SelectItemText, SelectLabel, SelectSeparator, SelectScrollDownButton, SelectScrollUpButton |
-| `Separator` | Horizontal/vertical separator |
-| `Skeleton` | Pulsing placeholder |
-| `Table` | Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption |
-| `Sonner` | Toaster wrapper (custom theme via CSS variables, icon slots) |
+| Package     | Components                                                                                                                                                             |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Badge`     | Badge with CVA variants (default, secondary, destructive, outline + 7 shipment status variants)                                                                        |
+| `Button`    | Button with CVA variants (default, destructive, outline, secondary, ghost, link) and sizes                                                                             |
+| `Card`      | Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter                                                                                                  |
+| `Dialog`    | Dialog, DialogTrigger, DialogContent, DialogScrollContent, DialogOverlay, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose                      |
+| `Input`     | Styled input with v-model                                                                                                                                              |
+| `Select`    | Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectGroup, SelectItemText, SelectLabel, SelectSeparator, SelectScrollDownButton, SelectScrollUpButton |
+| `Separator` | Horizontal/vertical separator                                                                                                                                          |
+| `Skeleton`  | Pulsing placeholder                                                                                                                                                    |
+| `Table`     | Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption                                                                                            |
+| `Sonner`    | Toaster wrapper (custom theme via CSS variables, icon slots)                                                                                                           |
 
 ---
 
@@ -160,6 +160,7 @@ Thin fetch wrapper around `http://localhost:8080/api`. Exports `api` object with
 ### `lib/api/orders.ts`
 
 8 API functions mapping to backend endpoints:
+
 - `fetchActiveDeliveries()` → GET `/shipments?limit=-1&exclude_status=delivered`
 - `fetchOrdersPaginated(query)` → GET `/shipments?page&limit&search&status&exclude_status`
 - `fetchOrder(id)` → GET `/shipments/:id`
@@ -183,12 +184,12 @@ Backend response types (`BackendShipment`, `BackendShipmentEvent`, `BackendHub`)
 
 TanStack Vue Query hooks wrapping API functions:
 
-| Hook file | Exports |
-|-----------|---------|
-| `useOrders.ts` | `useCreateOrder()`, `useUpdateOrder()` — mutations, invalidate `["deliveries"]` |
+| Hook file          | Exports                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `useOrders.ts`     | `useCreateOrder()`, `useUpdateOrder()` — mutations, invalidate `["deliveries"]`                  |
 | `useDeliveries.ts` | `useActiveDeliveries()` — query with 15s refetchInterval; `useUpdateShipmentStatus()` — mutation |
-| `useHubs.ts` | `useHubs()` — query; `useCreateHub()`, `useUpdateHub()`, `useDeleteHub()` — mutations |
-| `useCarriers.ts` | `useCarriers()` — query (in-memory data) |
+| `useHubs.ts`       | `useHubs()` — query; `useCreateHub()`, `useUpdateHub()`, `useDeleteHub()` — mutations            |
+| `useCarriers.ts`   | `useCarriers()` — query (in-memory data)                                                         |
 
 Mutation hooks use `useQueryClient().invalidateQueries()` on success to trigger refetch. `useDeleteHub` shows a toast.
 
@@ -198,7 +199,7 @@ Mutation hooks use `useQueryClient().invalidateQueries()` on success to trigger 
 
 ### `auth.ts`
 
-Pinia store for authentication. State: `user`, `loading`, `error`, `isGuest`. Actions: `init()` (restore session), `login()`, `signup()`, `logout()`, `enterGuestMode()`. Guest mode persisted in `sessionStorage("harborops_guest")`. Authenticated session via HTTP-only cookie (`credentials: "include"`). Backend endpoints: `POST /auth/login`, `POST /auth/register`, `GET /auth/me`, `POST /auth/logout`.
+Pinia store for authentication. State: `user`, `loading`, `error`. Actions: `init()` (restore session), `login()`, `signup()`, and `logout()`. Unsigned public browsing uses no saved session state. Authenticated sessions use an HTTP-only cookie (`credentials: "include"`). The public demo account is `demo@shipitout.example` / `demo-read-only-2026` and has customer-level read-only access.
 
 ---
 
@@ -249,6 +250,7 @@ Generic **client-side** pagination. `usePagination<T>(items: Ref<T[]>, pageSize 
 ```
 
 **Two pagination strategies:**
+
 - **Server-side** (`OrdersView`): page/search/filter sent as query params, backend returns `PaginatedResponse`
 - **Client-side** (`HubsPanel`, `DeliveriesPanel`): fetch all, paginate in browser via `usePagination` composable
 

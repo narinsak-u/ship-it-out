@@ -16,6 +16,7 @@ import (
 	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
+	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/pkg/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -46,7 +47,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{}, &bootstrapState{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{}, &bootstrapState{}, &demoBootstrapState{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -62,15 +63,15 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err := db.Create(&otherLegacy).Error; err != nil {
 		t.Fatal(err)
 	}
-	shipment := models.Shipment{OrderID: "ORDER-PRESERVED", TrackingNumber: "TRACK-PRESERVED", Origin: "A", Destination: "B", Status: "pending"}
-	if err := db.Create(&shipment).Error; err != nil {
+	preservedShipment := models.Shipment{OrderID: "ORDER-PRESERVED", TrackingNumber: "TRACK-PRESERVED", Origin: "A", Destination: "B", Status: "pending"}
+	if err := db.Create(&preservedShipment).Error; err != nil {
 		t.Fatal(err)
 	}
 	preservedHub := models.Hub{ID: "HUB-PRESERVED", Name: "Preserved", CarrierID: "carrier", Address: "address", Capacity: 10, CurrentUtilization: 1, Status: "active"}
 	if err := db.Create(&preservedHub).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Create(&models.ShipmentEvent{ShipmentID: shipment.ID, Status: "pending", Location: models.Location{Name: "A"}}).Error; err != nil {
+	if err := db.Create(&models.ShipmentEvent{ShipmentID: preservedShipment.ID, Status: "pending", Location: models.Location{Name: "A"}}).Error; err != nil {
 		t.Fatal(err)
 	}
 
@@ -82,8 +83,32 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	hubHandler := hub.NewHandler(hub.NewGormRepository(db))
 	app := fiber.New()
 	authHandler := auth.NewHandler(repo)
+	app.Post("/api/auth/register", authHandler.Register)
 	app.Post("/api/auth/login", authHandler.Login)
+	app.Get("/api/auth/me", middleware.AuthRequired(), authHandler.Me)
+	app.Post("/api/auth/logout", authHandler.Logout)
 	app.Post("/api/hubs", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Create)
+	app.Put("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Update)
+	app.Delete("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Delete)
+	shipmentHandler := shipment.NewHandler(shipment.NewGormRepository(db), hub.NewGormRepository(db))
+	app.Post("/api/shipments", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Create)
+	app.Patch("/api/shipments/:orderId/status", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.UpdateStatus)
+	app.Put("/api/shipments/:orderId", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Update)
+	app.Delete("/api/shipments/:orderId", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Delete)
+	register := httptest.NewRequest("POST", "/api/auth/register", strings.NewReader(`{"name":"Elevated","email":"elevated@example.test","password":"password","role":"admin"}`))
+	register.Header.Set("Content-Type", "application/json")
+	registerResponse, err := app.Test(register)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registerResponse.Body.Close()
+	if registerResponse.StatusCode != 200 {
+		t.Fatalf("public signup status = %d, want 200", registerResponse.StatusCode)
+	}
+	var registered models.User
+	if err := db.Where("email = ?", "elevated@example.test").First(&registered).Error; err != nil || registered.Role != "customer" {
+		t.Fatalf("signup role = %q, err %v", registered.Role, err)
+	}
 	login := func(email, password string) (int, string) {
 		request := httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(fmt.Sprintf(`{"email":%q,"password":%q}`, email, password)))
 		request.Header.Set("Content-Type", "application/json")
@@ -102,6 +127,17 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	}
 	createHub := func(token string) int {
 		request := httptest.NewRequest("POST", "/api/hubs", strings.NewReader(`{"id":"HUB-WRITE","name":"Write test","carrierId":"carrier","address":"test","capacity":10,"currentUtilization":1,"coords":{"lat":1,"lng":2}}`))
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Authorization", "Bearer "+token)
+		response, err := app.Test(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		response.Body.Close()
+		return response.StatusCode
+	}
+	writeStatus := func(token, method, path string) int {
+		request := httptest.NewRequest(method, path, strings.NewReader(`{}`))
 		request.Header.Set("Content-Type", "application/json")
 		request.Header.Set("Authorization", "Bearer "+token)
 		response, err := app.Test(request)
@@ -141,7 +177,96 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err := BootstrapAdmin(db, "New Staff", "admin@example.test", "new-secret", true); err != nil {
 		t.Fatal(err)
 	}
-	if got := createHub(oldToken); got != 403 {
+	demoCollision := models.User{Name: "Unrelated Demo Email Owner", Email: demoUserEmail, Password: legacyHash, Role: "customer"}
+	if err := db.Create(&demoCollision).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := BootstrapDemoUser(db); err == nil {
+		t.Fatal("demo bootstrap accepted an existing email")
+	}
+	var collisionUnchanged models.User
+	if err := db.First(&collisionUnchanged, demoCollision.ID).Error; err != nil || collisionUnchanged.Name != demoCollision.Name || collisionUnchanged.Role != "customer" || collisionUnchanged.Password != legacyHash {
+		t.Fatalf("demo collision account changed: %+v, err %v", collisionUnchanged, err)
+	}
+	if err := db.Delete(&demoCollision).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := BootstrapDemoUser(db); err != nil {
+		t.Fatal(err)
+	}
+	if err := BootstrapDemoUser(db); err != nil {
+		t.Fatal(err)
+	}
+	status, demoToken := login(demoUserEmail, demoUserPassword)
+	if status != 200 || demoToken == "" {
+		t.Fatalf("seeded demo login: status %d", status)
+	}
+	cookieLogin := httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(fmt.Sprintf(`{"email":%q,"password":%q}`, demoUserEmail, demoUserPassword)))
+	cookieLogin.Header.Set("Content-Type", "application/json")
+	cookieLoginResponse, err := app.Test(cookieLogin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cookies := cookieLoginResponse.Cookies()
+	cookieLoginResponse.Body.Close()
+	if cookieLoginResponse.StatusCode != 200 || len(cookies) != 1 || cookies[0].Name != "jwt" || !cookies[0].HttpOnly {
+		t.Fatalf("demo login cookie = %#v, status %d", cookies, cookieLoginResponse.StatusCode)
+	}
+	refresh := httptest.NewRequest("GET", "/api/auth/me", nil)
+	refresh.AddCookie(cookies[0])
+	refreshResponse, err := app.Test(refresh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	refreshResponse.Body.Close()
+	if refreshResponse.StatusCode != 200 {
+		t.Fatalf("demo session refresh status = %d, want 200", refreshResponse.StatusCode)
+	}
+	logout := httptest.NewRequest("POST", "/api/auth/logout", nil)
+	logout.AddCookie(cookies[0])
+	logoutResponse, err := app.Test(logout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	logoutCookies := logoutResponse.Cookies()
+	logoutResponse.Body.Close()
+	if logoutResponse.StatusCode != 200 || len(logoutCookies) != 1 || logoutCookies[0].Name != "jwt" || logoutCookies[0].Value != "" {
+		t.Fatalf("demo logout cookie = %#v, status %d", logoutCookies, logoutResponse.StatusCode)
+	}
+	unsignedRefresh, err := app.Test(httptest.NewRequest("GET", "/api/auth/me", nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	unsignedRefresh.Body.Close()
+	if unsignedRefresh.StatusCode != 401 {
+		t.Fatalf("unsigned session refresh status = %d, want 401", unsignedRefresh.StatusCode)
+	}
+	var seededDemo models.User
+	if err := db.Where("email = ?", demoUserEmail).First(&seededDemo).Error; err != nil {
+		t.Fatal(err)
+	}
+	var demoCount int64
+	if err := db.Model(&models.User{}).Where("email = ?", demoUserEmail).Count(&demoCount).Error; err != nil || demoCount != 1 {
+		t.Fatalf("demo account count = %d, err %v", demoCount, err)
+	}
+	for _, write := range []struct{ method, path string }{
+		{"POST", "/api/hubs"},
+		{"PUT", "/api/hubs/HUB-PRESERVED"},
+		{"DELETE", "/api/hubs/HUB-PRESERVED"},
+		{"POST", "/api/shipments"},
+		{"PATCH", "/api/shipments/ORDER-PRESERVED/status"},
+		{"PUT", "/api/shipments/ORDER-PRESERVED"},
+		{"DELETE", "/api/shipments/ORDER-PRESERVED"},
+	} {
+		if got := writeStatus(demoToken, write.method, write.path); got != 403 {
+			t.Errorf("demo %s %s status = %d, want 403", write.method, write.path, got)
+		}
+	}
+	var demoAfterRepeat models.User
+	if err := db.First(&demoAfterRepeat, seededDemo.ID).Error; err != nil || demoAfterRepeat.Email != demoUserEmail || demoAfterRepeat.Role != "customer" || demoAfterRepeat.Password != seededDemo.Password {
+		t.Fatalf("repeat bootstrap changed demo identity or credentials: %+v, err %v", demoAfterRepeat, err)
+	}
+	if got := writeStatus(oldToken, "POST", "/api/hubs"); got != 403 {
 		t.Fatalf("legacy session write status = %d, want 403", got)
 	}
 	status, newToken := login("admin@example.test", "new-secret")

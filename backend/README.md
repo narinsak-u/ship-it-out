@@ -121,6 +121,10 @@ pg_restore --list "$BACKUP_FILE" >/dev/null
 
 Set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and optionally `ADMIN_NAME` in the deployment secret manager. Then set `ADMIN_ROLE_CUTOVER=true` and deploy. First startup atomically rejects an existing email collision, demotes every current `admin` account, creates the configured admin, and records completion. A collision aborts startup without changing roles or credentials; choose an unused email and retry. Once startup succeeds, remove `ADMIN_ROLE_CUTOVER` or set it to `false`; the durable marker keeps later startups from demoting roles or resetting credentials. Do not remove or change the seeded account: a completed marker with a missing configured admin intentionally fails startup.
 
+## Public read-only demo account
+
+Every startup provisions `demo@shipitout.example` with password `demo-read-only-2026` and role `customer`. The frontend displays these public credentials; they are not an admin secret. The seed records its account identity and verifies the account remains a customer with the expected credential on restart. If the email already belongs to another account, startup fails without changing that account. Never log passwords. Public shipment and hub reads need no session; writes require a current `admin` or `staff` database role, so the demo account receives 403 for direct write requests.
+
 To restore the pre-cutover database after an unsuccessful deployment, stop API instances first, then restore the verified backup to the intended database:
 
 ```bash
@@ -133,7 +137,7 @@ Restore overwrites database objects. Confirm the database target and stop writer
 The optional integration test uses only an explicitly supplied PostgreSQL test database and creates/drops a private schema:
 
 ```bash
-export ADMIN_BOOTSTRAP_TEST_DATABASE_URL='postgres://user:pass@127.0.0.1:55432/shipments_ticket13?sslmode=disable'
+export ADMIN_BOOTSTRAP_TEST_DATABASE_URL='postgres://user:pass@127.0.0.1:55432/shipments_ticket14?sslmode=disable'
 go test ./internal/seed -run TestAdminCutoverHTTPAndPersistence -count=1
 ```
 

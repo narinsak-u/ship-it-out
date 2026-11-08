@@ -24,7 +24,6 @@ describe("auth store", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
-    sessionStorage.clear();
   });
 
   it("init() fetches user and sets state on success", async () => {
@@ -41,15 +40,6 @@ describe("auth store", () => {
     await store.init();
     expect(store.user).toBeNull();
     expect(store.loading).toBe(false);
-  });
-
-  it("init() with guest mode skips API call", async () => {
-    sessionStorage.setItem("harborops_guest", "true");
-    const store = useAuthStore();
-    store.enterGuestMode();
-    expect(api.get).not.toHaveBeenCalled();
-    expect(store.loading).toBe(false);
-    expect(store.isGuest).toBe(true);
   });
 
   it("login() sets user on success", async () => {
@@ -85,23 +75,23 @@ describe("auth store", () => {
     expect(err).toBe("Email taken");
   });
 
-  it("logout() clears user and sessionStorage", async () => {
+  it("logout() clears user", async () => {
     vi.mocked(api.post).mockResolvedValue({ data: { success: true } });
-    sessionStorage.setItem("harborops_guest", "true");
     const store = useAuthStore();
     store.user = mockUser;
-    store.isGuest = false;
     await store.logout();
     expect(store.user).toBeNull();
-    expect(store.isGuest).toBe(false);
-    expect(sessionStorage.getItem("harborops_guest")).toBeNull();
   });
 
-  it("enterGuestMode() sets sessionStorage flag", () => {
+  it("isStaff accepts admin and staff roles only", () => {
     const store = useAuthStore();
-    store.enterGuestMode();
-    expect(store.isGuest).toBe(true);
-    expect(sessionStorage.getItem("harborops_guest")).toBe("true");
+    expect(store.isStaff).toBe(false);
+    store.user = { ...mockUser, role: "customer" };
+    expect(store.isStaff).toBe(false);
+    store.user = { ...mockUser, role: "staff" };
+    expect(store.isStaff).toBe(true);
+    store.user = { ...mockUser, role: "admin" };
+    expect(store.isStaff).toBe(true);
   });
 
   it("isAuthenticated is true when user is set", () => {

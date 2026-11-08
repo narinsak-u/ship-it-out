@@ -76,8 +76,7 @@ func AuthRequired() fiber.Handler {
 	}
 }
 
-// StaffOnly returns middleware that permits writes only to users whose current
-// database role is admin, so a stale JWT role cannot preserve staff access.
+// StaffOnly permits writes to users whose current database role is staff or admin.
 func StaffOnly(repo UserRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userID, ok := c.Locals("user_id").(uint)
@@ -88,7 +87,7 @@ func StaffOnly(repo UserRepository) fiber.Handler {
 		if err != nil {
 			return utils.Error(c, 401, "user not found")
 		}
-		if user.Role != "admin" {
+		if user.Role != "admin" && user.Role != "staff" {
 			return utils.Error(c, 403, "staff access required")
 		}
 		return c.Next()

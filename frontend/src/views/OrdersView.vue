@@ -95,11 +95,6 @@ function onAuthenticated() {
   router.push({ name: "order-create" });
 }
 
-function onGuest() {
-  showAuthModal.value = false;
-  router.push({ name: "order-create" });
-}
-
 function onDeleteOrder(id: string) {
   deleteTarget.value = id;
 }
@@ -204,7 +199,6 @@ function onDeleteOrder(id: string) {
         :open="showAuthModal"
         @close="showAuthModal = false"
         @authenticated="onAuthenticated"
-        @guest="onGuest"
       />
     </template>
   </div>

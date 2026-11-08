@@ -12,9 +12,9 @@ import { api } from "@/lib/api/client";
 
 const mockUser = {
   id: 1,
-  name: "Test Admin",
-  email: "admin@gmail.com",
-  role: "admin",
+  name: "Ship It Out Demo",
+  email: "demo@shipitout.example",
+  role: "customer",
   created_at: "2026-01-01T00:00:00Z",
 };
 
@@ -60,12 +60,15 @@ describe("AuthModal", () => {
     expect(wrapper.text()).toContain("Create Account");
   });
 
-  it("has guest mode button", async () => {
+  it("displays visible read-only demo credentials without guest controls", async () => {
     const wrapper = mount(AuthModal, {
       props: { open: true },
       global: { plugins: [pinia], stubs },
     });
-    expect(wrapper.text()).toContain("Continue as Guest");
+    expect(wrapper.text()).toContain("demo@shipitout.example");
+    expect(wrapper.text()).toContain("demo-read-only-2026");
+    expect(wrapper.text()).toContain("Read-only demo account");
+    expect(wrapper.text()).not.toContain("Continue as Guest");
   });
 
   it("shows error on signup with empty fields", async () => {

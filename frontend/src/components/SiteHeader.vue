@@ -65,8 +65,8 @@ const showAuthModal = ref(false);
             <span class="font-mono text-xs text-muted-foreground">...</span>
           </template>
           <template v-else-if="authStore.user">
-            <span class="font-mono text-xs text-muted-foreground"
-              >Admin ({{ authStore.user.name }})</span
+            <span class="font-mono text-xs text-muted-foreground capitalize"
+              >{{ authStore.user.role }} ({{ authStore.user.name }})</span
             >
             <button
               @click="
@@ -77,15 +77,6 @@ const showAuthModal = ref(false);
               class="flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               <LogOut class="h-3.5 w-3.5" /> Sign out
-            </button>
-          </template>
-          <template v-else-if="authStore.isGuest">
-            <span class="font-mono text-xs text-muted-foreground">Guest</span>
-            <button
-              @click="showAuthModal = true"
-              class="flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-xs transition-colors text-primary hover:text-foreground"
-            >
-              <LogIn class="h-3.5 w-3.5" /> Sign in
             </button>
           </template>
           <button
@@ -104,6 +95,5 @@ const showAuthModal = ref(false);
     :open="showAuthModal"
     @close="showAuthModal = false"
     @authenticated="showAuthModal = false"
-    @guest="showAuthModal = false"
   />
 </template>

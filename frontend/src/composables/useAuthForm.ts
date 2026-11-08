@@ -45,9 +45,5 @@ export function useAuthForm(mode: "login" | "signup") {
     return false;
   }
 
-  function handleGuest() {
-    store.enterGuestMode();
-  }
-
-  return { submitting, error, handleLogin, handleSignup, handleGuest };
+  return { submitting, error, handleLogin, handleSignup };
 }
