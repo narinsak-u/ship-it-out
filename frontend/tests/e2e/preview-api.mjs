@@ -30,6 +30,28 @@ const shipment = {
   progress: 55,
 };
 
+const manifestStatuses = [
+  "in_transit",
+  "delivered",
+  "pending",
+  "in_transit",
+  "delivered",
+  "pending",
+];
+const createManifest = () =>
+  Array.from({ length: 12 }, (_, index) => {
+    const number = String(index + 1).padStart(2, "0");
+    return {
+      ...structuredClone(shipment),
+      id: `ORD-MANIFEST-${number}`,
+      trackingNumber: `TH-MANIFEST-${number}`,
+      status: manifestStatuses[index % manifestStatuses.length],
+      customer: { ...shipment.customer, name: `Sender ${number}` },
+      receiver: { ...shipment.receiver, name: `Receiver ${number}` },
+    };
+  });
+let manifestRecords = createManifest();
+
 let analyticsMode = "normal";
 const authUsers = new Map([
   [
@@ -46,10 +68,71 @@ const authPasswords = new Map([
   ["staff@shipitout.example", "preview-staff-password"],
 ]);
 const authSessions = new Map();
-let nextUserId = 3;
+let manifestDeleteFailure = false;
 
 createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
+  if (req.method === "POST" && req.url === "/__test/manifest?reset=1") {
+    manifestRecords = createManifest();
+    manifestDeleteFailure = false;
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (req.method === "POST" && req.url === "/__test/manifest?delete=failure") {
+    manifestDeleteFailure = true;
+    res.statusCode = 204;
+    return res.end();
+  }
+  const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+  if (pathname === "/api/auth/me") {
+    const token = req.headers.cookie?.match(/(?:^|;\s*)jwt=([^;]+)/)?.[1];
+    const user = token ? authSessions.get(token) : undefined;
+    res.statusCode = user ? 200 : 401;
+    return res.end(
+      JSON.stringify(
+        user ? { success: true, data: user } : { success: false, error: "unauthorized" },
+      ),
+    );
+  }
+  if (req.method === "POST" && pathname === "/api/auth/login") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const credentials = JSON.parse(body);
+    const user = authUsers.get(credentials.email);
+    if (!user || authPasswords.get(credentials.email) !== credentials.password) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "invalid credentials" }));
+    }
+    const token = `preview-${user.role}`;
+    authSessions.set(token, user);
+    res.setHeader("set-cookie", `jwt=${token}; Path=/; HttpOnly; Secure; SameSite=Lax`);
+    return res.end(JSON.stringify({ success: true, data: { user } }));
+  }
+  if (req.method === "POST" && pathname === "/api/auth/logout") {
+    const token = req.headers.cookie?.match(/(?:^|;\s*)jwt=([^;]+)/)?.[1];
+    if (token) authSessions.delete(token);
+    res.setHeader("set-cookie", "jwt=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
+    return res.end(JSON.stringify({ success: true, data: null }));
+  }
+  const token = req.headers.cookie?.match(/(?:^|;\s*)jwt=([^;]+)/)?.[1];
+  const currentUser = token ? authSessions.get(token) : undefined;
+  if (req.method === "DELETE" && pathname.startsWith("/api/shipments/")) {
+    if (!currentUser) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "unauthorized" }));
+    }
+    if (currentUser.role !== "staff") {
+      res.statusCode = 403;
+      return res.end(JSON.stringify({ success: false, error: "forbidden" }));
+    }
+    if (manifestDeleteFailure) {
+      res.statusCode = 503;
+      return res.end(JSON.stringify({ success: false, error: "shipment delete unavailable" }));
+    }
+    const id = decodeURIComponent(pathname.slice("/api/shipments/".length));
+    manifestRecords = manifestRecords.filter((record) => record.id !== id);
+    return res.end(JSON.stringify({ success: true, data: null }));
+  }
   if (req.method === "POST" && req.url?.startsWith("/__test/analytics?mode=")) {
     analyticsMode = new URL(req.url, "http://localhost").searchParams.get("mode") ?? "normal";
     res.statusCode = 204;
@@ -124,14 +207,42 @@ createServer(async (req, res) => {
         },
       }),
     );
-  if (req.url?.startsWith("/api/shipments?"))
+  if (req.url?.startsWith("/api/shipments?")) {
+    const query = new URL(req.url, "http://localhost").searchParams;
+    if (query.has("exclude_status")) {
+      return res.end(
+        JSON.stringify({
+          success: true,
+          data: [shipment],
+          pagination: { page: 1, limit: 3, total: 1, totalPages: 1 },
+        }),
+      );
+    }
+    const search = (query.get("search") ?? "").toLowerCase();
+    const status = query.get("status");
+    const filtered = manifestRecords.filter((record) => {
+      const matchesSearch =
+        `${record.id} ${record.trackingNumber} ${record.customer.name} ${record.receiver.name} ${record.origin} ${record.destination}`
+          .toLowerCase()
+          .includes(search);
+      return matchesSearch && (!status || record.status === status);
+    });
+    const page = Number(query.get("page") || 1);
+    const limit = Number(query.get("limit") || 10);
+    const start = (page - 1) * limit;
     return res.end(
       JSON.stringify({
         success: true,
-        data: [shipment],
-        pagination: { page: 1, limit: 3, total: 1, totalPages: 1 },
+        data: filtered.slice(start, start + limit),
+        pagination: {
+          page,
+          limit,
+          total: filtered.length,
+          totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
+        },
       }),
     );
+  }
   if (req.url === "/api/hubs")
     return res.end(
       JSON.stringify({
