@@ -37,10 +37,14 @@ func main() {
 	config.Validate()
 	database.ConnectPostgres(config.App.DatabaseURL)
 
-	// Auto-create/update tables so they match our model structs
-	database.DB.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{})
-
-	// Seed demo data (skips if tables already have rows)
+	// Auto-create/update tables so they match our model structs.
+	if err := database.DB.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{}); err != nil {
+		log.Fatal().Err(err).Msg("database migration failed")
+	}
+	if err := seed.BootstrapAdmin(database.DB, config.App.AdminName, config.App.AdminEmail, config.App.AdminPassword, config.App.AdminRoleCutover); err != nil {
+		log.Fatal().Err(err).Msg("admin bootstrap failed")
+	}
+	// Seed demo data (skips if tables already have rows).
 	seed.SeedHubs(database.DB)
 	seed.SeedShipments(database.DB)
 
@@ -70,7 +74,7 @@ func main() {
 	authGroup.Get("/me", middleware.AuthRequired(), authHandler.Me)
 	authGroup.Post("/logout", authHandler.Logout) // POST /api/auth/logout
 
-	// --- Hub routes (public read, auth required for write) ---
+	// --- Hub routes (public read, staff-only write) ---
 	hubRepo := hub.NewGormRepository(database.DB)
 	hubHandler := hub.NewHandler(hubRepo)
 
@@ -81,7 +85,7 @@ func main() {
 	hubGroup.Put("/:id", hubHandler.Update)
 	hubGroup.Delete("/:id", hubHandler.Delete)
 
-	// --- Shipment routes (public read, auth required for write) ---
+	// --- Shipment routes (public read, staff-only write) ---
 	shipmentRepo := shipment.NewGormRepository(database.DB)
 	shipmentHandler := shipment.NewHandler(shipmentRepo, hubRepo)
 
