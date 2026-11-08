@@ -4,20 +4,20 @@ Vue 3 SPA for Thun-u-der Express — a shipment tracking dashboard with interact
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| Framework | Vue 3.5 (Composition API, `<script setup lang="ts">`) |
-| Build | Vite 6 |
-| Language | TypeScript 5.7 (strict) |
-| Routing | Vue Router 4 (6 lazy-loaded routes) |
-| State | Pinia (auth) + TanStack Vue Query 5 (server state) |
-| UI | shadcn-vue (New York) on reka-ui |
-| Styling | Tailwind CSS v4 |
-| Maps | Leaflet 1.9 + CARTO dark tiles |
-| Geocoding | OpenCage via `opencage-api-client` |
-| Icons | lucide-vue-next |
-| Toast | vue-sonner |
-| Package manager | Bun |
+| Category        | Technology                                            |
+| --------------- | ----------------------------------------------------- |
+| Framework       | Vue 3.5 (Composition API, `<script setup lang="ts">`) |
+| Build           | Vite 6                                                |
+| Language        | TypeScript 5.7 (strict)                               |
+| Routing         | Vue Router 4 (6 lazy-loaded routes)                   |
+| State           | Pinia (auth) + TanStack Vue Query 5 (server state)    |
+| UI              | shadcn-vue (New York) on reka-ui                      |
+| Styling         | Tailwind CSS v4                                       |
+| Maps            | Leaflet 1.9 + CARTO dark tiles                        |
+| Geocoding       | OpenCage via `opencage-api-client`                    |
+| Icons           | lucide-vue-next                                       |
+| Toast           | vue-sonner                                            |
+| Package manager | Bun                                                   |
 
 ## Quick Start
 
@@ -30,16 +30,16 @@ npm run dev            # http://localhost:5173
 
 ## Scripts
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Start Vite dev server |
-| `npm run build` | `vue-tsc` typecheck + `vite build` |
-| `npm run preview` | Preview production build |
-| `npm run lint` | ESLint (flat config + Prettier) |
-| `npm run format` | Prettier auto-format |
-| `npm run test` | Vitest (unit + integration, 138 tests) |
-| `npm run test:coverage` | Vitest with V8 coverage report |
-| `npm run test:e2e` | Playwright E2E (8 tests, Chromium) |
+| Command                 | Purpose                                |
+| ----------------------- | -------------------------------------- |
+| `npm run dev`           | Start Vite dev server                  |
+| `npm run build`         | `vue-tsc` typecheck + `vite build`     |
+| `npm run preview`       | Preview production build               |
+| `npm run lint`          | ESLint (flat config + Prettier)        |
+| `npm run format`        | Prettier auto-format                   |
+| `npm run test`          | Vitest (unit + integration, 138 tests) |
+| `npm run test:coverage` | Vitest with V8 coverage report         |
+| `npm run test:e2e`      | Playwright E2E (8 tests, Chromium)     |
 
 ## Project Structure
 
@@ -64,14 +64,14 @@ tests/
 
 ## Routes
 
-| Path | View | Description |
-|------|------|-------------|
-| `/` | HomeView | Dashboard: tracking search, KPI stats, recent shipments |
-| `/orders` | OrdersView | Paginated, searchable, filterable orders table |
-| `/orders/create` | OrderFormView | Create order (auth required) |
-| `/orders/:orderId` | OrderDetailView | Shipment detail with Leaflet map & timeline |
-| `/orders/:orderId/edit` | OrderFormView | Edit order (auth required) |
-| `/carriers` | CarriersView | Tabs: Hubs, Analytics, Active Deliveries |
+| Path                    | View            | Description                                             |
+| ----------------------- | --------------- | ------------------------------------------------------- |
+| `/`                     | HomeView        | Dashboard: tracking search, KPI stats, recent shipments |
+| `/orders`               | OrdersView      | Paginated, searchable, filterable orders table          |
+| `/orders/create`        | OrderFormView   | Create order (auth required)                            |
+| `/orders/:orderId`      | OrderDetailView | Shipment detail with Leaflet map & timeline             |
+| `/orders/:orderId/edit` | OrderFormView   | Edit order (auth required)                              |
+| `/carriers`             | CarriersView    | Tabs: Hubs, Analytics, Active Deliveries                |
 
 ## Key Features
 
@@ -95,10 +95,10 @@ Pagination: server-side (`OrdersView`) sends `page`/`limit`/`search` as query pa
 
 ## Environment
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `VITE_OPENCAGE_API_KEY` | Yes | OpenCage Geocoding API key |
-| `VITE_CARTO_API_KEY` | Yes | CARTO Basemaps API key for dark map tiles |
+| Variable                | Required | Description                                                                                                                                            |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `VITE_OPENCAGE_API_KEY` | Yes      | OpenCage Geocoding API key                                                                                                                             |
+| `VITE_CARTO_API_KEY`    | Yes      | CARTO Basemaps key for dark map tiles; set in Vercel build environment for Next previews. The Next config exposes this public tile key to the browser. |
 
 ## Conventions
 
@@ -115,15 +115,15 @@ Pagination: server-side (`OrdersView`) sends `page`/`limit`/`search` as query pa
 
 **Playwright** (E2E): 8 tests across 6 files. Runs against Vite dev server. Critical path flow uses `page.route()` for API interception (no backend needed).
 
-| Layer | Tests | Approach |
-|-------|-------|----------|
-| Composables | 12 | Pure logic, edge cases |
-| Stores | 9 | Pinia, mocked API client |
-| API | 42 | MSW handlers for all endpoints |
-| Hooks | 6 | TanStack Query, mocked fetch |
-| Components | 30 | Vue Test Utils, stubbed children |
-| Views | 7 | Route + data flow smoke tests |
-| E2E | 8 | Playwright, page.route API mocks |
-| Lib | 24 | Pure functions (geocode, analytics-utils, utils) |
+| Layer       | Tests | Approach                                         |
+| ----------- | ----- | ------------------------------------------------ |
+| Composables | 12    | Pure logic, edge cases                           |
+| Stores      | 9     | Pinia, mocked API client                         |
+| API         | 42    | MSW handlers for all endpoints                   |
+| Hooks       | 6     | TanStack Query, mocked fetch                     |
+| Components  | 30    | Vue Test Utils, stubbed children                 |
+| Views       | 7     | Route + data flow smoke tests                    |
+| E2E         | 8     | Playwright, page.route API mocks                 |
+| Lib         | 24    | Pure functions (geocode, analytics-utils, utils) |
 
 See `docs/OVERVIEW.md` for detailed architecture reference.
