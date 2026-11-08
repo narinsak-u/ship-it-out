@@ -19,6 +19,7 @@ dist-ssr
 # Frontend
 frontend/node_modules
 frontend/dist
+frontend/.next/
 
 # Backend
 backend/tmp/
