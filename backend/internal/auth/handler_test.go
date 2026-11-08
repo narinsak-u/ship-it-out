@@ -52,14 +52,14 @@ func (m *mockRepo) FindByID(id uint) (*models.User, error) {
 func TestRegister_Success(t *testing.T) {
 	repo := new(mockRepo)
 	repo.On("Create", mock.MatchedBy(func(u *models.User) bool {
-		return u.Name == "John" && u.Email == "john@test.com"
+		return u.Name == "John" && u.Email == "john@test.com" && u.Role == "customer"
 	})).Return(nil)
 
 	app := fiber.New()
 	h := NewHandler(repo)
 	app.Post("/api/auth/register", h.Register)
 
-	body := `{"name":"John","email":"john@test.com","password":"pass123"}`
+	body := `{"name":"John","email":"john@test.com","password":"pass123","role":"admin"}`
 	req := httptest.NewRequest("POST", "/api/auth/register", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	resp, _ := app.Test(req, 1000)

@@ -76,11 +76,8 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return utils.Error(c, 500, "failed to hash password")
 	}
 
-	// --- Default to "customer" role if not specified ---
-	role := req.Role
-	if role == "" {
-		role = "customer"
-	}
+	// Public registration always creates a read-only customer account.
+	role := "customer"
 
 	// --- Build the user model and insert into Postgres ---
 	user := models.User{

@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/narinsak-u/backend/internal/config"
+	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +23,7 @@ func setupConfig() {
 func validToken() string {
 	claims := jwt.MapClaims{
 		"user_id": float64(1),
-		"role":    "customer",
+		"role":    "admin",
 		"exp":     time.Now().Add(1 * time.Hour).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -41,9 +42,20 @@ func expiredToken() string {
 	return s
 }
 
-func testApp() *fiber.App {
+type testUserRepo struct {
+	user *models.User
+	err  error
+}
+
+func (r testUserRepo) FindByID(uint) (*models.User, error) { return r.user, r.err }
+
+func testApp(role ...string) *fiber.App {
+	userRole := "admin"
+	if len(role) > 0 {
+		userRole = role[0]
+	}
 	app := fiber.New()
-	app.Use(AuthRequired())
+	app.Use(AuthRequired(), StaffOnly(testUserRepo{user: &models.User{ID: 1, Role: userRole}}))
 	app.Get("/test", func(c *fiber.Ctx) error {
 		return c.SendString("ok")
 	})
@@ -56,6 +68,14 @@ func TestAuthRequired_ValidToken_Header(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+validToken())
 	resp, _ := testApp().Test(req, 1000)
 	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestStaffOnly_RejectsCustomerFromDatabase(t *testing.T) {
+	setupConfig()
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+validToken())
+	resp, _ := testApp("customer").Test(req, 1000)
+	assert.Equal(t, 403, resp.StatusCode)
 }
 
 func TestAuthRequired_NoToken(t *testing.T) {
