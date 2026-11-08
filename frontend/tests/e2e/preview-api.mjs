@@ -69,6 +69,7 @@ const authPasswords = new Map([
 ]);
 const authSessions = new Map();
 let manifestDeleteFailure = false;
+let nextShipmentNumber = 1;
 
 createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
@@ -221,14 +222,37 @@ createServer(async (req, res) => {
     return res.end(JSON.stringify({ success: true, data: { message: "logged out" } }));
   }
   if (req.url === "/api/shipments" && req.method === "POST") {
-    if (user?.role === "admin" || user?.role === "staff") {
-      res.statusCode = 201;
-      return res.end(JSON.stringify({ success: true, data: {} }));
+    if (!user) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "not authenticated" }));
     }
-    res.statusCode = user ? 403 : 401;
-    return res.end(
-      JSON.stringify({ success: false, error: user ? "staff role required" : "not authenticated" }),
-    );
+    if (user.role !== "admin" && user.role !== "staff") {
+      res.statusCode = 403;
+      return res.end(JSON.stringify({ success: false, error: "staff role required" }));
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const input = JSON.parse(body);
+    const number = nextShipmentNumber++;
+    const record = {
+      ...structuredClone(shipment),
+      id: `ORD-CREATED-${number}`,
+      trackingNumber: `TH-CREATED-${number}`,
+      status: "pending",
+      customer: input.customer,
+      receiver: input.receiver,
+      carrier: input.carrier,
+      origin: `${input.customer.subDistrict}, ${input.customer.district}, ${input.customer.province}`,
+      destination: `${input.receiver.subDistrict}, ${input.receiver.district}, ${input.receiver.province}`,
+      currentCoords: input.customer.coords,
+      weight: input.weight,
+      items: input.items,
+      createdAt: new Date().toISOString(),
+      progress: 0,
+    };
+    manifestRecords.unshift(record);
+    res.statusCode = 201;
+    return res.end(JSON.stringify({ success: true, data: record }));
   }
   if (req.url?.startsWith("/api/shipments?")) {
     const query = new URL(req.url, "http://localhost").searchParams;
@@ -406,6 +430,10 @@ createServer(async (req, res) => {
         ],
       }),
     );
+  const createdShipment = manifestRecords.find(
+    (record) => req.url === `/api/shipments/${encodeURIComponent(record.id)}`,
+  );
+  if (createdShipment) return res.end(JSON.stringify({ success: true, data: createdShipment }));
   if (req.url === "/api/shipments/ORD-TEST1")
     return res.end(JSON.stringify({ success: true, data: shipment }));
   if (req.url === "/api/shipments/missing") {
