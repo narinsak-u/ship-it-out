@@ -77,7 +77,7 @@ tests/
 | Path                    | View            | Description                                             |
 | ----------------------- | --------------- | ------------------------------------------------------- |
 | `/`                     | HomeView        | Dashboard: tracking search, KPI stats, recent shipments |
-| `/orders`               | OrdersView      | Paginated, searchable, filterable orders table          |
+| `/orders`               | Next.js manifest   | Server-rendered, searchable, filterable, paginated shipment table |
 | `/orders/create`        | OrderFormView   | Create order (auth required)                            |
 | `/orders/:orderId`      | OrderDetailView | Shipment detail with Leaflet map & timeline             |
 | `/orders/:orderId/edit` | OrderFormView   | Edit order (auth required)                              |
@@ -86,7 +86,7 @@ tests/
 ## Key Features
 
 - **Tracking search** — look up by order ID or tracking number from home
-- **Server-side pagination** — orders table with 300ms debounced search & status filters
+- **Server-side pagination** — Next.js manifest uses 300ms debounced search and Go status filters
 - **Leaflet maps** — origin → current → destination polylines with custom markers
 - **Geocoding** — addresses resolved to real lat/lng via OpenCage on form submit
 - **Hub-aware status updates** — status changes to hub-based states update map position to hub coordinates
@@ -101,14 +101,14 @@ Views/Components → TanStack Vue Query hooks → lib/api/ → Go backend (local
                     Pinia store (auth session)
 ```
 
-Pagination: server-side (`OrdersView`) sends `page`/`limit`/`search` as query params; client-side (`HubsPanel`, `DeliveriesPanel`) fetches all and paginates via `usePagination`.
+The Next.js `/orders` route fetches its initial public page with `cache: "no-store"` and passes it to `src/features/shipments/Manifest.tsx`; browser search, filters, paging, and deletion use the same-origin `/api/shipments` proxy.
 
 ## Environment
 
-| Variable                | Required | Description                                                                                                                                            |
-| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `VITE_OPENCAGE_API_KEY` | Yes      | OpenCage Geocoding API key                                                                                                                             |
-| `VITE_CARTO_API_KEY`    | Yes      | CARTO Basemaps key for dark map tiles; set in Vercel build environment for Next previews. The Next config exposes this public tile key to the browser. |
+| Variable                | Required | Description                                                                                                                                              |
+| ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENCAGE_API_KEY`      | Yes      | OpenCage key used only by the Next.js `/api/geocode` server route. Never expose it as `NEXT_PUBLIC_*`. `VITE_OPENCAGE_API_KEY` is accepted server-side during migration. |
+| `VITE_CARTO_API_KEY`    | Yes      | CARTO Basemaps key for dark map tiles; set in Vercel build environment for Next previews. The Next config exposes this public tile key to the browser.   |
 
 ## Conventions
 

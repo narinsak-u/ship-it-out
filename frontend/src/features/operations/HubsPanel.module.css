@@ -212,3 +212,58 @@
     text-transform: uppercase;
   }
 }
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0;
+}
+.actions button,
+.table td button,
+.formActions button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  background: var(--card);
+  cursor: pointer;
+}
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: min(100% - 24px, 480px);
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--foreground);
+  background: var(--card);
+}
+.dialog::backdrop {
+  background: rgb(0 0 0 / 65%);
+}
+.dialog form,
+.dialog label {
+  display: grid;
+  gap: 10px;
+}
+.dialog form {
+  gap: 16px;
+}
+.dialog input,
+.dialog select {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  background: var(--background);
+}
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
