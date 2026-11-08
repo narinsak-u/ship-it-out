@@ -259,3 +259,9 @@ Form submit → `geocodeAddress()` → OpenCage API → real `{lat, lng}` → ba
 
 **Status update flow:**
 DeliveriesPanel selects status + hub → `PATCH /shipments/:id/status` → backend updates status + hub assignment + sets `currentCoords` to hub's location → frontend refetches → map reflects new position.
+
+## Next preview authentication
+
+The Next preview wraps its header and pages in `src/features/auth/AuthProvider.tsx`. The feature-owned `useAuth()` state exposes `user`, `isStaff`, `loading`, `login`, `signup`, and `logout` for later staff-only UI. Session restore calls `GET /api/auth/me`; login, registration, and logout use same-origin `/api/auth/*` requests through `app/api/[...path]/route.ts`. The Go API sets and clears the HTTP-only `jwt` cookie. Public signup creates a customer; staff access is derived from the fresh Go user role (`admin` or `staff`), and the backend remains authoritative for writes.
+
+Set `API_BASE_URL` to the Go API origin when running the Next preview outside Playwright. The browser only calls same-origin `/api`; do not expose API secrets or persist auth state in guest storage. The demo login is `demo@shipitout.example` / `demo-read-only-2026`; its password appears in a masked password field and a read-only account hint.

@@ -30,8 +30,78 @@ const shipment = {
   progress: 55,
 };
 
-createServer((req, res) => {
+const authUsers = new Map([
+  [
+    "demo@shipitout.example",
+    { id: 2, name: "Ship It Out Demo", email: "demo@shipitout.example", role: "customer" },
+  ],
+  [
+    "staff@shipitout.example",
+    { id: 1, name: "Preview Staff", email: "staff@shipitout.example", role: "staff" },
+  ],
+]);
+const authPasswords = new Map([
+  ["demo@shipitout.example", "demo-read-only-2026"],
+  ["staff@shipitout.example", "preview-staff-password"],
+]);
+const authSessions = new Map();
+let nextUserId = 3;
+
+createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
+  const cookies = Object.fromEntries(
+    (req.headers.cookie || "")
+      .split("; ")
+      .filter(Boolean)
+      .map((item) => item.split("=")),
+  );
+  const user = authSessions.get(cookies.jwt);
+
+  // Auth preview API keeps cookie behavior in the Next proxy browser tests.
+  if (req.url === "/api/auth/me") {
+    if (!user) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "not authenticated" }));
+    }
+    return res.end(JSON.stringify({ success: true, data: user }));
+  }
+  if (req.url === "/api/auth/login" || req.url === "/api/auth/register") {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const body = JSON.parse(Buffer.concat(chunks).toString() || "{}");
+    let account = authUsers.get(body.email);
+    if (req.url === "/api/auth/register") {
+      if (account) {
+        res.statusCode = 409;
+        return res.end(JSON.stringify({ success: false, error: "email already registered" }));
+      }
+      account = { id: nextUserId++, name: body.name, email: body.email, role: "customer" };
+      authUsers.set(body.email, account);
+      authPasswords.set(body.email, body.password);
+    } else if (!account || authPasswords.get(body.email) !== body.password) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "invalid email or password" }));
+    }
+    const token = `preview-session-${account.id}-${Date.now()}`;
+    authSessions.set(token, account);
+    res.setHeader("set-cookie", `jwt=${token}; Path=/; HttpOnly; SameSite=None; Secure`);
+    return res.end(JSON.stringify({ success: true, data: { user: account, token } }));
+  }
+  if (req.url === "/api/auth/logout" && req.method === "POST") {
+    authSessions.delete(cookies.jwt);
+    res.setHeader("set-cookie", "jwt=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0");
+    return res.end(JSON.stringify({ success: true, data: { message: "logged out" } }));
+  }
+  if (req.url === "/api/shipments" && req.method === "POST") {
+    if (user?.role === "admin" || user?.role === "staff") {
+      res.statusCode = 201;
+      return res.end(JSON.stringify({ success: true, data: {} }));
+    }
+    res.statusCode = user ? 403 : 401;
+    return res.end(
+      JSON.stringify({ success: false, error: user ? "staff role required" : "not authenticated" }),
+    );
+  }
   if (req.url === "/api/analytics/overview")
     return res.end(
       JSON.stringify({

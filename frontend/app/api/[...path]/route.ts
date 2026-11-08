@@ -14,6 +14,7 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     method: request.method,
     headers,
     body: ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer(),
+    cache: "no-store",
     redirect: "manual",
   });
   return new Response(response.body, { status: response.status, headers: response.headers });
