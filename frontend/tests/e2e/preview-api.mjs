@@ -1,34 +1,36 @@
 import { createServer } from "node:http";
 
-const shipment = {
+let shipment = {
   id: "ORD-TEST1",
   trackingNumber: "TH-TEST-1",
   status: "in_transit",
   carrier: "Flash Express",
   customer: {
     name: "Sender",
-    zipcode: "10100",
-    subDistrict: "A",
-    district: "B",
-    province: "Bangkok",
+    zipcode: "10900",
+    subDistrict: "ลาดยาว",
+    district: "จตุจักร",
+    province: "กรุงเทพมหานคร",
     coords: { lat: 13.7, lng: 100.5 },
   },
   receiver: {
     name: "Receiver",
-    zipcode: "20100",
-    subDistrict: "C",
-    district: "D",
-    province: "Chonburi",
+    zipcode: "10800",
+    subDistrict: "วงศ์สว่าง",
+    district: "บางซื่อ",
+    province: "กรุงเทพมหานคร",
     coords: { lat: 13.3, lng: 100.9 },
   },
   origin: "Bangkok",
   destination: "Chonburi",
   currentCoords: { lat: 13.5, lng: 100.7 },
   weight: 2,
+  items: 2,
   estimatedDelivery: "2026-12-01T00:00:00Z",
   createdAt: "2026-11-01T00:00:00Z",
   progress: 55,
 };
+const originalShipment = structuredClone(shipment);
 
 const manifestStatuses = [
   "in_transit",
@@ -68,6 +70,7 @@ const authPasswords = new Map([
   ["staff@shipitout.example", "preview-staff-password"],
 ]);
 const authSessions = new Map();
+let shipmentUpdateFailure = false;
 let manifestDeleteFailure = false;
 let nextShipmentNumber = 1;
 
@@ -80,6 +83,18 @@ createServer(async (req, res) => {
       .map((item) => item.split("=")),
   );
   const user = authSessions.get(cookies.jwt);
+  if (req.method === "POST" && req.url === "/__test/shipment?reset=1") {
+    shipment = structuredClone(originalShipment);
+    manifestRecords = createManifest();
+    shipmentUpdateFailure = false;
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (req.method === "POST" && req.url === "/__test/shipment?update=failure") {
+    shipmentUpdateFailure = true;
+    res.statusCode = 204;
+    return res.end();
+  }
   if (req.method === "POST" && req.url === "/__test/manifest?reset=1") {
     manifestRecords = createManifest();
     manifestDeleteFailure = false;
@@ -430,6 +445,34 @@ createServer(async (req, res) => {
         ],
       }),
     );
+  if (req.method === "PUT" && req.url === "/api/shipments/ORD-TEST1") {
+    if (!user) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "not authenticated" }));
+    }
+    if (user.role !== "staff") {
+      res.statusCode = 403;
+      return res.end(JSON.stringify({ success: false, error: "staff role required" }));
+    }
+    if (shipmentUpdateFailure) {
+      res.statusCode = 503;
+      return res.end(JSON.stringify({ success: false, error: "shipment update unavailable" }));
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const update = JSON.parse(body);
+    shipment = {
+      ...shipment,
+      ...update,
+      origin: `${update.customer.subDistrict}, ${update.customer.district}, ${update.customer.province}`,
+      destination: `${update.receiver.subDistrict}, ${update.receiver.district}, ${update.receiver.province}`,
+      currentCoords: update.customer.coords,
+    };
+    manifestRecords = manifestRecords.map((record) =>
+      record.id === shipment.id ? shipment : record,
+    );
+    return res.end(JSON.stringify({ success: true, data: shipment }));
+  }
   const createdShipment = manifestRecords.find(
     (record) => req.url === `/api/shipments/${encodeURIComponent(record.id)}`,
   );

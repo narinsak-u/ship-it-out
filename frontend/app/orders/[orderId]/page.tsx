@@ -10,8 +10,14 @@ function date(value: string) {
   });
 }
 
-export default async function ShipmentPage({ params }: { params: Promise<{ orderId: string }> }) {
-  const { orderId } = await params;
+export default async function ShipmentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orderId: string }>;
+  searchParams: Promise<{ updated?: string }>;
+}) {
+  const [{ orderId }, { updated }] = await Promise.all([params, searchParams]);
   const shipment = await getShipment(orderId);
   if (!shipment) notFound();
   const events = await getShipmentEvents(shipment.trackingNumber);
@@ -19,6 +25,7 @@ export default async function ShipmentPage({ params }: { params: Promise<{ order
   return (
     <main className="detail-layout">
       <section className="details">
+        {updated === "1" && <p role="status">Shipment updated.</p>}
         <a className="back" href="/orders">
           ← <span>All orders</span>
         </a>
