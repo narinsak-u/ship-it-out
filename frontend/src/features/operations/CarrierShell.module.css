@@ -36,6 +36,17 @@
   color: var(--foreground);
   font: 13px var(--font-mono);
 }
+.tab:not([aria-current="page"]) {
+  border-bottom-color: var(--border);
+  background: var(--secondary);
+  color: var(--muted-foreground);
+}
+.tab:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 .panel {
   padding: clamp(16px, 3vw, 26px);
   border: 1px solid var(--border);

@@ -30,6 +30,7 @@ const shipment = {
   progress: 55,
 };
 
+let analyticsMode = "normal";
 const authUsers = new Map([
   [
     "demo@shipitout.example",
@@ -49,64 +50,78 @@ let nextUserId = 3;
 
 createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
-  const cookies = Object.fromEntries(
-    (req.headers.cookie || "")
-      .split("; ")
-      .filter(Boolean)
-      .map((item) => item.split("=")),
-  );
-  const user = authSessions.get(cookies.jwt);
-
-  // Auth preview API keeps cookie behavior in the Next proxy browser tests.
-  if (req.url === "/api/auth/me") {
-    if (!user) {
-      res.statusCode = 401;
-      return res.end(JSON.stringify({ success: false, error: "not authenticated" }));
-    }
-    return res.end(JSON.stringify({ success: true, data: user }));
+  if (req.method === "POST" && req.url?.startsWith("/__test/analytics?mode=")) {
+    analyticsMode = new URL(req.url, "http://localhost").searchParams.get("mode") ?? "normal";
+    res.statusCode = 204;
+    return res.end();
   }
-  if (req.url === "/api/auth/login" || req.url === "/api/auth/register") {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const body = JSON.parse(Buffer.concat(chunks).toString() || "{}");
-    let account = authUsers.get(body.email);
-    if (req.url === "/api/auth/register") {
-      if (account) {
-        res.statusCode = 409;
-        return res.end(JSON.stringify({ success: false, error: "email already registered" }));
-      }
-      account = { id: nextUserId++, name: body.name, email: body.email, role: "customer" };
-      authUsers.set(body.email, account);
-      authPasswords.set(body.email, body.password);
-    } else if (!account || authPasswords.get(body.email) !== body.password) {
-      res.statusCode = 401;
-      return res.end(JSON.stringify({ success: false, error: "invalid email or password" }));
-    }
-    const token = `preview-session-${account.id}-${Date.now()}`;
-    authSessions.set(token, account);
-    res.setHeader("set-cookie", `jwt=${token}; Path=/; HttpOnly; SameSite=None; Secure`);
-    return res.end(JSON.stringify({ success: true, data: { user: account, token } }));
+  if (analyticsMode === "failure" && req.url?.startsWith("/api/analytics/")) {
+    res.statusCode = 503;
+    return res.end(JSON.stringify({ success: false, error: "unavailable" }));
   }
-  if (req.url === "/api/auth/logout" && req.method === "POST") {
-    authSessions.delete(cookies.jwt);
-    res.setHeader("set-cookie", "jwt=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0");
-    return res.end(JSON.stringify({ success: true, data: { message: "logged out" } }));
-  }
-  if (req.url === "/api/shipments" && req.method === "POST") {
-    if (user?.role === "admin" || user?.role === "staff") {
-      res.statusCode = 201;
-      return res.end(JSON.stringify({ success: true, data: {} }));
-    }
-    res.statusCode = user ? 403 : 401;
+  if (analyticsMode === "empty" && req.url === "/api/analytics/overview")
     return res.end(
-      JSON.stringify({ success: false, error: user ? "staff role required" : "not authenticated" }),
+      JSON.stringify({
+        success: true,
+        data: {
+          total: 0,
+          active: 0,
+          delivered: 0,
+          by_status: null,
+          by_region: ["Central", "East", "North", "West", "North-east", "South"].map((name) => ({
+            name,
+            total: 0,
+          })),
+        },
+      }),
     );
-  }
+  if (analyticsMode === "empty" && req.url === "/api/analytics/timeseries")
+    return res.end(
+      JSON.stringify({ success: true, data: { by_month: null, by_day_of_week: null } }),
+    );
   if (req.url === "/api/analytics/overview")
     return res.end(
       JSON.stringify({
         success: true,
-        data: { total: 14, active: 9, delivered: 5, by_status: [], by_region: [] },
+        data: {
+          total: 126,
+          active: 44,
+          delivered: 82,
+          by_status: [
+            { status: "delivered", count: 82 },
+            { status: "in_transit", count: 28 },
+            { status: "pending", count: 16 },
+          ],
+          by_region: [
+            { name: "Bangkok", total: 64 },
+            { name: "Chonburi", total: 38 },
+            { name: "Chiang Mai", total: 24 },
+          ],
+        },
+      }),
+    );
+  if (req.url === "/api/analytics/timeseries")
+    return res.end(
+      JSON.stringify({
+        success: true,
+        data: {
+          by_month: [
+            { month: "Jun", count: 18 },
+            { month: "Jul", count: 24 },
+            { month: "Aug", count: 31 },
+            { month: "Sep", count: 26 },
+            { month: "Oct", count: 27 },
+          ],
+          by_day_of_week: [
+            { day: "Mon", count: 21 },
+            { day: "Tue", count: 18 },
+            { day: "Wed", count: 26 },
+            { day: "Thu", count: 16 },
+            { day: "Fri", count: 24 },
+            { day: "Sat", count: 13 },
+            { day: "Sun", count: 8 },
+          ],
+        },
       }),
     );
   if (req.url?.startsWith("/api/shipments?"))
