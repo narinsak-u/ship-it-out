@@ -38,7 +38,7 @@ backend/
 │   │   └── hub.go              # Hub model
 │   ├── middleware/
 │   │   ├── auth.go             # JWT Bearer token / cookie verification
-│   │   ├── cors.go             # Manual CORS headers (origin: localhost:5173)
+│   │   ├── cors.go             # Manual CORS headers (default origin: localhost:3000)
 │   │   ├── logger.go           # Request logging via zerolog
 │   │   └── ratelimit.go        # In-memory sliding-window rate limiter (5 req/min on auth)
 │   ├── auth/

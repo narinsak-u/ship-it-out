@@ -34,7 +34,7 @@ func Load() {
 	App = Config{
 		Port:             getEnv("PORT", "8080"),
 		DatabaseURL:      getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/shipments"),
-		CORSOrigin:       getEnv("CORS_ORIGIN", "http://localhost:5173"),
+		CORSOrigin:       getEnv("CORS_ORIGIN", "http://localhost:3000"),
 		JWTSecret:        getEnv("JWT_SECRET", ""),
 		AdminName:        getEnv("ADMIN_NAME", "Administrator"),
 		AdminEmail:       getEnv("ADMIN_EMAIL", ""),

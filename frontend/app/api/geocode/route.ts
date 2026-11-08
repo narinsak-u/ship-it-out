@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   if (user?.role !== "admin" && user?.role !== "staff") {
     return Response.json({ error: "Staff role required." }, { status: 403 });
   }
-  const key = process.env.OPENCAGE_API_KEY ?? process.env.VITE_OPENCAGE_API_KEY;
+  const key = process.env.OPENCAGE_API_KEY;
   if (!key) return Response.json({ error: "OpenCage API key is not configured." }, { status: 503 });
 
   let address: { subDistrict?: string; district?: string; province?: string };

@@ -11,7 +11,7 @@ export default defineConfig({
   webServer: [
     { command: "node tests/e2e/preview-api.mjs", port: 8081, reuseExistingServer: true },
     {
-      command: "npm run dev:next",
+      command: "bun run dev",
       port: 3000,
       reuseExistingServer: true,
       env: { API_BASE_URL: "http://127.0.0.1:8081" },

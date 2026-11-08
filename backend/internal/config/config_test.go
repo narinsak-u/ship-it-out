@@ -15,7 +15,7 @@ func TestLoad_Defaults(t *testing.T) {
 	config.Load()
 	assert.Equal(t, "8080", config.App.Port)
 	assert.Equal(t, "postgres://user:pass@localhost:5432/shipments", config.App.DatabaseURL)
-	assert.Equal(t, "http://localhost:5173", config.App.CORSOrigin)
+	assert.Equal(t, "http://localhost:3000", config.App.CORSOrigin)
 	assert.Equal(t, "", config.App.JWTSecret)
 	assert.Equal(t, 24*time.Hour, config.App.JWTTTL)
 }

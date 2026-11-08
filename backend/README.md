@@ -147,7 +147,7 @@ go test ./internal/seed -run TestAdminCutoverHTTPAndPersistence -count=1
 | ------------------- | ----------------------------------------------- | ------------------------------------------------ |
 | `PORT`              | `8080`                                          | Server listen port                               |
 | `DATABASE_URL`      | `postgres://user:pass@localhost:5432/shipments` | PostgreSQL DSN                                   |
-| `CORS_ORIGIN`       | `http://localhost:5173`                         | Allowed browser origin                          |
+| `CORS_ORIGIN`       | `http://localhost:3000`                         | Allowed direct-browser origin; not authorization |
 | `JWT_SECRET`        | `change-me`                                     | HMAC secret for JWT                              |
 | `ADMIN_NAME`        | `Administrator`                                | Seeded staff display name                        |
 | `ADMIN_EMAIL`       | none                                            | Required deployment-provided staff email         |

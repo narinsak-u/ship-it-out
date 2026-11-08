@@ -1,139 +1,47 @@
 # ship-it-out Frontend
 
-Vue 3 SPA for Thun-u-der Express — a shipment tracking dashboard with interactive maps, real-time status updates, and logistics analytics.
+Next.js App Router shipment dashboard, deployed on Vercel. Go API remains a separate deployment; the browser uses same-origin `/api` routes proxied by Next.js.
 
-## Tech Stack
-
-| Category        | Technology                                            |
-| --------------- | ----------------------------------------------------- |
-| Framework       | Vue 3.5 (Composition API, `<script setup lang="ts">`) |
-| Build           | Vite 6                                                |
-| Language        | TypeScript 5.7 (strict)                               |
-| Routing         | Vue Router 4 (6 lazy-loaded routes)                   |
-| State           | Pinia (auth) + TanStack Vue Query 5 (server state)    |
-| UI              | shadcn-vue (New York) on reka-ui                      |
-| Styling         | Tailwind CSS v4                                       |
-| Maps            | Leaflet 1.9 + CARTO dark tiles                        |
-| Geocoding       | OpenCage via `opencage-api-client`                    |
-| Icons           | lucide-vue-next                                       |
-| Toast           | vue-sonner                                            |
-| Package manager | Bun                                                   |
-
-## Quick Start
+## Quick start
 
 ```bash
 cd frontend
 bun install
-cp .env.example .env   # Add VITE_OPENCAGE_API_KEY and VITE_CARTO_API_KEY
-npm run dev            # http://localhost:5173
+cp .env.example .env.local
+# Set API_BASE_URL to the Go API origin, without /api.
+bun run dev
 ```
 
-## Next.js preview
-
-The migration preview serves `/`, `/orders/:orderId`, and carrier operations on `/carriers` while Vue remains the default app. `/carriers` opens Hubs; `/carriers?tab=analytics` opens API-backed analytics. Start the Go API first, then run:
-
-```bash
-API_BASE_URL=http://localhost:8080 bun run dev:next
-```
-
-`API_BASE_URL` is the server-only Go origin, without `/api`. Browser `/api` requests use the Next.js origin. Set `VITE_CARTO_API_KEY` in `.env` for dark map tiles. Run `bun run build:next` and `bun run test:e2e:next` to check the preview.
+Next.js runs at `http://localhost:3000`; local Go API defaults to `http://localhost:8080`.
 
 ## Scripts
 
-| Command                 | Purpose                                |
-| ----------------------- | -------------------------------------- |
-| `npm run dev`           | Start Vite dev server                  |
-| `npm run build`         | `vue-tsc` typecheck + `vite build`     |
-| `npm run preview`       | Preview production build               |
-| `npm run lint`          | ESLint (flat config + Prettier)        |
-| `npm run format`        | Prettier auto-format                   |
-| `npm run test`          | Vitest (unit + integration, 138 tests) |
-| `npm run test:coverage` | Vitest with V8 coverage report         |
-| `npm run test:e2e`      | Playwright E2E (8 tests, Chromium)     |
+| Command | Purpose |
+| --- | --- |
+| `bun run dev` | Start Next.js development server |
+| `bun run build` | Build production Next.js app |
+| `bun run start` | Start production Next.js app |
+| `bun run lint` | Run ESLint |
+| `bun run test:e2e` | Run supported Next.js Playwright coverage |
 
-## Project Structure
+## Supported app and security
 
-```
-src/
-├── components/        # Shared Vue components
-│   └── ui/            # shadcn-vue primitives (auto-generated)
-├── views/             # Page-level route components (lazy-loaded)
-├── lib/               # Types, API client, utilities, seed data
-│   └── api/           # Endpoint functions + response mappers
-├── hooks/             # TanStack Vue Query hooks (useQuery/useMutation)
-├── stores/            # Pinia store (auth.ts)
-├── composables/       # usePagination, useSearchFilter
-├── router/            # Vue Router config
-├── App.vue            # Root layout + auth init
-├── main.ts            # App entry point
-└── styles.css         # Tailwind entry + Ocean Deep theme
-tests/
-├── msw/               # Mock Service Worker handlers + server
-└── e2e/               # Playwright E2E tests
-```
+Next.js is the sole frontend. Public shipment and analytics pages render on the server; interactive navigation and management use client components. Browser calls, including login and writes, go to same-origin `/api/*`. `app/api/[...path]/route.ts` forwards requests and cookies to the separately deployed Go API using server-only `API_BASE_URL`. Do not use a browser API origin variable or expose the Go endpoint as a public environment variable. Go remains authoritative for authentication, roles, and protected writes.
 
-## Routes
+The login screen visibly displays the read-only demo credentials: `demo@shipitout.example` / `demo-read-only-2026`. No guest mode or guest-stored authentication exists. Demo account is customer-role and cannot write.
 
-| Path                    | View            | Description                                             |
-| ----------------------- | --------------- | ------------------------------------------------------- |
-| `/`                     | HomeView        | Dashboard: tracking search, KPI stats, recent shipments |
-| `/orders`               | Next.js manifest   | Server-rendered, searchable, filterable, paginated shipment table |
-| `/orders/create`        | OrderFormView   | Create order (auth required)                            |
-| `/orders/:orderId`      | OrderDetailView | Shipment detail with Leaflet map & timeline             |
-| `/orders/:orderId/edit` | OrderFormView   | Edit order (auth required)                              |
-| `/carriers`             | CarriersView    | Tabs: Hubs, Analytics, Active Deliveries                |
-
-## Key Features
-
-- **Tracking search** — look up by order ID or tracking number from home
-- **Server-side pagination** — Next.js manifest uses 300ms debounced search and Go status filters
-- **Leaflet maps** — origin → current → destination polylines with custom markers
-- **Geocoding** — addresses resolved to real lat/lng via OpenCage on form submit
-- **Hub-aware status updates** — status changes to hub-based states update map position to hub coordinates
-- **Auth** — HTTP-only cookie sessions, signup, and visible read-only demo login; public pages work without a session
-- **Dark theme** — Ocean Deep OKLCH color palette, fully responsive
-
-## Architecture
-
-```
-Views/Components → TanStack Vue Query hooks → lib/api/ → Go backend (localhost:8080/api)
-                              ↕
-                    Pinia store (auth session)
-```
-
-The Next.js `/orders` route fetches its initial public page with `cache: "no-store"` and passes it to `src/features/shipments/Manifest.tsx`; browser search, filters, paging, and deletion use the same-origin `/api/shipments` proxy.
+For production cutover, configure Vercel `API_BASE_URL` to the Go API origin and keep Go API credentials and `OPENCAGE_API_KEY` server-side. Follow `docs/adr/0002-staff-only-writes.md`: retain existing accounts and shipment data, demote pre-existing admins during the one-time cutover, and permit writes only for the newly seeded admin and staff. Do not expose secrets through `NEXT_PUBLIC_*`.
 
 ## Environment
 
-| Variable                | Required | Description                                                                                                                                              |
-| ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OPENCAGE_API_KEY`      | Yes      | OpenCage key used only by the Next.js `/api/geocode` server route. Never expose it as `NEXT_PUBLIC_*`. `VITE_OPENCAGE_API_KEY` is accepted server-side during migration. |
-| `VITE_CARTO_API_KEY`    | Yes      | CARTO Basemaps key for dark map tiles; set in Vercel build environment for Next previews. The Next config exposes this public tile key to the browser.   |
+| Variable | Required | Description |
+| --- | --- | --- |
+| `API_BASE_URL` | Yes | Go API origin, no `/api` suffix; server-only |
+| `OPENCAGE_API_KEY` | For geocoding | Server-side OpenCage key |
+| `NEXT_PUBLIC_CARTO_API_KEY` | Optional | Public CARTO map tile key |
 
-## Conventions
+## Routes and coverage
 
-- **SFC:** `<script setup lang="ts">` only. No Options API. Order: `<script>` → `<template>` → no `<style>`.
-- **Imports:** `@/` alias for project files. Vue/external first, then `@/`, then relative. `import type` for types.
-- **State:** TanStack Vue Query for server state, Pinia (Composition API) for client state.
-- **Naming:** PascalCase components (`StatusBadge.vue`). Views suffixed `View`. Hooks/composables `use`-prefixed. Constants `UPPER_SNAKE_CASE`.
-- **CSS:** Tailwind utility classes only. No `<style scoped>`. Ocean Deep `oklch()` dark theme.
-- **Formatting:** Prettier (semicolons, double quotes, trailing commas, 100 print width).
+Supported routes: `/`, `/orders`, `/orders/create`, `/orders/[orderId]`, `/orders/[orderId]/edit`, `/carriers`. Playwright tests in `tests/e2e/next-*.spec.ts` cover navigation, public SSR, auth cookie restore, staff writes, demo write denial, shipment management, hubs, and analytics. Tests start a local Next server and Go API-compatible fixture; live deployment smoke coverage must additionally exercise the deployed Next and Go origins.
 
-## Testing
-
-**Vitest** (unit + integration): 138 tests across 30 files. Tests colocated next to source (`*.spec.ts`). API calls mocked via MSW. Coverage: 92% lines, 85% statements, 91% functions, 74% branches.
-
-**Playwright** (E2E): 8 tests across 6 files. Runs against Vite dev server. Critical path flow uses `page.route()` for API interception (no backend needed).
-
-| Layer       | Tests | Approach                                         |
-| ----------- | ----- | ------------------------------------------------ |
-| Composables | 12    | Pure logic, edge cases                           |
-| Stores      | 9     | Pinia, mocked API client                         |
-| API         | 42    | MSW handlers for all endpoints                   |
-| Hooks       | 6     | TanStack Query, mocked fetch                     |
-| Components  | 30    | Vue Test Utils, stubbed children                 |
-| Views       | 7     | Route + data flow smoke tests                    |
-| E2E         | 8     | Playwright, page.route API mocks                 |
-| Lib         | 24    | Pure functions (geocode, analytics-utils, utils) |
-
-See `docs/OVERVIEW.md` for detailed architecture reference.
+See `docs/OVERVIEW.md` and root `docs/adr/0001-nextjs-frontend-api-origin.md` for architecture and API origin details.
