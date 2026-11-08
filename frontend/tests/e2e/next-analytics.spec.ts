@@ -39,6 +39,6 @@ test.describe("Next carrier analytics", () => {
 
     await page.request.post("http://127.0.0.1:8081/__test/analytics?mode=empty");
     await page.reload();
-    await expect(page.getByRole("status")).toContainText("No analytics data available yet.");
+    await expect(page.getByText("No analytics data available yet.", { exact: true })).toBeVisible();
   });
 });

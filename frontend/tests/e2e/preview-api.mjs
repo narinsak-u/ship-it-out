@@ -30,6 +30,28 @@ const shipment = {
   progress: 55,
 };
 
+const manifestStatuses = [
+  "in_transit",
+  "delivered",
+  "pending",
+  "in_transit",
+  "delivered",
+  "pending",
+];
+const createManifest = () =>
+  Array.from({ length: 12 }, (_, index) => {
+    const number = String(index + 1).padStart(2, "0");
+    return {
+      ...structuredClone(shipment),
+      id: `ORD-MANIFEST-${number}`,
+      trackingNumber: `TH-MANIFEST-${number}`,
+      status: manifestStatuses[index % manifestStatuses.length],
+      customer: { ...shipment.customer, name: `Sender ${number}` },
+      receiver: { ...shipment.receiver, name: `Receiver ${number}` },
+    };
+  });
+let manifestRecords = createManifest();
+
 let analyticsMode = "normal";
 const authUsers = new Map([
   [
@@ -46,10 +68,50 @@ const authPasswords = new Map([
   ["staff@shipitout.example", "preview-staff-password"],
 ]);
 const authSessions = new Map();
-let nextUserId = 3;
+let manifestDeleteFailure = false;
 
 createServer(async (req, res) => {
   res.setHeader("content-type", "application/json");
+  const cookies = Object.fromEntries(
+    (req.headers.cookie || "")
+      .split("; ")
+      .filter(Boolean)
+      .map((item) => item.split("=")),
+  );
+  const user = authSessions.get(cookies.jwt);
+  if (req.method === "POST" && req.url === "/__test/manifest?reset=1") {
+    manifestRecords = createManifest();
+    manifestDeleteFailure = false;
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (req.method === "POST" && req.url === "/__test/manifest?delete=failure") {
+    manifestDeleteFailure = true;
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (
+    req.method === "DELETE" &&
+    new URL(req.url ?? "/", "http://localhost").pathname.startsWith("/api/shipments/")
+  ) {
+    if (!user) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "unauthorized" }));
+    }
+    if (user.role !== "staff") {
+      res.statusCode = 403;
+      return res.end(JSON.stringify({ success: false, error: "forbidden" }));
+    }
+    if (manifestDeleteFailure) {
+      res.statusCode = 503;
+      return res.end(JSON.stringify({ success: false, error: "shipment delete unavailable" }));
+    }
+    const id = decodeURIComponent(
+      new URL(req.url, "http://localhost").pathname.slice("/api/shipments/".length),
+    );
+    manifestRecords = manifestRecords.filter((record) => record.id !== id);
+    return res.end(JSON.stringify({ success: true, data: null }));
+  }
   if (req.method === "POST" && req.url?.startsWith("/__test/analytics?mode=")) {
     analyticsMode = new URL(req.url, "http://localhost").searchParams.get("mode") ?? "normal";
     res.statusCode = 204;
@@ -124,14 +186,86 @@ createServer(async (req, res) => {
         },
       }),
     );
-  if (req.url?.startsWith("/api/shipments?"))
+  if (req.url === "/api/auth/me") {
+    if (!user) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "not authenticated" }));
+    }
+    return res.end(JSON.stringify({ success: true, data: user }));
+  }
+  if (req.url === "/api/auth/login" || req.url === "/api/auth/register") {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const body = JSON.parse(Buffer.concat(chunks).toString() || "{}");
+    let account = authUsers.get(body.email);
+    if (req.url === "/api/auth/register") {
+      if (account) {
+        res.statusCode = 409;
+        return res.end(JSON.stringify({ success: false, error: "email already registered" }));
+      }
+      account = { id: nextUserId++, name: body.name, email: body.email, role: "customer" };
+      authUsers.set(body.email, account);
+      authPasswords.set(body.email, body.password);
+    } else if (!account || authPasswords.get(body.email) !== body.password) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ success: false, error: "invalid email or password" }));
+    }
+    const token = `preview-session-${account.id}-${Date.now()}`;
+    authSessions.set(token, account);
+    res.setHeader("set-cookie", `jwt=${token}; Path=/; HttpOnly; SameSite=None; Secure`);
+    return res.end(JSON.stringify({ success: true, data: { user: account, token } }));
+  }
+  if (req.url === "/api/auth/logout" && req.method === "POST") {
+    authSessions.delete(cookies.jwt);
+    res.setHeader("set-cookie", "jwt=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0");
+    return res.end(JSON.stringify({ success: true, data: { message: "logged out" } }));
+  }
+  if (req.url === "/api/shipments" && req.method === "POST") {
+    if (user?.role === "admin" || user?.role === "staff") {
+      res.statusCode = 201;
+      return res.end(JSON.stringify({ success: true, data: {} }));
+    }
+    res.statusCode = user ? 403 : 401;
+    return res.end(
+      JSON.stringify({ success: false, error: user ? "staff role required" : "not authenticated" }),
+    );
+  }
+  if (req.url?.startsWith("/api/shipments?")) {
+    const query = new URL(req.url, "http://localhost").searchParams;
+    if (query.has("exclude_status")) {
+      return res.end(
+        JSON.stringify({
+          success: true,
+          data: [shipment],
+          pagination: { page: 1, limit: 3, total: 1, totalPages: 1 },
+        }),
+      );
+    }
+    const search = (query.get("search") ?? "").toLowerCase();
+    const status = query.get("status");
+    const filtered = manifestRecords.filter((record) => {
+      const matchesSearch =
+        `${record.id} ${record.trackingNumber} ${record.customer.name} ${record.receiver.name} ${record.origin} ${record.destination}`
+          .toLowerCase()
+          .includes(search);
+      return matchesSearch && (!status || record.status === status);
+    });
+    const page = Number(query.get("page") || 1);
+    const limit = Number(query.get("limit") || 10);
+    const start = (page - 1) * limit;
     return res.end(
       JSON.stringify({
         success: true,
-        data: [shipment],
-        pagination: { page: 1, limit: 3, total: 1, totalPages: 1 },
+        data: filtered.slice(start, start + limit),
+        pagination: {
+          page,
+          limit,
+          total: filtered.length,
+          totalPages: Math.max(1, Math.ceil(filtered.length / limit)),
+        },
       }),
     );
+  }
   if (req.url === "/api/hubs")
     return res.end(
       JSON.stringify({
