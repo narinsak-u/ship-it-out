@@ -30,6 +30,21 @@ export interface ShipmentEvent {
   timestamp: string;
 }
 
+export interface ShipmentPage {
+  data: Shipment[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export async function getShipmentsPage(page = 1, limit = 10): Promise<ShipmentPage> {
+  const response = await fetch(`${apiBase()}/api/shipments?page=${page}&limit=${limit}`, {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`Shipment API returned ${response.status}`);
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error || "Failed to load shipments");
+  return { data: result.data, pagination: result.pagination };
+}
+
 const apiBase = () => {
   const base = process.env.API_BASE_URL;
   if (!base) throw new Error("API_BASE_URL is required");
