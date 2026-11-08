@@ -20,7 +20,8 @@ go run .
 
 ```
 backend/
-├── cmd/server/main.go       # Entry point: config → DB → migrate → seed → routes → server
+├── main.go                 # Entry point: config → DB → migrate → seed → routes → server
+├── routes.go               # Centralized HTTP route registration
 ├── internal/
 │   ├── config/config.go     # Env-based config (Port, DatabaseURL, JWTSecret, JWTTTL)
 │   ├── data/regions.go      # Static Thailand province-to-region mapping
@@ -207,6 +208,5 @@ go tool cover -html=coverage.out          # HTML report
 | `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
 | `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
 | `internal/hub` | HTTP + mock | 49% | Handler + repository |
-| `cmd/server`, `database`, `seed` | — | 0% | Require live PostgreSQL |
-
+| `main.go`, `internal/database`, `internal/seed` | — | 0% | Require live PostgreSQL |
 Handler/business logic coverage is 70-100%. GORM repository implementations (`gorm_repository.go`) are untested in unit tests — they require a live PostgreSQL connection or test containers to execute.

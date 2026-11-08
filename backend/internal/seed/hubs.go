@@ -7,11 +7,19 @@ import (
 	"gorm.io/gorm"
 )
 
-func SeedHubs(db *gorm.DB) {
+func SeedHubs(db *gorm.DB) error {
+	tx := db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
 	var count int64
-	db.Model(&models.Hub{}).Count(&count)
+	if err := tx.Model(&models.Hub{}).Count(&count).Error; err != nil {
+		return err
+	}
 	if count > 0 {
-		return
+		return nil
 	}
 
 	hubs := []models.Hub{
@@ -128,6 +136,9 @@ func SeedHubs(db *gorm.DB) {
 	}
 
 	for _, h := range hubs {
-		db.Create(&h)
+		if err := tx.Create(&h).Error; err != nil {
+			return err
+		}
 	}
+	return tx.Commit().Error
 }

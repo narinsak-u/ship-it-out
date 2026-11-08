@@ -525,11 +525,15 @@ Request arrives at login or register
 
 ### Entry Point
 
-`cmd/server/main.go` after `AutoMigrate`:
+`main.go` after `AutoMigrate`:
 
 ```go
-seed.SeedHubs(database.DB)
-seed.SeedShipments(database.DB)
+if err := seed.SeedHubs(database.DB); err != nil {
+	log.Fatal().Err(err).Msg("hub seed failed")
+}
+if err := seed.SeedShipments(database.DB); err != nil {
+	log.Fatal().Err(err).Msg("shipment seed failed")
+}
 ```
 
 ### 7.1 SeedHubs

@@ -29,9 +29,9 @@ This guide traces how a request travels through the codebase **end-to-end**. If 
 
 ---
 
-## 2. Step 1 — main.go Wires Everything Together
+## 2. Step 1 — routes.go Centralizes Route Registration
 
-In `cmd/server/main.go`:
+In `routes.go`:
 
 ```go
 // 1. Create the repository (real GORM implementation)

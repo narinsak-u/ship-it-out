@@ -8,11 +8,19 @@ import (
 	"gorm.io/gorm"
 )
 
-func SeedShipments(db *gorm.DB) {
+func SeedShipments(db *gorm.DB) error {
+	tx := db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
 	var count int64
-	db.Model(&models.Shipment{}).Count(&count)
+	if err := tx.Model(&models.Shipment{}).Count(&count).Error; err != nil {
+		return err
+	}
 	if count > 0 {
-		return
+		return nil
 	}
 
 	rng := rand.New(rand.NewSource(42))
@@ -255,7 +263,9 @@ func SeedShipments(db *gorm.DB) {
 			Progress:          progress,
 			CurrentCoords:     models.GeoPoint{Lat: currLat, Lng: currLng},
 		}
-		db.Create(&shipment)
+		if err := tx.Create(&shipment).Error; err != nil {
+			return err
+		}
 
 		for _, e := range events {
 			event := models.ShipmentEvent{
@@ -265,9 +275,12 @@ func SeedShipments(db *gorm.DB) {
 				Description: e.desc,
 				CreatedAt:   e.timestamp,
 			}
-			db.Create(&event)
+			if err := tx.Create(&event).Error; err != nil {
+				return err
+			}
 		}
 	}
+	return tx.Commit().Error
 }
 
 var weights = []float64{1.2, 2.5, 3.8, 5.2, 6.7, 8.5, 10.0, 4.2, 7.1, 3.3, 1.8, 5.5, 4.5, 2.1, 9.3, 6.0, 3.5, 7.8, 2.0, 4.8}

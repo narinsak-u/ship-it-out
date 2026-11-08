@@ -22,7 +22,8 @@ Go API server for the Thun-u-der Express shipment tracking platform. Built with 
 
 ```
 backend/
-├── cmd/server/main.go          # Entry point: config load, DB init, migrate, seed, route setup, server start
+├── main.go                     # Entry point: config load, DB init, migrate, seed, route setup, server start
+├── routes.go                   # Centralized route registration and dependency wiring
 ├── internal/
 │   ├── config/config.go        # Global Config struct (Port, DatabaseURL, JWTSecret, JWTTTL)
 │   ├── data/regions.go         # Static Thailand province-to-region mapping
@@ -149,8 +150,7 @@ This gives clean JSON with nested objects while keeping normal DB columns for qu
 - **Cross-domain dependency:** The shipment handler receives both a `shipment.Repository` and a `HubRepository` interface (defined locally in the shipment package to avoid circular imports) for status updates that need hub location data.
 - **Standardized responses:** All endpoints return `{"success": true/false, "data": ...}` or `{"success": false, "error": "..."}`. Paginated endpoints include a `pagination` block.
 - **JWT auth:** HS256 bearer tokens with `user_id` and `role` claims. Token TTL is hardcoded to 24h. Auth middleware checks `Authorization: Bearer` header first, then falls back to the `jwt` cookie. Auth endpoints are rate-limited to 5 requests/minute per IP via an in-memory sliding-window limiter.
-- **Seed data:** On first startup, `main.go` runs `seed.SeedHubs()` and `seed.SeedShipments()` after AutoMigrate. Both skip if their table already has rows (idempotent).
-- **Testing:** 19 test files, 64+ tests across 10 packages using testify (assert, require, mock). Handler tests use mocked repositories with Fiber's `app.Test()`. Pure-logic tests cover models (GORM hooks), middleware (rate limiter, JWT auth), utils, config, and data.
+- **Seed data:** Root `main.go` runs `seed.SeedHubs()` and `seed.SeedShipments()` after AutoMigrate. Each seed checks existing rows, rolls back failed writes, and reports errors to stop startup.
 - **Middlewares run in order:** CORS → Logger → Rate limit (auth routes only) → Auth (protected routes only).
 
 ---
