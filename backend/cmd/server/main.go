@@ -62,13 +62,13 @@ func main() {
 	// Health check for container orchestrators (Docker, K8s liveness probe)
 	api.Get("/health", health.Check)
 
-	// --- Auth routes (public — no auth required) ---
-	authHandler := auth.NewHandler(auth.NewGormRepository(database.DB))
+	authRepo := auth.NewGormRepository(database.DB)
+	authHandler := auth.NewHandler(authRepo)
 	authGroup := api.Group("/auth")
 	authGroup.Post("/register", middleware.RateLimitAuth(), authHandler.Register) // POST /api/auth/register (rate limited)
 	authGroup.Post("/login", middleware.RateLimitAuth(), authHandler.Login)       // POST /api/auth/login (rate limited)
-	authGroup.Get("/me", middleware.AuthRequired(), authHandler.Me)               // GET  /api/auth/me (needs valid JWT cookie)
-	authGroup.Post("/logout", authHandler.Logout)                                 // POST /api/auth/logout
+	authGroup.Get("/me", middleware.AuthRequired(), authHandler.Me)
+	authGroup.Post("/logout", authHandler.Logout) // POST /api/auth/logout
 
 	// --- Hub routes (public read, auth required for write) ---
 	hubRepo := hub.NewGormRepository(database.DB)
@@ -76,7 +76,7 @@ func main() {
 
 	api.Get("/hubs", hubHandler.List)        // GET /api/hubs (public)
 	api.Get("/hubs/:id", hubHandler.GetByID) // GET /api/hubs/:id (public)
-	hubGroup := api.Group("/hubs", middleware.AuthRequired())
+	hubGroup := api.Group("/hubs", middleware.AuthRequired(), middleware.StaffOnly(authRepo))
 	hubGroup.Post("/", hubHandler.Create)
 	hubGroup.Put("/:id", hubHandler.Update)
 	hubGroup.Delete("/:id", hubHandler.Delete)
@@ -87,11 +87,11 @@ func main() {
 
 	api.Get("/shipments", shipmentHandler.List)             // GET    /api/shipments (public)
 	api.Get("/shipments/:orderId", shipmentHandler.GetByID) // GET    /api/shipments/:orderId (public)
-	shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
-	shipmentGroup.Post("/", shipmentHandler.Create)                       // POST   /api/shipments
-	shipmentGroup.Patch("/:orderId/status", shipmentHandler.UpdateStatus) // PATCH  /api/shipments/:orderId/status
-	shipmentGroup.Put("/:orderId", shipmentHandler.Update)                // PUT    /api/shipments/:orderId
-	shipmentGroup.Delete("/:orderId", shipmentHandler.Delete)             // DELETE /api/shipments/:orderId
+	shipmentGroup := api.Group("/shipments", middleware.AuthRequired(), middleware.StaffOnly(authRepo))
+	shipmentGroup.Post("/", shipmentHandler.Create)
+	shipmentGroup.Patch("/:orderId/status", shipmentHandler.UpdateStatus)
+	shipmentGroup.Put("/:orderId", shipmentHandler.Update)
+	shipmentGroup.Delete("/:orderId", shipmentHandler.Delete)
 
 	// --- Public tracking (anyone can look up a shipment by tracking number) ---
 	trackingHandler := tracking.NewHandler(shipmentRepo)

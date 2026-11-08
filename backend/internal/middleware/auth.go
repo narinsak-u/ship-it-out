@@ -9,17 +9,23 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/narinsak-u/backend/internal/config"
+	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
+
+// UserRepository loads the current user record for staff authorization.
+type UserRepository interface {
+	FindByID(id uint) (*models.User, error)
+}
 
 // AuthRequired returns middleware that guards routes behind authentication.
 // It checks for a valid JWT in two places (in order):
 //  1. The "Authorization: Bearer <token>" header (used by mobile/CLI clients)
 //  2. The "jwt" cookie (used by browser-based clients)
 //
-// If a valid token is found, it extracts the user_id and role from the JWT
-// claims and stores them in the request context (c.Locals) so downstream
-// handlers can access them (e.g. auth.Me reads c.Locals("user_id")).
+// If a valid token is found, it extracts the user_id and role claims and stores
+// them in the request context (c.Locals). StaffOnly loads the current database
+// role before permitting a write, so a stale JWT role cannot preserve access.
 //
 // If no token is found or the token is invalid/expired, it returns 401 and
 // blocks the request from reaching the route handler.
@@ -59,10 +65,32 @@ func AuthRequired() fiber.Handler {
 
 		// --- Store user info in the request context for downstream handlers ---
 		// JSON numbers decode as float64, so we convert to uint
-		uid, _ := claims["user_id"].(float64)
+		uid, ok := claims["user_id"].(float64)
+		if !ok || uid <= 0 {
+			return utils.Error(c, 401, "invalid token claims")
+		}
 		c.Locals("user_id", uint(uid))
 		c.Locals("role", claims["role"])
 
 		return c.Next() // Pass control to the next handler
+	}
+}
+
+// StaffOnly returns middleware that permits writes only to users whose current
+// database role is admin, so a stale JWT role cannot preserve staff access.
+func StaffOnly(repo UserRepository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID, ok := c.Locals("user_id").(uint)
+		if !ok {
+			return utils.Error(c, 401, "missing or invalid token")
+		}
+		user, err := repo.FindByID(userID)
+		if err != nil {
+			return utils.Error(c, 401, "user not found")
+		}
+		if user.Role != "admin" {
+			return utils.Error(c, 403, "staff access required")
+		}
+		return c.Next()
 	}
 }

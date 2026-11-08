@@ -156,7 +156,7 @@ function handleUpdate(orderId: string) {
             :key="o.id"
             :order="o"
             :hubs="hubOptions"
-            :is-authenticated="auth.isAuthenticated"
+            :is-authenticated="auth.isStaff"
             :status-draft="draftStatus[o.id]"
             :hub-draft="draftHubId[o.id]"
             @update:status-draft="draftStatus[o.id] = $event"

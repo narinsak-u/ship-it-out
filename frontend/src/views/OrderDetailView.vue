@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, defineAsyncComponent } from "vue";
 import { useRoute, RouterLink } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
-import { ArrowLeft, MapPin, Truck, Calendar, Hash, User, Weight, Maximize2 } from "lucide-vue-next";
+import { Hash, User, Truck, Weight, Calendar, ArrowLeft, MapPin, Maximize2 } from "lucide-vue-next";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import StatusBadge from "@/components/StatusBadge.vue";
 import Skeleton from "@/components/ui/Skeleton.vue";

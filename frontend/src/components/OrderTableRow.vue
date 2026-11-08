@@ -7,7 +7,7 @@ import type { Order } from "@/lib/orders";
 
 const props = defineProps<{
   order: Order;
-  isAuthenticated: boolean;
+  isStaff: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -49,7 +49,7 @@ const emit = defineEmits<{
       >
         <Eye class="h-4 w-4" />
       </RouterLink>
-      <div v-if="isAuthenticated">
+      <div v-if="isStaff">
         <button
           @click.stop="emit('edit', order.id)"
           class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-primary"
