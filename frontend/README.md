@@ -28,6 +28,16 @@ cp .env.example .env   # Add VITE_OPENCAGE_API_KEY and VITE_CARTO_API_KEY
 npm run dev            # http://localhost:5173
 ```
 
+## Next.js preview
+
+The migration preview serves `/` and `/orders/:orderId` on port 3000 while Vue remains the default app. Start the Go API first, then run:
+
+```bash
+API_BASE_URL=http://localhost:8080 bun run dev:next
+```
+
+`API_BASE_URL` is the server-only Go origin, without `/api`. Browser `/api` requests use the Next.js origin. Set `VITE_CARTO_API_KEY` in `.env` for dark map tiles. Run `bun run build:next` and `bun run test:e2e:next` to check the preview.
+
 ## Scripts
 
 | Command                 | Purpose                                |
