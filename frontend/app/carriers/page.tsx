@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { AnalyticsPanel, type AnalyticsData } from "@/features/analytics/AnalyticsPanel";
+import { DeliveriesPanel } from "@/features/operations/DeliveriesPanel";
 import { HubsPanel } from "@/features/operations/HubsPanel";
 import styles from "@/features/operations/CarrierShell.module.css";
 import type { Hub } from "@/lib/hubs";
+import type { Order } from "@/lib/orders";
+import { mapShipmentToOrder, type BackendShipment } from "@/lib/api/mappers";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +18,20 @@ async function getHubs(): Promise<Hub[]> {
   const result = await response.json();
   return result.data as Hub[];
 }
+
+async function getActiveDeliveries(): Promise<Order[]> {
+  const base = process.env.API_BASE_URL;
+  if (!base) throw new Error("API_BASE_URL is required");
+
+  const response = await fetch(
+    `${base.replace(/\/$/, "")}/api/shipments?limit=-1&exclude_status=delivered`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) throw new Error(`Shipment API returned ${response.status}`);
+  const result = await response.json();
+  return (result.data as BackendShipment[]).map(mapShipmentToOrder);
+}
+
 async function getAnalytics(): Promise<AnalyticsData> {
   const base = process.env.API_BASE_URL;
   if (!base) throw new Error("API_BASE_URL is required");
@@ -51,8 +68,11 @@ export default async function CarriersPage({
 }) {
   const { tab } = await searchParams;
   const analyticsSelected = tab === "analytics";
+  const hubsSelected = tab === "hubs";
   let hubs: Hub[] = [];
   let error = false;
+  let deliveries: Order[] = [];
+  let deliveriesError = false;
   let analytics: AnalyticsData | null = null;
   let analyticsError = false;
 
@@ -62,11 +82,17 @@ export default async function CarriersPage({
     } catch {
       analyticsError = true;
     }
-  } else {
+  } else if (hubsSelected) {
     try {
       hubs = await getHubs();
     } catch {
       error = true;
+    }
+  } else {
+    try {
+      [deliveries, hubs] = await Promise.all([getActiveDeliveries(), getHubs()]);
+    } catch {
+      deliveriesError = true;
     }
   }
 
@@ -84,7 +110,14 @@ export default async function CarriersPage({
           <Link
             className={styles.tab}
             href="/carriers"
-            aria-current={analyticsSelected ? undefined : "page"}
+            aria-current={!analyticsSelected && !hubsSelected ? "page" : undefined}
+          >
+            Active Deliveries
+          </Link>
+          <Link
+            className={styles.tab}
+            href="/carriers?tab=hubs"
+            aria-current={hubsSelected ? "page" : undefined}
           >
             Hubs
           </Link>
@@ -99,8 +132,14 @@ export default async function CarriersPage({
         <div className={styles.panel}>
           {analyticsSelected ? (
             <AnalyticsPanel initialData={analytics} initialError={analyticsError} />
-          ) : (
+          ) : hubsSelected ? (
             <HubsPanel hubs={hubs} initialError={error} />
+          ) : (
+            <DeliveriesPanel
+              initialDeliveries={deliveries}
+              hubs={hubs}
+              initialError={deliveriesError}
+            />
           )}
         </div>
       </section>

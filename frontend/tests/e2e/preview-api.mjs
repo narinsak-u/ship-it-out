@@ -31,6 +31,16 @@ let shipment = {
   progress: 55,
 };
 const originalShipment = structuredClone(shipment);
+const activeDeliveries = [
+  shipment,
+  ...Array.from({ length: 10 }, (_, index) => ({
+    ...shipment,
+    id: `ORD-TEST${index + 2}`,
+    trackingNumber: `TH-TEST-${index + 2}`,
+    customer: { ...shipment.customer, name: `Sender ${index + 2}` },
+  })),
+];
+let deliveryReads = 0;
 
 const manifestStatuses = [
   "in_transit",
@@ -71,6 +81,7 @@ const authPasswords = new Map([
 ]);
 const authSessions = new Map();
 let shipmentUpdateFailure = false;
+let nextUserId = 3;
 let manifestDeleteFailure = false;
 let nextShipmentNumber = 1;
 
@@ -83,8 +94,18 @@ createServer(async (req, res) => {
       .map((item) => item.split("=")),
   );
   const user = authSessions.get(cookies.jwt);
+  if (req.url === "/__test/delivery-reads")
+    return res.end(JSON.stringify({ reads: deliveryReads }));
+  if (req.method === "POST" && req.url === "/__test/deliveries?reset=1") {
+    shipment = structuredClone(originalShipment);
+    activeDeliveries[0] = shipment;
+    deliveryReads = 0;
+    res.statusCode = 204;
+    return res.end();
+  }
   if (req.method === "POST" && req.url === "/__test/shipment?reset=1") {
     shipment = structuredClone(originalShipment);
+    activeDeliveries[0] = shipment;
     manifestRecords = createManifest();
     shipmentUpdateFailure = false;
     res.statusCode = 204;
@@ -270,6 +291,10 @@ createServer(async (req, res) => {
     return res.end(JSON.stringify({ success: true, data: record }));
   }
   if (req.url?.startsWith("/api/shipments?")) {
+    if (req.url.includes("limit=-1&exclude_status=delivered")) {
+      deliveryReads++;
+      return res.end(JSON.stringify({ success: true, data: activeDeliveries }));
+    }
     const query = new URL(req.url, "http://localhost").searchParams;
     if (query.has("exclude_status")) {
       return res.end(
@@ -445,6 +470,30 @@ createServer(async (req, res) => {
         ],
       }),
     );
+  if (req.method === "PATCH" && req.url === "/api/shipments/ORD-TEST1/status") {
+    const session = req.headers.cookie?.match(/(?:^|; )jwt=([^;]+)/)?.[1];
+    const statusUser = authSessions.get(session);
+    if (!statusUser) {
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ error: "unauthorized" }));
+    }
+    if (statusUser.role !== "staff" && statusUser.role !== "admin") {
+      res.statusCode = 403;
+      return res.end(JSON.stringify({ error: "forbidden" }));
+    }
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const update = JSON.parse(body);
+    shipment = {
+      ...shipment,
+      status: update.status,
+      ...(update.hubId === "HUB-001"
+        ? { hubId: "HUB-001", currentCoords: { lat: 13.7563, lng: 100.5018 } }
+        : {}),
+    };
+    activeDeliveries[0] = shipment;
+    return res.end(JSON.stringify({ success: true, data: shipment }));
+  }
   if (req.method === "PUT" && req.url === "/api/shipments/ORD-TEST1") {
     if (!user) {
       res.statusCode = 401;
@@ -471,6 +520,7 @@ createServer(async (req, res) => {
     manifestRecords = manifestRecords.map((record) =>
       record.id === shipment.id ? shipment : record,
     );
+    activeDeliveries[0] = shipment;
     return res.end(JSON.stringify({ success: true, data: shipment }));
   }
   const createdShipment = manifestRecords.find(
