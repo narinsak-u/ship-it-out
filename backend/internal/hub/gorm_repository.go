@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -32,10 +33,13 @@ func (r *GormRepository) FindAll() ([]models.Hub, error) {
 }
 
 // FindByID looks up a single hub by its string primary key (e.g. "HUB-001").
-// Returns error (caller should map to 404) if no hub matches.
+// Returns ErrNotFound if no hub matches.
 func (r *GormRepository) FindByID(id string) (*models.Hub, error) {
 	var hub models.Hub
 	if err := r.db.First(&hub, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return &hub, nil

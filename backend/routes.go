@@ -26,7 +26,8 @@ func registerRoutes(app *fiber.App, db *gorm.DB) {
 	authGroup.Post("/logout", authHandler.Logout)
 
 	hubRepo := hub.NewGormRepository(db)
-	hubHandler := hub.NewHandler(hubRepo)
+	hubService := hub.NewService(hubRepo)
+	hubHandler := hub.NewHandler(hubService)
 	api.Get("/hubs", hubHandler.List)
 	api.Get("/hubs/:id", hubHandler.GetByID)
 	hubGroup := api.Group("/hubs", middleware.AuthRequired(), middleware.StaffOnly(authRepo))
