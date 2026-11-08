@@ -17,6 +17,7 @@ export const useAuthStore = defineStore("auth", () => {
   const isGuest = ref(sessionStorage.getItem("harborops_guest") === "true");
 
   const isAuthenticated = computed(() => user.value !== null);
+  const isStaff = computed(() => user.value?.role === "admin");
 
   async function init() {
     loading.value = true;
@@ -85,6 +86,7 @@ export const useAuthStore = defineStore("auth", () => {
     loading,
     error,
     isGuest,
+    isStaff,
     isAuthenticated,
     init,
     login,

@@ -125,15 +125,10 @@ function onDeleteOrder(id: string) {
                 {{ totalItems }} total shipments tracked across all carriers.
               </p>
             </div>
-            <div v-if="authStore.user" class="shrink-0">
+            <div v-if="authStore.isStaff" class="shrink-0">
               <RouterLink :to="{ name: 'order-create' }">
                 <Button class="gap-2"> <Plus class="h-4 w-4" /> New Order </Button>
               </RouterLink>
-            </div>
-            <div v-else class="shrink-0">
-              <Button class="gap-2" @click="showAuthModal = true">
-                <Plus class="h-4 w-4" /> New Order
-              </Button>
             </div>
           </div>
         </div>
@@ -168,7 +163,7 @@ function onDeleteOrder(id: string) {
                 v-for="o in pageItems"
                 :key="o.id"
                 :order="o"
-                :is-authenticated="!!authStore.user"
+                :is-staff="authStore.isStaff"
                 @edit="router.push({ name: 'order-edit', params: { orderId: $event } })"
                 @delete="onDeleteOrder($event)"
               />

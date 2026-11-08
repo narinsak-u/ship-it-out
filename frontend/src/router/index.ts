@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,10 +17,12 @@ const router = createRouter({
     {
       path: "/orders/create",
       name: "order-create",
+      meta: { staffOnly: true },
       component: () => import("@/views/OrderFormView.vue"),
     },
     {
       path: "/orders/:orderId/edit",
+      meta: { staffOnly: true },
       name: "order-edit",
       component: () => import("@/views/OrderFormView.vue"),
     },
@@ -34,6 +37,12 @@ const router = createRouter({
       component: () => import("@/views/CarriersView.vue"),
     },
   ],
+});
+router.beforeEach(async (to) => {
+  if (!to.meta.staffOnly) return true;
+  const auth = useAuthStore();
+  if (auth.loading) await auth.init();
+  if (!auth.isStaff) return { name: "orders" };
 });
 
 export default router;

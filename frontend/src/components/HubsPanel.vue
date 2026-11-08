@@ -101,7 +101,7 @@ const hubStatusCounts = computed(() => {
           class="h-10 border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0"
         />
       </div>
-      <Button v-if="auth.isAuthenticated" size="sm" class="gap-2" @click="openAdd">
+      <Button v-if="auth.isStaff" size="sm" class="gap-2" @click="openAdd">
         <Plus class="h-4 w-4" /> Add Hub
       </Button>
     </div>
@@ -119,9 +119,7 @@ const hubStatusCounts = computed(() => {
             <TableHead class="hidden md:table-cell">Address</TableHead>
             <TableHead class="hidden md:table-cell">Capacity</TableHead>
             <TableHead class="hidden md:table-cell">Status</TableHead>
-            <TableHead v-if="auth.isAuthenticated" class="hidden md:table-cell">
-              Actions
-            </TableHead>
+            <TableHead v-if="auth.isStaff" class="hidden md:table-cell">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -168,7 +166,7 @@ const hubStatusCounts = computed(() => {
                 {{ hubStatusLabels[h.status] }}
               </Badge>
             </TableCell>
-            <TableCell v-if="auth.isAuthenticated">
+            <TableCell v-if="auth.isStaff">
               <button
                 @click="openEdit(h.id)"
                 class="rounded cursor-pointer p-1.5 text-muted-foreground hover:text-foreground"
