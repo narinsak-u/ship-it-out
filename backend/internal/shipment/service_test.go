@@ -11,11 +11,13 @@ import (
 
 func TestServiceCreatePersistsShipmentAndInitialEvent(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("CreateWithEvent", mock.Anything, mock.MatchedBy(func(event *models.ShipmentEvent) bool {
+	repo.On("Create", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		args.Get(0).(*models.Shipment).ID = 17
+	})
+	repo.On("CreateEvent", mock.MatchedBy(func(event *models.ShipmentEvent) bool {
 		return event.Status == "Label Created" && event.Description == "Awaiting pickup."
 	})).Return(nil).Run(func(args mock.Arguments) {
-		args.Get(0).(*models.Shipment).ID = 17
-		args.Get(1).(*models.ShipmentEvent).ShipmentID = 17
+		args.Get(0).(*models.ShipmentEvent).ShipmentID = 17
 	})
 	service := NewService(repo, nil)
 	shipment, err := service.Create(context.Background(), CreateRequest{
