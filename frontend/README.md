@@ -90,7 +90,7 @@ tests/
 - **Leaflet maps** — origin → current → destination polylines with custom markers
 - **Geocoding** — addresses resolved to real lat/lng via OpenCage on form submit
 - **Hub-aware status updates** — status changes to hub-based states update map position to hub coordinates
-- **Auth** — JWT via HTTP-only cookie, login/signup/guest in AuthModal dialog
+- **Auth** — HTTP-only cookie sessions, signup, and visible read-only demo login; public pages work without a session
 - **Dark theme** — Ocean Deep OKLCH color palette, fully responsive
 
 ## Architecture

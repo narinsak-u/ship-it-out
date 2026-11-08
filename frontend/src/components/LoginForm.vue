@@ -3,24 +3,18 @@ import { ref } from "vue";
 import { LogIn, Loader2 } from "lucide-vue-next";
 import Input from "@/components/ui/Input.vue";
 import Button from "@/components/ui/Button.vue";
-import Separator from "@/components/ui/Separator.vue";
 import { useAuthForm } from "@/composables/useAuthForm";
 
-const emit = defineEmits<{ success: []; guest: []; "switch-to-signup": [] }>();
+const emit = defineEmits<{ success: []; "switch-to-signup": [] }>();
 
-const { submitting, error, handleLogin, handleGuest } = useAuthForm("login");
+const { submitting, error, handleLogin } = useAuthForm("login");
 
-const email = ref("admin@gmail.com");
-const password = ref("123456789");
+const email = ref("demo@shipitout.example");
+const password = ref("demo-read-only-2026");
 
 async function onSubmit() {
   const ok = await handleLogin(email.value, password.value);
   if (ok) emit("success");
-}
-
-function onGuest() {
-  handleGuest();
-  emit("guest");
 }
 </script>
 
@@ -32,7 +26,7 @@ function onGuest() {
         v-model="email"
         type="email"
         class="mt-1.5 font-mono text-sm"
-        placeholder="admin@harborops.io"
+        placeholder="demo@shipitout.example"
       />
     </div>
     <div>
@@ -54,15 +48,11 @@ function onGuest() {
       <Loader2 v-else class="h-4 w-4 animate-spin" />
       {{ submitting ? "Signing in..." : "Sign In" }}
     </Button>
-
-    <div class="relative my-4">
-      <div class="absolute inset-0 flex items-center"><Separator /></div>
-      <div class="relative flex justify-center text-xs uppercase">
-        <span class="bg-card px-2 font-mono text-muted-foreground">or</span>
-      </div>
-    </div>
-
-    <Button type="button" variant="ghost" class="w-full" @click="onGuest">Continue as Guest</Button>
+    <p
+      class="rounded-md border border-border bg-secondary/40 p-3 font-mono text-xs text-muted-foreground"
+    >
+      Read-only demo account. Email: demo@shipitout.example · Password: demo-read-only-2026
+    </p>
 
     <p class="text-center font-mono text-xs text-muted-foreground">
       Don't have an account?

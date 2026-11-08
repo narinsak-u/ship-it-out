@@ -54,7 +54,9 @@ Client → POST /api/auth/login { email, password }
          ├─ 4. Build + sign JWT with { user_id, role, exp }
          ├─ 5. Set "jwt" cookie
          └─ 6. Return { token, user } → 200
+
 ```
+The public read-only demo account is seeded at startup with `demo@shipitout.example` / `demo-read-only-2026`. These public credentials are shown in the frontend. Demo and registered customers can read public data but receive 403 for shipment and hub writes. Admin and staff roles can write; never log private passwords.
 
 **Note:** The token string is returned in the JSON body too, for mobile/CLI clients that can't use cookies.
 
@@ -111,7 +113,7 @@ Request arrives at protected route
 
 Shipment and hub writes additionally require `StaffOnly`: it loads the user's current role
 from Postgres and requires `admin` or `staff`. Missing or invalid credentials return
-401; a valid non-staff account returns 403. JWT role claims cannot grant write access
+401; a valid customer account returns 403. JWT role claims cannot grant write access
 after an account is demoted. Public shipment, tracking, hub, and analytics reads
 remain available without a session.
 

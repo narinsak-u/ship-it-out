@@ -14,22 +14,15 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<AuthUser | null>(null);
   const loading = ref(true);
   const error = ref("");
-  const isGuest = ref(sessionStorage.getItem("harborops_guest") === "true");
+  const isStaff = computed(() => user.value?.role === "admin" || user.value?.role === "staff");
 
   const isAuthenticated = computed(() => user.value !== null);
-  const isStaff = computed(() => user.value?.role === "admin");
 
   async function init() {
     loading.value = true;
-    if (isGuest.value) {
-      loading.value = false;
-      return;
-    }
     try {
       const res = await api.get<AuthUser>("/auth/me");
-      if (res.data) {
-        user.value = res.data;
-      }
+      if (res.data) user.value = res.data;
     } catch {
       // API failure — user stays null
     }
@@ -71,13 +64,6 @@ export const useAuthStore = defineStore("auth", () => {
   async function logout() {
     await api.post("/auth/logout");
     user.value = null;
-    isGuest.value = false;
-    sessionStorage.removeItem("harborops_guest");
-  }
-
-  function enterGuestMode() {
-    isGuest.value = true;
-    sessionStorage.setItem("harborops_guest", "true");
     loading.value = false;
   }
 
@@ -85,13 +71,11 @@ export const useAuthStore = defineStore("auth", () => {
     user,
     loading,
     error,
-    isGuest,
     isStaff,
     isAuthenticated,
     init,
     login,
     signup,
     logout,
-    enterGuestMode,
   };
 });

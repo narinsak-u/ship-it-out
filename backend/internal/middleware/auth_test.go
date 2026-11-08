@@ -78,6 +78,14 @@ func TestStaffOnly_RejectsCustomerFromDatabase(t *testing.T) {
 	assert.Equal(t, 403, resp.StatusCode)
 }
 
+func TestStaffOnly_AllowsStaffRole(t *testing.T) {
+	setupConfig()
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+validToken())
+	resp, _ := testApp("staff").Test(req, 1000)
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
 func TestAuthRequired_NoToken(t *testing.T) {
 	setupConfig()
 	resp, _ := testApp().Test(httptest.NewRequest("GET", "/test", nil), 1000)

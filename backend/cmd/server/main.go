@@ -44,6 +44,9 @@ func main() {
 	if err := seed.BootstrapAdmin(database.DB, config.App.AdminName, config.App.AdminEmail, config.App.AdminPassword, config.App.AdminRoleCutover); err != nil {
 		log.Fatal().Err(err).Msg("admin bootstrap failed")
 	}
+	if err := seed.BootstrapDemoUser(database.DB); err != nil {
+		log.Fatal().Err(err).Msg("demo account bootstrap failed")
+	}
 	// Seed demo data (skips if tables already have rows).
 	seed.SeedHubs(database.DB)
 	seed.SeedShipments(database.DB)

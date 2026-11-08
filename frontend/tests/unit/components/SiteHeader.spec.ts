@@ -39,29 +39,20 @@ describe("SiteHeader", () => {
     expect(wrapper.text()).toContain("Sign in");
   });
 
-  it("shows user name when authenticated", async () => {
+  it("shows true role for authenticated customer and staff users", async () => {
     const router = createTestRouter();
     const wrapper = mount(SiteHeader, {
       global: { plugins: [router, pinia], stubs },
     });
     const store = useAuthStore();
-    store.user = { id: 1, name: "Admin", email: "admin@test.com", role: "admin", created_at: "" };
+    store.user = { id: 1, name: "Demo", email: "demo@test.com", role: "customer", created_at: "" };
     store.loading = false;
     await flushPromises();
-    expect(wrapper.text()).toContain("Admin");
-    expect(wrapper.text()).toContain("Sign out");
-  });
-
-  it("shows guest label when in guest mode", async () => {
-    const router = createTestRouter();
-    const wrapper = mount(SiteHeader, {
-      global: { plugins: [router, pinia], stubs },
-    });
-    const store = useAuthStore();
-    store.isGuest = true;
-    store.loading = false;
+    expect(wrapper.text()).toContain("customer (Demo)");
+    store.user = { ...store.user, role: "staff" };
     await flushPromises();
-    expect(wrapper.text()).toContain("Guest");
+    expect(wrapper.text()).toContain("staff (Demo)");
+    expect(wrapper.text()).not.toContain("Guest");
   });
 
   it("renders navigation links", async () => {

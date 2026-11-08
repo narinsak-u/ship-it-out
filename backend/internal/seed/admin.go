@@ -21,6 +21,63 @@ type bootstrapState struct {
 
 func (bootstrapState) TableName() string { return "admin_bootstrap_states" }
 
+const demoUserEmail = "demo@shipitout.example"
+const demoUserPassword = "demo-read-only-2026"
+const demoUserName = "Ship It Out Demo"
+
+type demoBootstrapState struct {
+	Key       string    `gorm:"primaryKey"`
+	UserID    uint      `gorm:"not null"`
+	CreatedAt time.Time `gorm:"not null"`
+}
+
+func (demoBootstrapState) TableName() string { return "demo_bootstrap_states" }
+
+// BootstrapDemoUser provisions the public, read-only demo account once.
+func BootstrapDemoUser(db *gorm.DB) error {
+	if err := db.AutoMigrate(&demoBootstrapState{}); err != nil {
+		return fmt.Errorf("migrate demo bootstrap state: %w", err)
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", 130014).Error; err != nil {
+			return fmt.Errorf("lock demo bootstrap: %w", err)
+		}
+		var state demoBootstrapState
+		err := tx.First(&state, "key = ?", "public-demo-user-v1").Error
+		if err == nil {
+			var user models.User
+			if err := tx.First(&user, state.UserID).Error; err != nil || user.Email != demoUserEmail || user.Role != "customer" {
+				return errors.New("demo bootstrap is complete but demo account is unavailable")
+			}
+			if !utils.CheckPassword(demoUserPassword, user.Password) {
+				return errors.New("demo bootstrap account credentials changed")
+			}
+			return nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("read demo bootstrap state: %w", err)
+		}
+		var collision models.User
+		if err := tx.Where("email = ?", demoUserEmail).First(&collision).Error; err == nil {
+			return errors.New("demo email already belongs to an account")
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("check demo email collision: %w", err)
+		}
+		hash, err := utils.HashPassword(demoUserPassword)
+		if err != nil {
+			return fmt.Errorf("hash demo password: %w", err)
+		}
+		user := models.User{Name: demoUserName, Email: demoUserEmail, Password: hash, Role: "customer"}
+		if err := tx.Create(&user).Error; err != nil {
+			return fmt.Errorf("create demo account: %w", err)
+		}
+		if err := tx.Create(&demoBootstrapState{Key: "public-demo-user-v1", UserID: user.ID, CreatedAt: time.Now().UTC()}).Error; err != nil {
+			return fmt.Errorf("record demo bootstrap: %w", err)
+		}
+		return nil
+	})
+}
+
 // BootstrapAdmin demotes legacy admins and creates the configured admin exactly once.
 func BootstrapAdmin(db *gorm.DB, name, email, password string, cutoverEnabled bool) error {
 	name, email = strings.TrimSpace(name), strings.TrimSpace(email)

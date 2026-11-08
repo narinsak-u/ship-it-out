@@ -5,7 +5,7 @@ import LoginForm from "@/components/LoginForm.vue";
 import SignupForm from "@/components/SignupForm.vue";
 
 defineProps<{ open?: boolean }>();
-const emit = defineEmits<{ close: []; authenticated: []; guest: [] }>();
+const emit = defineEmits<{ close: []; authenticated: [] }>();
 
 type Tab = "login" | "signup";
 const activeTab = ref<Tab>("login");
@@ -16,10 +16,6 @@ function switchTab(tab: Tab) {
 
 function onAuthenticated() {
   emit("authenticated");
-}
-
-function onGuest() {
-  emit("guest");
 }
 </script>
 
@@ -62,15 +58,9 @@ function onGuest() {
       <LoginForm
         v-if="activeTab === 'login'"
         @success="onAuthenticated"
-        @guest="onGuest"
         @switch-to-signup="switchTab('signup')"
       />
-      <SignupForm
-        v-else
-        @success="onAuthenticated"
-        @guest="onGuest"
-        @switch-to-login="switchTab('login')"
-      />
+      <SignupForm v-else @success="onAuthenticated" @switch-to-login="switchTab('login')" />
     </DialogContent>
   </Dialog>
 </template>
