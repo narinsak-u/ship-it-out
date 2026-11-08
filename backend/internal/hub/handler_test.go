@@ -52,7 +52,7 @@ func TestHubList_Success(t *testing.T) {
 	}, nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Get("/api/hubs", h.List)
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/hubs", nil), 1000)
@@ -65,7 +65,7 @@ func TestHubGetByID_Found(t *testing.T) {
 	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001", Name: "Test"}, nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Get("/api/hubs/:id", h.GetByID)
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/hubs/HUB-001", nil), 1000)
@@ -74,10 +74,10 @@ func TestHubGetByID_Found(t *testing.T) {
 
 func TestHubGetByID_NotFound(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByID", "HUB-999").Return(nil, gorm.ErrRecordNotFound)
+	repo.On("FindByID", "HUB-999").Return(nil, ErrNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Get("/api/hubs/:id", h.GetByID)
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/hubs/HUB-999", nil), 1000)
@@ -91,7 +91,7 @@ func TestHubCreate_Success(t *testing.T) {
 	})).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Post("/api/hubs", h.Create)
 
 	body := `{"name":"New Hub","carrierId":"CAR-001","address":"Addr","coords":{"lat":10,"lng":20},"capacity":100,"currentUtilization":50,"status":"active"}`
@@ -104,7 +104,7 @@ func TestHubCreate_Success(t *testing.T) {
 func TestHubCreate_InvalidBody(t *testing.T) {
 	repo := new(mockRepo)
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Post("/api/hubs", h.Create)
 
 	req := httptest.NewRequest("POST", "/api/hubs", strings.NewReader("not json"))
@@ -121,7 +121,7 @@ func TestHubUpdate_Success(t *testing.T) {
 	})).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Put("/api/hubs/:id", h.Update)
 
 	body := `{"name":"Updated"}`
@@ -133,10 +133,10 @@ func TestHubUpdate_Success(t *testing.T) {
 
 func TestHubUpdate_NotFound(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByID", "HUB-999").Return(nil, gorm.ErrRecordNotFound)
+	repo.On("FindByID", "HUB-999").Return(nil, ErrNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Put("/api/hubs/:id", h.Update)
 
 	body := `{"name":"Updated"}`
@@ -151,7 +151,7 @@ func TestHubDelete_Success(t *testing.T) {
 	repo.On("Delete", "HUB-001").Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Delete("/api/hubs/:id", h.Delete)
 
 	resp, _ := app.Test(httptest.NewRequest("DELETE", "/api/hubs/HUB-001", nil), 1000)
@@ -163,7 +163,7 @@ func TestHubUpdate_InvalidBody(t *testing.T) {
 	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001"}, nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Put("/api/hubs/:id", h.Update)
 
 	req := httptest.NewRequest("PUT", "/api/hubs/HUB-001", strings.NewReader("not json"))
@@ -177,7 +177,7 @@ func TestHubDelete_Error(t *testing.T) {
 	repo.On("Delete", "HUB-999").Return(gorm.ErrRecordNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := NewHandler(NewService(repo))
 	app.Delete("/api/hubs/:id", h.Delete)
 
 	resp, _ := app.Test(httptest.NewRequest("DELETE", "/api/hubs/HUB-999", nil), 1000)
