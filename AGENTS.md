@@ -128,3 +128,17 @@ Backend: `http://localhost:8080`, Frontend: `http://localhost:5173`.
 - `backend/docs/WORKFLOW.md` — API request/response flows
 - `backend/docs/DATA.md` — Database schema
 - `specs/PROJECT-PLAN.md` — Feature roadmap
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues; use the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use single-context domain docs. See `docs/agents/domain.md`.
