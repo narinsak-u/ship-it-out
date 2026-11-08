@@ -1,10 +1,10 @@
 package hub
 
 import (
+	"context"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ import (
 
 type mockRepo struct{ mock.Mock }
 
-func (m *mockRepo) FindAll() ([]models.Hub, error) {
+func (m *mockRepo) FindAll(_ context.Context) ([]models.Hub, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -22,7 +22,7 @@ func (m *mockRepo) FindAll() ([]models.Hub, error) {
 	return args.Get(0).([]models.Hub), args.Error(1)
 }
 
-func (m *mockRepo) FindByID(id string) (*models.Hub, error) {
+func (m *mockRepo) FindByID(_ context.Context, id string) (*models.Hub, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -30,17 +30,17 @@ func (m *mockRepo) FindByID(id string) (*models.Hub, error) {
 	return args.Get(0).(*models.Hub), args.Error(1)
 }
 
-func (m *mockRepo) Create(hub *models.Hub) error {
+func (m *mockRepo) Create(_ context.Context, hub *models.Hub) error {
 	args := m.Called(hub)
 	return args.Error(0)
 }
 
-func (m *mockRepo) Save(hub *models.Hub) error {
+func (m *mockRepo) Save(_ context.Context, hub *models.Hub) error {
 	args := m.Called(hub)
 	return args.Error(0)
 }
 
-func (m *mockRepo) Delete(id string) error {
+func (m *mockRepo) Delete(_ context.Context, id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
@@ -115,7 +115,7 @@ func TestHubCreate_InvalidBody(t *testing.T) {
 
 func TestHubUpdate_Success(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001"}, nil)
+	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001"}, nil).Twice()
 	repo.On("Save", mock.MatchedBy(func(h *models.Hub) bool {
 		return h.ID == "HUB-001" && h.Name == "Updated"
 	})).Return(nil)
@@ -139,7 +139,7 @@ func TestHubUpdate_NotFound(t *testing.T) {
 	h := NewHandler(NewService(repo))
 	app.Put("/api/hubs/:id", h.Update)
 
-	body := `{"name":"Updated"}`
+	body := `not json`
 	req := httptest.NewRequest("PUT", "/api/hubs/HUB-999", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	resp, _ := app.Test(req, 1000)

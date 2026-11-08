@@ -50,7 +50,7 @@ func main() {
 	hubRepo := hub.NewGormRepository(database.DB)
 	hubHandler := hub.NewHandler(hub.NewService(hubRepo))
 	shipmentRepo := shipment.NewGormRepository(database.DB)
-	shipmentHandler := shipment.NewHandler(shipmentRepo, shipment.NewService(shipmentRepo, hubRepo))
+	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hubRepo))
 	trackingHandler := tracking.NewHandler(tracking.NewService(shipmentRepo))
 	analyticsRepo := analytics.NewGormRepository(database.DB)
 	analyticsHandler := analytics.NewHandler(analytics.NewService(analyticsRepo))

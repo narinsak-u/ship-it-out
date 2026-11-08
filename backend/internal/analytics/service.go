@@ -1,6 +1,8 @@
 package analytics
 
 import (
+	"context"
+
 	"github.com/narinsak-u/backend/internal/data"
 )
 
@@ -25,12 +27,12 @@ type DayCount struct {
 }
 
 type Repository interface {
-	Count() (int64, error)
-	CountActive() (int64, error)
-	CountByStatus() ([]StatusCount, error)
-	CountByProvince() ([]ProvinceCount, error)
-	CountByMonth() ([]MonthCount, error)
-	CountByDayOfWeek() ([]DayCount, error)
+	Count(context.Context) (int64, error)
+	CountActive(context.Context) (int64, error)
+	CountByStatus(context.Context) ([]StatusCount, error)
+	CountByProvince(context.Context) ([]ProvinceCount, error)
+	CountByMonth(context.Context) ([]MonthCount, error)
+	CountByDayOfWeek(context.Context) ([]DayCount, error)
 }
 
 type RegionCount struct {
@@ -55,16 +57,16 @@ type Service struct{ repo Repository }
 
 func NewService(repo Repository) *Service { return &Service{repo: repo} }
 
-func (s *Service) Overview() (Overview, error) {
+func (s *Service) Overview(ctx context.Context) (Overview, error) {
 	var result Overview
 	var err error
-	if result.Total, err = s.repo.Count(); err != nil { return Overview{}, err }
-	if result.Active, err = s.repo.CountActive(); err != nil { return Overview{}, err }
-	if result.ByStatus, err = s.repo.CountByStatus(); err != nil { return Overview{}, err }
+	if result.Total, err = s.repo.Count(ctx); err != nil { return Overview{}, err }
+	if result.Active, err = s.repo.CountActive(ctx); err != nil { return Overview{}, err }
+	if result.ByStatus, err = s.repo.CountByStatus(ctx); err != nil { return Overview{}, err }
 	for _, status := range result.ByStatus {
 		if status.Status == "delivered" { result.Delivered = status.Count; break }
 	}
-	provinces, err := s.repo.CountByProvince()
+	provinces, err := s.repo.CountByProvince(ctx)
 	if err != nil { return Overview{}, err }
 	regions := map[string]int64{"Central": 0, "East": 0, "North": 0, "West": 0, "North-east": 0, "South": 0}
 	for _, province := range provinces {
@@ -75,10 +77,10 @@ func (s *Service) Overview() (Overview, error) {
 	return result, nil
 }
 
-func (s *Service) TimeSeries() (TimeSeries, error) {
-	months, err := s.repo.CountByMonth()
+func (s *Service) TimeSeries(ctx context.Context) (TimeSeries, error) {
+	months, err := s.repo.CountByMonth(ctx)
 	if err != nil { return TimeSeries{}, err }
-	days, err := s.repo.CountByDayOfWeek()
+	days, err := s.repo.CountByDayOfWeek(ctx)
 	if err != nil { return TimeSeries{}, err }
 	return TimeSeries{ByMonth: months, ByDayOfWeek: days}, nil
 }

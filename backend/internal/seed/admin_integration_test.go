@@ -91,7 +91,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	app.Put("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Update)
 	app.Delete("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Delete)
 	shipmentRepo := shipment.NewGormRepository(db)
-	shipmentHandler := shipment.NewHandler(shipmentRepo, shipment.NewService(shipmentRepo, hub.NewGormRepository(db)))
+	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hub.NewGormRepository(db)))
 	app.Post("/api/shipments", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Create)
 	app.Patch("/api/shipments/:orderId/status", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.UpdateStatus)
 	app.Put("/api/shipments/:orderId", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Update)

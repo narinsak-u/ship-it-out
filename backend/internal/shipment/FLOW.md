@@ -42,7 +42,7 @@ hubRepo := hub.NewGormRepository(database.DB)
 
 // 3. Create the workflow service and inject it into the handler.
 shipmentService := shipment.NewService(shipmentRepo, hubRepo)
-shipmentHandler := shipment.NewHandler(shipmentRepo, shipmentService)
+shipmentHandler := shipment.NewHandler(shipmentService)
 
 // 4. Register routes — the handler methods handle requests
 api.Get("/shipments", shipmentHandler.List)             // public
@@ -246,9 +246,9 @@ func TestCreate(t *testing.T) {
 │                                                              │
 │  shipmentRepo := NewGormRepository(database.DB)              │
 │  hubRepo      := hub.NewGormRepository(database.DB)          │
-│  handler      := NewHandler(shipmentRepo, hubRepo)           │
-│                                                              │
-│  app.Post("/api/shipments", handler.Create)                  │
+│  service      := NewService(shipmentRepo, hubRepo)            │
+│  handler      := NewHandler(service)                          │
+│  app.Post("/api/shipments", handler.Create)                    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼ request comes in

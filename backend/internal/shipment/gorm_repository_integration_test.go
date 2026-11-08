@@ -1,13 +1,13 @@
 package shipment
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
 	"sync"
 	"testing"
 	"time"
-
 	"github.com/narinsak-u/backend/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -43,7 +43,7 @@ func TestGormRepositoryTransactionsAndConcurrentIDs(t *testing.T) {
 	first, second := NewGormRepository(db), NewGormRepository(openDB())
 
 	shipment := testShipment()
-	if err := first.CreateWithEvent(&shipment, &models.ShipmentEvent{Status: "force-fail", Location: models.Location{Name: "Origin"}}); err == nil {
+	if err := first.CreateWithEvent(context.Background(), &shipment, &models.ShipmentEvent{Status: "force-fail", Location: models.Location{Name: "Origin"}}); err == nil {
 		t.Fatal("expected event insert failure")
 	}
 	var count int64
@@ -58,15 +58,42 @@ func TestGormRepositoryTransactionsAndConcurrentIDs(t *testing.T) {
 	mapped.Customer.Coords = models.GeoPoint{Lat: 13.75, Lng: 100.5}
 	mapped.Receiver.Coords = models.GeoPoint{Lat: 18.79, Lng: 98.98}
 	mapped.CurrentCoords = models.GeoPoint{Lat: 15.87, Lng: 100.99}
-	if err := first.CreateWithEvent(&mapped, &models.ShipmentEvent{Status: "Label Created"}); err != nil {
+	if err := first.CreateWithEvent(context.Background(), &mapped, &models.ShipmentEvent{Status: "Label Created"}); err != nil {
 		t.Fatal(err)
 	}
-	loaded, err := first.FindByOrderID(mapped.OrderID)
+	loaded, err := first.FindByOrderID(context.Background(), mapped.OrderID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if loaded.Customer.Coords != mapped.Customer.Coords || loaded.Receiver.Coords != mapped.Receiver.Coords || loaded.CurrentCoords != mapped.CurrentCoords {
 		t.Fatalf("coordinate mapping did not round-trip: %+v", loaded)
+	}
+	loaded.Status = StatusInTransit
+	if err := first.SaveWithEvent(context.Background(), loaded, &models.ShipmentEvent{Status: "force-fail"}); err == nil {
+		t.Fatal("expected status event insert failure")
+	}
+	loaded, err = first.FindByOrderID(context.Background(), mapped.OrderID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Status != StatusPending {
+		t.Fatalf("status persisted after event failure: %q", loaded.Status)
+	}
+	if err := db.Exec("CREATE TABLE shipment_delete_guard (shipment_id bigint REFERENCES shipments(id))").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO shipment_delete_guard (shipment_id) VALUES (?)", mapped.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := first.DeleteWithEvents(context.Background(), loaded); err == nil {
+		t.Fatal("expected shipment delete failure")
+	}
+	var eventCount int64
+	if err := db.Model(&models.ShipmentEvent{}).Where("shipment_id = ?", loaded.ID).Count(&eventCount).Error; err != nil {
+		t.Fatal(err)
+	}
+	if eventCount != 1 {
+		t.Fatalf("events deleted after shipment delete failure: %d", eventCount)
 	}
 	duplicate := models.Shipment{OrderID: mapped.OrderID, TrackingNumber: "TH202699999", Origin: "Origin", Destination: "Destination"}
 	if err := db.Create(&duplicate).Error; err == nil {
@@ -89,7 +116,7 @@ func TestGormRepositoryTransactionsAndConcurrentIDs(t *testing.T) {
 			if i%2 != 0 { repo = second }
 			shipment := testShipment()
 			event := &models.ShipmentEvent{Status: "Label Created", Location: models.Location{Name: "Origin"}}
-			if err := repo.CreateWithEvent(&shipment, event); err != nil { errs <- err; return }
+			if err := repo.CreateWithEvent(context.Background(), &shipment, event); err != nil { errs <- err; return }
 			ids <- [2]string{shipment.OrderID, shipment.TrackingNumber}
 		}(i)
 	}

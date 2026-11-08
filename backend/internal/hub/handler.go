@@ -18,7 +18,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) List(c *fiber.Ctx) error {
-	hubs, err := h.service.List()
+	hubs, err := h.service.List(c.UserContext())
 	if err != nil {
 		return utils.Error(c, 500, "failed to fetch hubs")
 	}
@@ -26,7 +26,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetByID(c *fiber.Ctx) error {
-	hub, err := h.service.GetByID(c.Params("id"))
+	hub, err := h.service.GetByID(c.UserContext(), c.Params("id"))
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return utils.Error(c, 404, "hub not found")
@@ -41,7 +41,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	if err := c.BodyParser(&hub); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
-	if err := h.service.Create(&hub); err != nil {
+	if err := h.service.Create(c.UserContext(), &hub); err != nil {
 		return utils.Error(c, 500, "failed to create hub")
 	}
 	return utils.Success(c, hub)
@@ -49,11 +49,17 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 
 func (h *Handler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
+	if _, err := h.service.GetByID(c.UserContext(), id); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return utils.Error(c, 404, "hub not found")
+		}
+		return utils.Error(c, 500, "failed to update hub")
+	}
 	var hub models.Hub
 	if err := c.BodyParser(&hub); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
-	if err := h.service.Update(id, &hub); err != nil {
+	if err := h.service.Update(c.UserContext(), id, &hub); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return utils.Error(c, 404, "hub not found")
 		}
@@ -63,7 +69,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 }
 
 func (h *Handler) Delete(c *fiber.Ctx) error {
-	if err := h.service.Delete(c.Params("id")); err != nil {
+	if err := h.service.Delete(c.UserContext(), c.Params("id")); err != nil {
 		return utils.Error(c, 500, "failed to delete hub")
 	}
 	return utils.Success(c, fiber.Map{"message": "hub deleted"})

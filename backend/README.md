@@ -178,8 +178,8 @@ go tool cover -html=coverage.out          # HTML report
 | `pkg/utils` | Unit | 100% | Hash/response helpers |
 | `internal/config` | Unit | 100% | Env loading |
 | `internal/models` | Unit | 100% | GORM BeforeSave/AfterFind hooks |
-| `internal/tracking` | HTTP + mock | 89% | Handler via `shipment.Repository` |
-| `internal/analytics` | HTTP + mock | 81% | Handler via `shipment.Repository` |
+| `internal/tracking` | HTTP + mock | 89% | Handler + tracking service |
+| `internal/analytics` | HTTP + mock | 81% | Handler + analytics service |
 | `internal/auth` | HTTP + mock | 74% | Handler + repository |
 | `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
 | `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
@@ -192,4 +192,4 @@ export SHIPMENT_TEST_DATABASE_URL='postgres://user:pass@127.0.0.1:5432/shipments
 go test ./internal/shipment -run TestGormRepositoryTransactionsAndConcurrentIDs -count=1
 ```
 
-The test verifies rollback when the initial event insert fails and checks concurrent order/tracking ID uniqueness across separate database connections. Repository mappings and unique-constraint behavior remain covered by database schema/hooks and must be verified against PostgreSQL when running the suite.
+The test verifies creation, status-update, and deletion rollback behavior, plus concurrent order/tracking ID uniqueness across separate database connections. Repository mappings and unique-constraint behavior remain covered by database schema/hooks and must be verified against PostgreSQL when running the suite.

@@ -1,9 +1,11 @@
 package tracking
 
 import (
+	"context"
 	"errors"
 
 	"github.com/narinsak-u/backend/internal/models"
+	"github.com/narinsak-u/backend/internal/shipment"
 )
 
 var (
@@ -12,8 +14,8 @@ var (
 )
 
 type ShipmentQuery interface {
-	FindByTrackingNumber(string) (*models.Shipment, error)
-	FindEventsByShipmentID(uint) ([]models.ShipmentEvent, error)
+	FindByTrackingNumber(context.Context, string) (*models.Shipment, error)
+	FindEventsByShipmentID(context.Context, uint) ([]models.ShipmentEvent, error)
 }
 
 type Service struct {
@@ -29,14 +31,17 @@ func NewService(query ShipmentQuery) *Service {
 	return &Service{query: query}
 }
 
-func (s *Service) Track(trackingNumber string) (*TrackingResult, error) {
-	shipment, err := s.query.FindByTrackingNumber(trackingNumber)
-	if err != nil {
+func (s *Service) Track(ctx context.Context, trackingNumber string) (*TrackingResult, error) {
+	shipmentRecord, err := s.query.FindByTrackingNumber(ctx, trackingNumber)
+	if errors.Is(err, shipment.ErrNotFound) {
 		return nil, ErrShipmentNotFound
 	}
-	events, err := s.query.FindEventsByShipmentID(shipment.ID)
+	if err != nil {
+		return nil, err
+	}
+	events, err := s.query.FindEventsByShipmentID(ctx, shipmentRecord.ID)
 	if err != nil {
 		return nil, ErrEventsUnavailable
 	}
-	return &TrackingResult{Shipment: shipment, Events: events}, nil
+	return &TrackingResult{Shipment: shipmentRecord, Events: events}, nil
 }

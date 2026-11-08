@@ -10,22 +10,13 @@ import (
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
-// HubRepository is the interface the shipment handler uses to look up a hub by its ID
-// when updating status (e.g. to set CurrentCoords to the hub's location). It's defined here
-// rather than in the hub package to avoid an import cycle — the handler depends on both.
-type HubRepository interface {
-	FindByID(id string) (*models.Hub, error)
-}
-
-// Handler holds the shipment read repository and workflow service.
+// Handler exposes shipment operations through the workflow service.
 type Handler struct {
-	repo    HandlerRepository
 	service *Service
 }
 
-// NewHandler wires shipment reads and the workflow service.
-func NewHandler(repo HandlerRepository, service *Service) *Handler {
-	return &Handler{repo: repo, service: service}
+func NewHandler(service *Service) *Handler {
+	return &Handler{service: service}
 }
 
 // CreateRequest is the JSON body for creating a new shipment.
@@ -50,7 +41,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 		Status:        c.Query("status", ""),
 		ExcludeStatus: c.Query("exclude_status", ""),
 	}
-	shipments, total, err := h.repo.List(filter)
+	shipments, total, err := h.service.List(c.UserContext(), filter)
 	if err != nil {
 		return utils.Error(c, 500, "failed to list shipments")
 	}
@@ -66,7 +57,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
-	shipment, err := h.service.Create(req)
+	shipment, err := h.service.Create(c.UserContext(), req)
 	if err != nil {
 		if err.Error() == "customer name, province, and zipcode are required" ||
 			err.Error() == "receiver name, province, and zipcode are required" ||
@@ -84,7 +75,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 // order ID and returns it directly. Returns 404 if not found. Public endpoint (no auth required).
 func (h *Handler) GetByID(c *fiber.Ctx) error {
 	orderID := c.Params("orderId")
-	shipment, err := h.repo.FindByOrderID(orderID)
+	shipment, err := h.service.GetByID(c.UserContext(), orderID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return utils.Error(c, 404, "shipment not found")
@@ -94,88 +85,6 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 	return utils.Success(c, shipment)
 }
 
-// statusToEvent translates a raw status string (e.g. "in_transit", "delivered") into a
-// human-readable ShipmentEvent with a label, description, and location. Location logic:
-//   - pending/picked_up → customer's address
-//   - delivered → receiver's address
-//   - departed/in_transit/out_for_delivery/delayed → hub location if hub is provided,
-//     otherwise falls back to current coords, origin, or destination
-//   - any unknown status → generic "Status updated." at destination
-//
-// This is a pure helper function — it does not save anything to the database.
-func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus string) models.ShipmentEvent {
-	var eventStatus, description string
-	var location models.Location
-
-	switch targetStatus {
-	case "pending":
-		eventStatus = "Label Created"
-		description = "Awaiting pickup."
-		location = models.Location{
-			Name: utils.ComposeAddress(shipment.Customer),
-			Lat:  shipment.CustomerLat,
-			Lng:  shipment.CustomerLng,
-		}
-	case "picked_up":
-		eventStatus = "Picked Up"
-		description = "Parcel collected from sender."
-		location = models.Location{
-			Name: utils.ComposeAddress(shipment.Customer),
-			Lat:  shipment.CustomerLat,
-			Lng:  shipment.CustomerLng,
-		}
-	case "departed":
-		eventStatus = "Departed"
-		description = "In transit to hub."
-		if hub != nil {
-			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
-		} else {
-			location = models.Location{Name: shipment.Origin, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
-		}
-	case "in_transit":
-		eventStatus = "In Transit"
-		description = "Transit to next hub."
-		if hub != nil {
-			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
-		} else {
-			location = models.Location{Name: shipment.Destination, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
-		}
-	case "out_for_delivery":
-		eventStatus = "Out for Delivery"
-		description = "Out for delivery."
-		if hub != nil {
-			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
-		} else {
-			location = models.Location{Name: shipment.Destination, Lat: shipment.ReceiverLat, Lng: shipment.ReceiverLng}
-		}
-	case "delivered":
-		eventStatus = "Delivered"
-		description = "Delivered to recipient."
-		location = models.Location{
-			Name: utils.ComposeAddress(shipment.Receiver),
-			Lat:  shipment.ReceiverLat,
-			Lng:  shipment.ReceiverLng,
-		}
-	case "delayed":
-		eventStatus = "Delayed"
-		description = "Unexpected issue encountered."
-		if hub != nil {
-			location = models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
-		} else {
-			location = models.Location{Name: shipment.Destination, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
-		}
-	default:
-		eventStatus = targetStatus
-		description = "Status updated."
-		location = models.Location{Name: shipment.Destination, Lat: shipment.CurrentLat, Lng: shipment.CurrentLng}
-	}
-
-	return models.ShipmentEvent{
-		Status:      eventStatus,
-		Description: description,
-		Location:    location,
-	}
-}
 
 // UpdateStatus handles PATCH /api/shipments/:orderId/status. Changes the shipment's status,
 // optionally links a hub (updating CurrentCoords to the hub's lat/lng), saves the shipment,
@@ -189,7 +98,7 @@ func (h *Handler) UpdateStatus(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
-	shipment, err := h.service.UpdateStatus(c.Params("orderId"), body.Status, body.HubID)
+	shipment, err := h.service.UpdateStatus(c.UserContext(), c.Params("orderId"), body.Status, body.HubID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return utils.Error(c, 404, "shipment not found")
@@ -222,7 +131,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
-	shipment, err := h.service.Update(c.Params("orderId"), req)
+	shipment, err := h.service.Update(c.UserContext(), c.Params("orderId"), req)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return utils.Error(c, 404, "shipment not found")
@@ -236,7 +145,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 // foreign-key constraint errors), then deletes the shipment itself. Returns a success message.
 // Requires staff authorization.
 func (h *Handler) Delete(c *fiber.Ctx) error {
-	if err := h.service.Delete(c.Params("orderId")); err != nil {
+	if err := h.service.Delete(c.UserContext(), c.Params("orderId")); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return utils.Error(c, 404, "shipment not found")
 		}

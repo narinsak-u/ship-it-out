@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -18,12 +19,12 @@ type fakeRepository struct {
 	err        error
 }
 
-func (r fakeRepository) Count() (int64, error) { return r.total, r.err }
-func (r fakeRepository) CountActive() (int64, error) { return r.active, r.err }
-func (r fakeRepository) CountByStatus() ([]StatusCount, error) { return r.statuses, r.err }
-func (r fakeRepository) CountByProvince() ([]ProvinceCount, error) { return r.provinces, r.err }
-func (r fakeRepository) CountByMonth() ([]MonthCount, error) { return r.months, r.err }
-func (r fakeRepository) CountByDayOfWeek() ([]DayCount, error) { return r.days, r.err }
+func (r fakeRepository) Count(context.Context) (int64, error) { return r.total, r.err }
+func (r fakeRepository) CountActive(context.Context) (int64, error) { return r.active, r.err }
+func (r fakeRepository) CountByStatus(context.Context) ([]StatusCount, error) { return r.statuses, r.err }
+func (r fakeRepository) CountByProvince(context.Context) ([]ProvinceCount, error) { return r.provinces, r.err }
+func (r fakeRepository) CountByMonth(context.Context) ([]MonthCount, error) { return r.months, r.err }
+func (r fakeRepository) CountByDayOfWeek(context.Context) ([]DayCount, error) { return r.days, r.err }
 
 func TestServiceOverviewAggregatesDeliveredAndRegions(t *testing.T) {
 	service := NewService(fakeRepository{
@@ -32,7 +33,7 @@ func TestServiceOverviewAggregatesDeliveredAndRegions(t *testing.T) {
 		provinces: []ProvinceCount{{Province: "ชลบุรี", Total: 5}, {Province: "กรุงเทพมหานคร", Total: 5}, {Province: "unknown", Total: 7}},
 	})
 
-	got, err := service.Overview()
+	got, err := service.Overview(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, int64(10), got.Total)
 	assert.Equal(t, int64(7), got.Active)
@@ -50,7 +51,7 @@ func TestServiceOverviewAggregatesDeliveredAndRegions(t *testing.T) {
 func TestServiceTimeSeriesReturnsRepositoryResults(t *testing.T) {
 	months := []MonthCount{{Month: "2026-01", Count: 3}}
 	days := []DayCount{{Day: "Monday", Count: 2}}
-	got, err := NewService(fakeRepository{months: months, days: days}).TimeSeries()
+	got, err := NewService(fakeRepository{months: months, days: days}).TimeSeries(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, months, got.ByMonth)
 	assert.Equal(t, days, got.ByDayOfWeek)
@@ -58,8 +59,8 @@ func TestServiceTimeSeriesReturnsRepositoryResults(t *testing.T) {
 
 func TestServicePropagatesQueryErrors(t *testing.T) {
 	want := errors.New("database unavailable")
-	_, err := NewService(fakeRepository{err: want}).Overview()
+	_, err := NewService(fakeRepository{err: want}).Overview(context.Background())
 	assert.ErrorIs(t, err, want)
-	_, err = NewService(fakeRepository{err: want}).TimeSeries()
+	_, err = NewService(fakeRepository{err: want}).TimeSeries(context.Background())
 	assert.ErrorIs(t, err, want)
 }

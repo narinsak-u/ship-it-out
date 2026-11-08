@@ -19,7 +19,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) Track(c *fiber.Ctx) error {
-	result, err := h.service.Track(c.Params("trackingNumber"))
+	result, err := h.service.Track(c.UserContext(), c.Params("trackingNumber"))
 	if errors.Is(err, ErrShipmentNotFound) {
 		return utils.Error(c, 404, "shipment not found")
 	}
