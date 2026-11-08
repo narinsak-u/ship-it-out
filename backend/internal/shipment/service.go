@@ -78,7 +78,7 @@ func (s *Service) UpdateStatus(orderID, status, hubID string) (*models.Shipment,
 	if hubID != "" {
 		hubRecord, err := s.hubs.FindByID(hubID)
 		if err != nil {
-			if err.Error() == "record not found" {
+			if err.Error() == "record not found" || err.Error() == "hub not found" {
 				return nil, ErrInvalidHub
 			}
 			return nil, err
