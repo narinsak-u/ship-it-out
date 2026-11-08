@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/features/auth/AuthProvider";
 import type { Hub, HubStatus } from "@/lib/hubs";
+import { HubForm } from "./HubForm";
 import styles from "./HubsPanel.module.css";
 
 const pageSize = 10;
@@ -19,7 +21,39 @@ export function HubsPanel({
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [editing, setEditing] = useState<Hub | null | undefined>(undefined);
+  const [actionError, setActionError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Hub | null>(null);
+  const confirmRef = useRef<HTMLDialogElement>(null);
+  const { isStaff } = useAuth();
+  const [notice, setNotice] = useState("");
 
+  useEffect(() => {
+    if (deleteTarget && !confirmRef.current?.open) confirmRef.current?.showModal();
+    else if (!deleteTarget && confirmRef.current?.open) confirmRef.current.close();
+  }, [deleteTarget]);
+  async function refresh() {
+    const response = await fetch("/api/hubs", { cache: "no-store" });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || `Hub API returned ${response.status}`);
+    setHubs(result.data as Hub[]);
+  }
+
+  async function removeHub(hub: Hub) {
+    setActionError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/hubs/${encodeURIComponent(hub.id)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || `Hub API returned ${response.status}`);
+      setHubs((current) => current.filter((item) => item.id !== hub.id));
+      setNotice("Hub deleted.");
+      setDeleteTarget(null);
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : "Failed to delete hub.");
+      setDeleteTarget(null);
+    }
+  }
   const counts = useMemo(
     () =>
       hubs.reduce<Record<string, number>>(
@@ -46,10 +80,7 @@ export function HubsPanel({
   async function retry() {
     setLoading(true);
     try {
-      const response = await fetch("/api/hubs", { cache: "no-store" });
-      if (!response.ok) throw new Error(`Hub API returned ${response.status}`);
-      const result = await response.json();
-      setHubs(result.data as Hub[]);
+      await refresh();
       setError(false);
     } catch {
       setError(true);
@@ -99,6 +130,23 @@ export function HubsPanel({
           }}
         />
       </div>
+      {isStaff && (
+        <div className={styles.actions}>
+          <button type="button" onClick={() => setEditing(null)}>
+            Add Hub
+          </button>
+        </div>
+      )}
+      {actionError && (
+        <p role="alert" className={styles.message}>
+          {actionError}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className={styles.message}>
+          {notice}
+        </p>
+      )}
       {filtered.length ? (
         <>
           <div className={styles.tableWrap}>
@@ -111,6 +159,7 @@ export function HubsPanel({
                   <th>Address</th>
                   <th>Capacity</th>
                   <th>Status</th>
+                  {isStaff && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -146,6 +195,24 @@ export function HubsPanel({
                           {hub.status}
                         </span>
                       </td>
+                      {isStaff && (
+                        <td data-label="Actions">
+                          <button
+                            type="button"
+                            aria-label={`Edit ${hub.name}`}
+                            onClick={() => setEditing(hub)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete ${hub.name}`}
+                            onClick={() => setDeleteTarget(hub)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -176,6 +243,38 @@ export function HubsPanel({
         </>
       ) : (
         <p className={styles.empty}>No hubs match your filters.</p>
+      )}
+      <dialog
+        ref={confirmRef}
+        aria-labelledby="hub-delete-title"
+        className={styles.dialog}
+        onCancel={() => setDeleteTarget(null)}
+      >
+        <h2 id="hub-delete-title">Delete Hub</h2>
+        <p>Are you sure you want to delete {deleteTarget?.name}? This action cannot be undone.</p>
+        <div className={styles.formActions}>
+          <button type="button" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </button>
+          <button type="button" onClick={() => deleteTarget && void removeHub(deleteTarget)}>
+            Delete Hub
+          </button>
+        </div>
+      </dialog>
+      {editing !== undefined && (
+        <HubForm
+          hub={editing}
+          onClose={() => setEditing(undefined)}
+          onSaved={async () => {
+            setEditing(undefined);
+            setNotice(editing ? "Hub updated." : "Hub created.");
+            try {
+              await refresh();
+            } catch {
+              setActionError("Hub saved, but the listing could not refresh.");
+            }
+          }}
+        />
       )}
     </>
   );

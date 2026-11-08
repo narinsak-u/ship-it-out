@@ -105,10 +105,10 @@ The Next.js `/orders` route fetches its initial public page with `cache: "no-sto
 
 ## Environment
 
-| Variable                | Required | Description                                                                                                                                            |
-| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `VITE_OPENCAGE_API_KEY` | Yes      | OpenCage Geocoding API key                                                                                                                             |
-| `VITE_CARTO_API_KEY`    | Yes      | CARTO Basemaps key for dark map tiles; set in Vercel build environment for Next previews. The Next config exposes this public tile key to the browser. |
+| Variable                | Required | Description                                                                                                                                              |
+| ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENCAGE_API_KEY`      | Yes      | OpenCage key used only by the Next.js `/api/geocode` server route. Never expose it as `NEXT_PUBLIC_*`. `VITE_OPENCAGE_API_KEY` is accepted server-side during migration. |
+| `VITE_CARTO_API_KEY`    | Yes      | CARTO Basemaps key for dark map tiles; set in Vercel build environment for Next previews. The Next config exposes this public tile key to the browser.   |
 
 ## Conventions
 
