@@ -35,7 +35,8 @@ func registerRoutes(app *fiber.App, db *gorm.DB) {
 	hubGroup.Delete("/:id", hubHandler.Delete)
 
 	shipmentRepo := shipment.NewGormRepository(db)
-	shipmentHandler := shipment.NewHandler(shipmentRepo, hubRepo)
+	shipmentService := shipment.NewService(shipmentRepo, hubRepo)
+	shipmentHandler := shipment.NewHandler(shipmentRepo, shipmentService)
 	api.Get("/shipments", shipmentHandler.List)
 	api.Get("/shipments/:orderId", shipmentHandler.GetByID)
 	shipmentGroup := api.Group("/shipments", middleware.AuthRequired(), middleware.StaffOnly(authRepo))

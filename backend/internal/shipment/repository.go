@@ -38,9 +38,7 @@ type ProvinceCountResult struct {
 	Total    int64  `json:"total"`
 }
 
-// Repository defines the data-access contract for shipments. The handler depends on this
-// interface (not on GormRepository directly), which makes it easy to swap implementations
-// for testing — just pass a mock that satisfies this interface.
+// Repository provides shipment queries used by tracking and analytics handlers.
 type Repository interface {
 	List(filter ShipmentFilter) ([]models.Shipment, int64, error)
 	FindByOrderID(orderID string) (*models.Shipment, error)

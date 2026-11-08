@@ -1,10 +1,8 @@
 package shipment
 
 import (
+	"errors"
 	"fmt"
-	"strconv"
-	"strings"
-	"sync"
 	"time"
 
 	"github.com/narinsak-u/backend/internal/models"
@@ -12,8 +10,7 @@ import (
 )
 
 type GormRepository struct {
-	db          *gorm.DB
-	orderIDLock sync.Mutex
+	db *gorm.DB
 }
 
 func NewGormRepository(db *gorm.DB) *GormRepository {
@@ -56,6 +53,9 @@ func (r *GormRepository) List(filter ShipmentFilter) ([]models.Shipment, int64, 
 func (r *GormRepository) FindByOrderID(orderID string) (*models.Shipment, error) {
 	var shipment models.Shipment
 	if err := r.db.Where("order_id = ?", orderID).First(&shipment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return &shipment, nil
@@ -71,12 +71,69 @@ func (r *GormRepository) FindByTrackingNumber(trackingNumber string) (*models.Sh
 	return &shipment, nil
 }
 
-// Create auto-generates an OrderID (ORD-xxxxx) and TrackingNumber (TH2026xxxxx), then inserts
-// the shipment row into Postgres. The caller is responsible for populating all other fields.
+// Create allocates database-backed IDs and inserts the shipment.
 func (r *GormRepository) Create(shipment *models.Shipment) error {
-	shipment.OrderID = r.generateOrderID()
-	shipment.TrackingNumber = r.generateTrackingNumber()
-	return r.db.Create(shipment).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.allocateIDs(tx, shipment); err != nil {
+			return err
+		}
+		return tx.Create(shipment).Error
+	})
+}
+
+func (r *GormRepository) CreateWithEvent(shipment *models.Shipment, event *models.ShipmentEvent) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.allocateIDs(tx, shipment); err != nil {
+			return err
+		}
+		if err := tx.Create(shipment).Error; err != nil {
+			return err
+		}
+		event.ShipmentID = shipment.ID
+		return tx.Create(event).Error
+	})
+}
+
+func (r *GormRepository) allocateIDs(tx *gorm.DB, shipment *models.Shipment) error {
+	if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", int64(30030)).Error; err != nil {
+		return err
+	}
+	var orderID int64
+	if err := tx.Model(&models.Shipment{}).Select("COALESCE(MAX(CAST(SUBSTRING(order_id FROM 5) AS BIGINT)), 10245)").Where("order_id ~ ?", `^ORD-[0-9]+$`).Scan(&orderID).Error; err != nil {
+		return err
+	}
+	var trackingID int64
+	year := time.Now().Year()
+	if err := tx.Model(&models.Shipment{}).Select("COALESCE(MAX(CAST(SUBSTRING(tracking_number FROM 7) AS INTEGER)), -1)").Where("tracking_number ~ ? AND SUBSTRING(tracking_number FROM 3 FOR 4) = ?", `^TH[0-9]{9}$`, fmt.Sprint(year)).Scan(&trackingID).Error; err != nil {
+		return err
+	}
+	if trackingID >= 99999 {
+		return errors.New("tracking number space exhausted for current year")
+	}
+	shipment.OrderID = fmt.Sprintf("ORD-%d", orderID+1)
+	shipment.TrackingNumber = fmt.Sprintf("TH%d%05d", year, trackingID+1)
+	return nil
+}
+
+func (r *GormRepository) SaveWithEvent(shipment *models.Shipment, event *models.ShipmentEvent) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(shipment).Error; err != nil {
+			return err
+		}
+		if event != nil {
+			return tx.Create(event).Error
+		}
+		return nil
+	})
+}
+
+func (r *GormRepository) DeleteWithEvents(shipment *models.Shipment) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("shipment_id = ?", shipment.ID).Delete(&models.ShipmentEvent{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(shipment).Error
+	})
 }
 
 // Save writes all fields of the shipment back to Postgres (full update, not partial).
@@ -178,29 +235,4 @@ func (r *GormRepository) CountByProvince() ([]ProvinceCountResult, error) {
 	return results, nil
 }
 
-// generateTrackingNumber creates a unique tracking ID in the format TH<year><5-digit-microsecond-hash>.
-// Example: "TH202612345". Uniqueness is probabilistic (based on microsecond timestamp).
-func (r *GormRepository) generateTrackingNumber() string {
-	return fmt.Sprintf("TH%d%05d", time.Now().Year(), time.Now().UnixMicro()%100000)
-}
-
-// generateOrderID creates the next OrderID by finding the highest existing ORD-xxxxx suffix and
-// incrementing by one (e.g. ORD-10245 → ORD-10246). Uses a mutex to prevent duplicates under
-// concurrent requests. Falls back to ORD-10246 if the DB is empty or the format doesn't match.
-func (r *GormRepository) generateOrderID() string {
-	r.orderIDLock.Lock()
-	defer r.orderIDLock.Unlock()
-
-	var max models.Shipment
-	if err := r.db.Select("order_id").Order("order_id DESC").First(&max).Error; err != nil {
-		return "ORD-10246"
-	}
-
-	parts := strings.SplitN(max.OrderID, "-", 2)
-	if len(parts) == 2 {
-		if n, err := strconv.Atoi(parts[1]); err == nil {
-			return fmt.Sprintf("ORD-%d", n+1)
-		}
-	}
-	return "ORD-10246"
-}
+// IDs are allocated while holding a PostgreSQL transaction-scoped advisory lock.
