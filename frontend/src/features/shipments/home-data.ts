@@ -1,3 +1,4 @@
+import { getApiOrigin } from "@/lib/api/server";
 import type { Shipment } from "@/lib/api/preview";
 
 interface ApiEnvelope<T> {
@@ -11,14 +12,8 @@ interface AnalyticsOverview {
   delivered: number;
 }
 
-function apiBase() {
-  const base = process.env.API_BASE_URL;
-  if (!base) throw new Error("API_BASE_URL is required");
-  return base.replace(/\/$/, "");
-}
-
 async function get<T>(path: string): Promise<T> {
-  const response = await fetch(`${apiBase()}/api/${path}`, { cache: "no-store" });
+  const response = await fetch(`${getApiOrigin()}/api/${path}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Home API returned ${response.status}`);
   const envelope = (await response.json()) as ApiEnvelope<T>;
   if (!envelope.success || envelope.data === undefined)

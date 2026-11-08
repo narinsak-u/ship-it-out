@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { statusLabels, type ShipmentStatus } from "@/lib/orders";
 import type { Shipment, ShipmentPage } from "@/lib/api/preview";
 import styles from "./manifest.module.css";
 
@@ -24,15 +25,6 @@ const filters = [
   ["delivered", "Delivered"],
   ["delayed", "Delayed"],
 ] as const;
-const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  picked_up: "Picked Up",
-  departed: "Departed",
-  in_transit: "In Transit",
-  out_for_delivery: "Out for Delivery",
-  delivered: "Delivered",
-  delayed: "Delayed",
-};
 
 async function getManifest(
   page: number,
@@ -52,7 +44,7 @@ async function getManifest(
 }
 
 function statusLabel(status: string) {
-  return statusLabels[status] ?? status.replaceAll("_", " ");
+  return statusLabels[status as ShipmentStatus] ?? status.replaceAll("_", " ");
 }
 
 function formatDate(value: string) {

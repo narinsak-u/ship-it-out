@@ -1,3 +1,5 @@
+import { getApiOrigin } from "@/lib/api/server";
+
 export interface ShipmentContact {
   name: string;
   zipcode: string;
@@ -37,7 +39,7 @@ export interface ShipmentPage {
 }
 
 export async function getShipmentsPage(page = 1, limit = 10): Promise<ShipmentPage> {
-  const response = await fetch(`${apiBase()}/api/shipments?page=${page}&limit=${limit}`, {
+  const response = await fetch(`${getApiOrigin()}/api/shipments?page=${page}&limit=${limit}`, {
     cache: "no-store",
   });
   if (!response.ok) throw new Error(`Shipment API returned ${response.status}`);
@@ -46,14 +48,8 @@ export async function getShipmentsPage(page = 1, limit = 10): Promise<ShipmentPa
   return { data: result.data, pagination: result.pagination };
 }
 
-const apiBase = () => {
-  const base = process.env.API_BASE_URL;
-  if (!base) throw new Error("API_BASE_URL is required");
-  return base.replace(/\/$/, "");
-};
-
 export async function getShipment(orderId: string): Promise<Shipment | null> {
-  const response = await fetch(`${apiBase()}/api/shipments/${encodeURIComponent(orderId)}`, {
+  const response = await fetch(`${getApiOrigin()}/api/shipments/${encodeURIComponent(orderId)}`, {
     cache: "no-store",
   });
   if (response.status === 404) return null;
@@ -63,7 +59,7 @@ export async function getShipment(orderId: string): Promise<Shipment | null> {
 }
 
 export async function getShipmentEvents(trackingNumber: string): Promise<ShipmentEvent[]> {
-  const response = await fetch(`${apiBase()}/api/track/${encodeURIComponent(trackingNumber)}`, {
+  const response = await fetch(`${getApiOrigin()}/api/track/${encodeURIComponent(trackingNumber)}`, {
     cache: "no-store",
   });
   if (!response.ok) throw new Error(`Tracking API returned ${response.status}`);

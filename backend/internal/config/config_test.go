@@ -39,6 +39,14 @@ func TestLoad_FromEnv(t *testing.T) {
 	assert.Equal(t, "my-secret-key", config.App.JWTSecret)
 }
 
+func TestLoad_InvalidAdminRoleCutoverPanics(t *testing.T) {
+	oldCfg := config.App
+	t.Cleanup(func() { config.App = oldCfg })
+	t.Setenv("ADMIN_ROLE_CUTOVER", "sometimes")
+
+	assert.PanicsWithValue(t, "ADMIN_ROLE_CUTOVER must be a boolean", config.Load)
+}
+
 func TestValidate_PanicsOnEmptySecret(t *testing.T) {
 	oldCfg := config.App
 	t.Cleanup(func() { config.App = oldCfg })

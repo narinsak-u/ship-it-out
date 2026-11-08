@@ -8,6 +8,7 @@ import styles from "@/features/operations/DeliveriesPanel.module.css";
 import "leaflet/dist/leaflet.css";
 export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }>) {
   const container = useRef<HTMLDivElement>(null);
+  const cartoKey = process.env.NEXT_PUBLIC_CARTO_API_KEY;
 
   useEffect(() => {
     let map: Map | undefined;
@@ -18,9 +19,15 @@ export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }
       const current: [number, number] = [order.currentCoords.lat, order.currentCoords.lng];
       const destination: [number, number] = [order.receiver.coords.lat, order.receiver.coords.lng];
       map = L.map(container.current, { center: current, zoom: 6, scrollWheelZoom: false, zoomControl: false });
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO',
-      }).addTo(map);
+      if (cartoKey) {
+        L.tileLayer(
+          `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`,
+          {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO',
+          },
+        ).addTo(map);
+      }
       L.polyline([origin, current], { color: "oklch(0.78 0.11 195)", weight: 3, opacity: 0.9 }).addTo(map);
       L.polyline([current, destination], { color: "oklch(0.78 0.11 195)", weight: 2, opacity: 0.6, dashArray: "6 8" }).addTo(map);
       const originIcon = L.divIcon({
@@ -62,14 +69,22 @@ export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }
     order.receiver.coords.lat,
     order.receiver.coords.lng,
     hub?.name,
+    cartoKey,
   ]);
 
   return (
-    <div
-      ref={container}
-      className={`${styles.map} leaflet-map`}
-      role="img"
-      aria-label={`Delivery route from ${order.origin} to ${order.destination}; current location ${hub?.name ?? "in transit"}`}
-    />
+    <>
+      <div
+        ref={container}
+        className={`${styles.map} leaflet-map`}
+        role="img"
+        aria-label={`Delivery route from ${order.origin} to ${order.destination}; current location ${hub?.name ?? "in transit"}`}
+      />
+      {!cartoKey && (
+        <p className="map-key-warning" role="status">
+          Map tiles unavailable. Configure NEXT_PUBLIC_CARTO_API_KEY.
+        </p>
+      )}
+    </>
   );
 }

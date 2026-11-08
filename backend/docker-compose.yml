@@ -26,6 +26,10 @@ services:
       DATABASE_URL: "${DATABASE_URL}"
       CORS_ORIGIN: "${CORS_ORIGIN:-http://localhost:3000}"
       JWT_SECRET: "${JWT_SECRET}"
+      ADMIN_NAME: "${ADMIN_NAME:-Administrator}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:?Set ADMIN_EMAIL in backend/.env}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in backend/.env}"
+      ADMIN_ROLE_CUTOVER: "${ADMIN_ROLE_CUTOVER:-false}"
     depends_on:
       - db
 

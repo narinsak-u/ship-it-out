@@ -8,7 +8,8 @@ Next.js App Router shipment dashboard, deployed on Vercel. Go API remains a sepa
 cd frontend
 bun install
 cp .env.example .env.local
-# Set API_BASE_URL to the Go API origin, without /api.
+# Set API_BASE_URL to the Go API origin, without /api. Set
+# NEXT_PUBLIC_CARTO_API_KEY for dark raster map tiles.
 bun run dev
 ```
 
@@ -38,7 +39,7 @@ For production cutover, configure Vercel `API_BASE_URL` to the Go API origin and
 | --- | --- | --- |
 | `API_BASE_URL` | Yes | Go API origin, no `/api` suffix; server-only |
 | `OPENCAGE_API_KEY` | For geocoding | Server-side OpenCage key |
-| `NEXT_PUBLIC_CARTO_API_KEY` | Optional | Public CARTO map tile key |
+| `NEXT_PUBLIC_CARTO_API_KEY` | Yes, for map tiles | Public CARTO raster tile key; required by CARTO's raster basemap service |
 
 ## Routes and coverage
 

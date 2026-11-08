@@ -30,7 +30,10 @@ func Load() {
 		l.Warn().Msg(".env file not found, using system env")
 	}
 
-	cutover, _ := strconv.ParseBool(getEnv("ADMIN_ROLE_CUTOVER", "false"))
+	cutover, err := strconv.ParseBool(getEnv("ADMIN_ROLE_CUTOVER", "false"))
+	if err != nil {
+		log.Panic().Err(err).Msg("ADMIN_ROLE_CUTOVER must be a boolean")
+	}
 	App = Config{
 		Port:             getEnv("PORT", "8080"),
 		DatabaseURL:      getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/shipments"),

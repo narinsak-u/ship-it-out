@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { toAnalyticsData, type AnalyticsData } from "./data";
 import styles from "./AnalyticsPanel.module.css";
 
 const STATUS_COLORS = ["#72d4a1", "#70b9d9", "#f1bd65", "#e77c80", "#a994e8"];
@@ -13,19 +14,6 @@ function formatMonth(month: string) {
     year: "2-digit",
     timeZone: "UTC",
   });
-}
-
-interface AnalyticsOverview {
-  total: number;
-  active: number;
-  delivered: number;
-  by_status: { status: string; count: number }[];
-  by_region: { name: string; total: number }[];
-}
-
-interface TimeSeriesData {
-  by_month: { month: string; count: number }[];
-  by_day_of_week: { day: string; count: number }[];
 }
 
 function points(values: number[], width: number, height: number, max: number) {
@@ -45,11 +33,6 @@ function ChartFrame({ title, children }: { title: string; children: ReactNode })
       {children}
     </section>
   );
-}
-
-export interface AnalyticsData {
-  overview: AnalyticsOverview;
-  series: TimeSeriesData;
 }
 
 export function AnalyticsPanel({
@@ -80,19 +63,7 @@ export function AnalyticsPanel({
           overviewResponse.json(),
           seriesResponse.json(),
         ]);
-        if (!overviewResult.success || !seriesResult.success)
-          throw new Error("Analytics request failed");
-        setData({
-          overview: {
-            ...overviewResult.data,
-            by_status: overviewResult.data.by_status ?? [],
-            by_region: overviewResult.data.by_region ?? [],
-          },
-          series: {
-            by_month: seriesResult.data.by_month ?? [],
-            by_day_of_week: seriesResult.data.by_day_of_week ?? [],
-          },
-        });
+        setData(toAnalyticsData(overviewResult, seriesResult));
       } catch {
         if (!controller.signal.aborted) setError(true);
       } finally {

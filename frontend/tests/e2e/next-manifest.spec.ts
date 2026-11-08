@@ -1,14 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn } from "./auth";
 
 async function resetManifest(page: Page) {
   await page.request.post("http://127.0.0.1:8081/__test/manifest?reset=1");
-}
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
 }
 
 test.describe("shipment manifest", () => {

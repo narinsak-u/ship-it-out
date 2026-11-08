@@ -5,7 +5,10 @@ Go/Fiber API server for the shipment tracking platform. PostgreSQL + JWT auth.
 ## Quick Start
 
 ```bash
-# With Docker (Postgres + backend)
+# With Docker (Postgres + backend); first copy .env.example to .env and set
+# JWT_SECRET, ADMIN_EMAIL, and ADMIN_PASSWORD. Set ADMIN_ROLE_CUTOVER=true
+# only for the one-time cutover after a verified backup.
+cp .env.example .env
 docker compose up
 
 # Without Docker (requires separate Postgres)

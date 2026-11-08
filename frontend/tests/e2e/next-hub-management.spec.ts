@@ -1,12 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/carriers?tab=hubs");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
-}
+import { signIn } from "./auth";
 
 async function mockHubApi(page: Page) {
   let hubs = [
@@ -75,6 +68,7 @@ async function mockHubApi(page: Page) {
 
 test("staff can create, edit, and confirm deletion of a hub", async ({ page }) => {
   await mockHubApi(page);
+  await page.goto("/carriers?tab=hubs");
   await signIn(page, "staff@shipitout.example", "preview-staff-password");
   await expect(page.getByRole("button", { name: "Add Hub" })).toBeVisible();
   await page.getByRole("button", { name: "Add Hub" }).click();
@@ -104,6 +98,7 @@ test("staff can create, edit, and confirm deletion of a hub", async ({ page }) =
 
 test("read-only demo cannot see hub management controls", async ({ page }) => {
   await mockHubApi(page);
+  await page.goto("/carriers?tab=hubs");
   await signIn(page, "demo@shipitout.example", "demo-read-only-2026");
   await expect(page.getByText("customer (Ship It Out Demo) · read-only")).toBeVisible();
   await expect(page.getByRole("button", { name: "Add Hub" })).toHaveCount(0);
@@ -126,6 +121,7 @@ test("hub form shows geocoding failures inline and does not save fake coordinate
       }),
     }),
   );
+  await page.goto("/carriers?tab=hubs");
   await signIn(page, "staff@shipitout.example", "preview-staff-password");
   await page.getByRole("button", { name: "Add Hub" }).click();
   const dialog = page.getByRole("dialog");

@@ -1,12 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto("/orders/create");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("dialog").locator("form").getByRole("button", { name: "Sign in" }).click();
-}
+import { expect, test } from "@playwright/test";
+import { signIn } from "./auth";
 
 test("staff creates a geocoded Shipment and returns to the updated manifest", async ({ page }) => {
   await page.request.post("http://127.0.0.1:8081/__test/manifest?reset=1");
@@ -17,6 +10,7 @@ test("staff creates a geocoded Shipment and returns to the updated manifest", as
       body: JSON.stringify({ data: { lat: 13.75, lng: 100.5 } }),
     }),
   );
+  await page.goto("/orders/create");
   await signIn(page, "staff@shipitout.example", "preview-staff-password");
   await expect(page.getByText("staff (Preview Staff) · staff access")).toBeVisible();
 
@@ -47,6 +41,7 @@ test("invalid Thai address stays on form and does not geocode", async ({ page })
       body: JSON.stringify({ data: { lat: 13.75, lng: 100.5 } }),
     });
   });
+  await page.goto("/orders/create");
   await signIn(page, "staff@shipitout.example", "preview-staff-password");
   await page.getByLabel("Sender Info name").fill("Sender One");
   await page.getByLabel("Sender Info zipcode").fill("10900");
@@ -68,6 +63,7 @@ test("invalid Thai address stays on form and does not geocode", async ({ page })
 });
 
 test("demo sees no create form and Go rejects direct Shipment writes", async ({ page }) => {
+  await page.goto("/orders/create");
   await signIn(page, "demo@shipitout.example", "demo-read-only-2026");
   await expect(page.getByText("customer (Ship It Out Demo) · read-only")).toBeVisible();
   await expect(page.getByRole("button", { name: "Create Shipment" })).toHaveCount(0);

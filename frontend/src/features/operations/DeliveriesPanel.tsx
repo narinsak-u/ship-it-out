@@ -3,20 +3,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { mapShipmentToOrder, type BackendShipment } from "@/lib/api/mappers";
 import type { Hub } from "@/lib/hubs";
-import type { Order, ShipmentStatus } from "@/lib/orders";
+import { statusLabels, type Order, type ShipmentStatus } from "@/lib/orders";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { DeliveryMap } from "@/features/operations/DeliveryMap";
 import styles from "@/features/operations/DeliveriesPanel.module.css";
 
 const pageSize = 10;
-const statuses: { value: ShipmentStatus; label: string }[] = [
-  { value: "pending", label: "Pending" },
-  { value: "picked_up", label: "Picked Up" },
-  { value: "departed", label: "Departed" },
-  { value: "in_transit", label: "In Transit" },
-  { value: "out_for_delivery", label: "Out for Delivery" },
-  { value: "delayed", label: "Delayed" },
-  { value: "delivered", label: "Delivered" },
+const statuses: ShipmentStatus[] = [
+  "pending",
+  "picked_up",
+  "departed",
+  "in_transit",
+  "out_for_delivery",
+  "delayed",
+  "delivered",
 ];
 const hubRequiredStatuses: Record<ShipmentStatus, boolean> = {
   pending: false,
@@ -225,13 +225,13 @@ export function DeliveriesPanel({
                         }
                       >
                         {statuses.map((status) => (
-                          <option key={status.value} value={status.value}>
-                            {status.label}
+                          <option key={status} value={status}>
+                            {statusLabels[status]}
                           </option>
                         ))}
                       </select>
                     ) : (
-                      order.status.replaceAll("_", " ")
+                      (statusLabels[order.status] ?? order.status.replaceAll("_", " "))
                     )}
                   </td>
                   <td>
