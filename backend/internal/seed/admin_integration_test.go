@@ -80,9 +80,9 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	config.App.JWTTTL = time.Hour
 	t.Cleanup(func() { config.App = oldConfig })
 	repo := auth.NewGormRepository(db)
-	hubHandler := hub.NewHandler(hub.NewGormRepository(db))
+	hubHandler := hub.NewHandler(hub.NewService(hub.NewGormRepository(db)))
 	app := fiber.New()
-	authHandler := auth.NewHandler(repo)
+	authHandler := auth.NewHandler(auth.NewService(repo, config.App.JWTSecret, config.App.JWTTTL))
 	app.Post("/api/auth/register", authHandler.Register)
 	app.Post("/api/auth/login", authHandler.Login)
 	app.Get("/api/auth/me", middleware.AuthRequired(), authHandler.Me)

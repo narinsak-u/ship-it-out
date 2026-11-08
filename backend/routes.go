@@ -6,6 +6,7 @@ import (
 
 	"github.com/narinsak-u/backend/internal/analytics"
 	"github.com/narinsak-u/backend/internal/auth"
+	"github.com/narinsak-u/backend/internal/config"
 	"github.com/narinsak-u/backend/internal/health"
 	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/middleware"
@@ -18,7 +19,8 @@ func registerRoutes(app *fiber.App, db *gorm.DB) {
 	api.Get("/health", health.Check)
 
 	authRepo := auth.NewGormRepository(db)
-	authHandler := auth.NewHandler(authRepo)
+	authService := auth.NewService(authRepo, config.App.JWTSecret, config.App.JWTTTL)
+	authHandler := auth.NewHandler(authService)
 	authGroup := api.Group("/auth")
 	authGroup.Post("/register", middleware.RateLimitAuth(), authHandler.Register)
 	authGroup.Post("/login", middleware.RateLimitAuth(), authHandler.Login)
@@ -26,7 +28,8 @@ func registerRoutes(app *fiber.App, db *gorm.DB) {
 	authGroup.Post("/logout", authHandler.Logout)
 
 	hubRepo := hub.NewGormRepository(db)
-	hubHandler := hub.NewHandler(hubRepo)
+	hubService := hub.NewService(hubRepo)
+	hubHandler := hub.NewHandler(hubService)
 	api.Get("/hubs", hubHandler.List)
 	api.Get("/hubs/:id", hubHandler.GetByID)
 	hubGroup := api.Group("/hubs", middleware.AuthRequired(), middleware.StaffOnly(authRepo))
