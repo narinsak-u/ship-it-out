@@ -1,16 +1,13 @@
 import { getApiOrigin } from "@/lib/api/server";
 import { getShipments } from "./server-api";
+import type { AnalyticsOverview } from "@/features/analytics/data";
 
 interface ApiEnvelope<T> {
   success: boolean;
   data?: T;
 }
 
-interface AnalyticsOverview {
-  total: number;
-  active: number;
-  delivered: number;
-}
+type HomeAnalyticsOverview = Pick<AnalyticsOverview, "total" | "active" | "delivered">;
 
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(`${getApiOrigin()}/api/${path}`, { cache: "no-store" });
@@ -23,7 +20,7 @@ async function get<T>(path: string): Promise<T> {
 
 export async function getHomeData() {
   const [analytics, shipments] = await Promise.allSettled([
-    get<AnalyticsOverview>("analytics/overview"),
+    get<HomeAnalyticsOverview>("analytics/overview"),
     getShipments("shipments?limit=3&exclude_status=delivered"),
   ]);
 
