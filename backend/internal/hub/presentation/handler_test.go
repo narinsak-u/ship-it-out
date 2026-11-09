@@ -109,12 +109,19 @@ func TestHubCreate_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	var response struct {
-		Success bool `json:"success"`
-		Data    Hub  `json:"data"`
+		Success bool            `json:"success"`
+		Data    json.RawMessage `json:"data"`
 	}
 	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
 	assert.True(t, response.Success)
-	assert.Equal(t, (GeoPoint{Lat: 10, Lng: 20}), response.Data.Coords)
+	var data map[string]json.RawMessage
+	assert.NoError(t, json.Unmarshal(response.Data, &data))
+	assert.Contains(t, data, "coords")
+	assert.NotContains(t, data, "lat")
+	assert.NotContains(t, data, "lng")
+	var coords GeoPoint
+	assert.NoError(t, json.Unmarshal(data["coords"], &coords))
+	assert.Equal(t, (GeoPoint{Lat: 10, Lng: 20}), coords)
 }
 
 func TestHubCreate_InvalidBody(t *testing.T) {

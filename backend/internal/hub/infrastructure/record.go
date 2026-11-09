@@ -26,6 +26,6 @@ func recordFromHub(h domain.Hub) Record {
 }
 
 func (r Record) hub() domain.Hub {
-	return domain.Hub{ID: r.ID, Name: r.Name, CarrierID: r.CarrierID, Address: r.Address, Lat: r.Lat, Lng: r.Lng, Coords: domain.GeoPoint{Lat: r.Lat, Lng: r.Lng}, Capacity: r.Capacity, CurrentUtilization: r.CurrentUtilization, Status: r.Status, CreatedAt: r.CreatedAt}
+	return domain.Hub{ID: r.ID, Name: r.Name, CarrierID: r.CarrierID, Address: r.Address, Coords: domain.GeoPoint{Lat: r.Lat, Lng: r.Lng}, Capacity: r.Capacity, CurrentUtilization: r.CurrentUtilization, Status: r.Status, CreatedAt: r.CreatedAt}
 }
 
