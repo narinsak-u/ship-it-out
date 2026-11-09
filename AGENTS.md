@@ -33,7 +33,7 @@ Backend listens on `http://localhost:8080`; frontend listens on `http://localhos
 
 ## Backend conventions
 
-- Fiber handlers return `pkg/utils` response helpers.
+- Fiber handlers use `internal/platform/http` response helpers.
 - All API routes use `/api/` and response format `{"success":true,"data":...}` or `{"success":false,"error":"..."}`.
 - JWT sessions use HTTP-only cookies; Go is authoritative for roles and protected writes.
 - Explicitly handle errors; use pointer request fields for partial updates.
