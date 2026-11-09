@@ -46,3 +46,17 @@ Backend listens on `http://localhost:8080`; frontend listens on `http://localhos
 - `backend/docs/WORKFLOW.md`: request and response flows.
 - `docs/adr/0001-nextjs-frontend-api-origin.md`: deployment and browser API origin.
 - `docs/adr/0002-staff-only-writes.md`: authorization and production cutover.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues. Use the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root GLOSSARY.md and docs/adr/. See `docs/agents/domain.md`.
