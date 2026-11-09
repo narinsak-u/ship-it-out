@@ -10,7 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/shipment/application"
-	"github.com/narinsak-u/backend/internal/shipment/domain"
+	hubdomain "github.com/narinsak-u/backend/internal/hub/domain"
 )
 
 type repoFake struct {
@@ -37,3 +37,17 @@ func TestGetByIDNotFound(t *testing.T){app:=fiber.New();app.Get("/api/shipments/
 func TestUpdateChangesProvidedFields(t *testing.T){repo:=&repoFake{shipment:&domain.Shipment{OrderID:"ORD-10246",Carrier:"Old",Weight:5,Status:domain.StatusPending}};app:=fiber.New();app.Put("/api/shipments/:orderId",NewHandler(application.NewService(repo,nil)).Update);response:=request(app,"PUT","/api/shipments/ORD-10246",`{"carrier":"New"}`);if response.Code!=200||repo.shipment.Carrier!="New"||repo.shipment.Weight!=5{t.Fatalf("partial update lost fields: %d %+v",response.Code,repo.shipment)}}
 func TestUpdateStatusCreatesMappedEvent(t *testing.T){repo:=&repoFake{shipment:&domain.Shipment{ID:7,OrderID:"ORD-10246",Destination:"Destination",CurrentCoords:domain.GeoPoint{Lat:1,Lng:2}}};app:=fiber.New();app.Patch("/api/shipments/:orderId/status",NewHandler(application.NewService(repo,nil)).UpdateStatus);response:=request(app,"PATCH","/api/shipments/ORD-10246/status",`{"status":"in_transit"}`);if response.Code!=200||repo.shipment.Status!=domain.StatusInTransit||repo.event==nil||repo.event.Status!="In Transit"||repo.event.Location.Name!="Destination"{t.Fatalf("unexpected status update/event: %d %+v %+v",response.Code,repo.shipment,repo.event)}}
 func TestDeleteRemovesShipment(t *testing.T){repo:=&repoFake{shipment:&domain.Shipment{OrderID:"ORD-10246"}};app:=fiber.New();app.Delete("/api/shipments/:orderId",NewHandler(application.NewService(repo,nil)).Delete);response:=request(app,"DELETE","/api/shipments/ORD-10246","");if response.Code!=200||!repo.deleted{t.Fatalf("delete failed: %d deleted=%t",response.Code,repo.deleted)}}
+type missingHub struct{}
+func (missingHub) FindByID(context.Context, string) (*hubdomain.Hub, error) { return nil, domain.ErrNotFound }
+
+func TestUpdateStatusReturnsInvalidHubIDContract(t *testing.T) {
+	repo := &repoFake{shipment: &domain.Shipment{ID: 7, OrderID: "ORD-1"}}
+	app := fiber.New()
+	app.Patch("/api/shipments/:orderId/status", NewHandler(application.NewService(repo, missingHub{})).UpdateStatus)
+	response := request(app, "PATCH", "/api/shipments/ORD-1/status", `{"status":"in_transit","hubId":"HUB-MISSING"}`)
+	var result struct { Error string `json:"error"` }
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil { t.Fatal(err) }
+	if response.Code != 400 || result.Error != "invalid hub ID" {
+		t.Fatalf("unexpected response: %d %+v", response.Code, result)
+	}
+}

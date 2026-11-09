@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrNotFound   = errors.New("shipment not found")
-	ErrInvalidHub = errors.New("invalid hub")
+	ErrInvalidHub = errors.New("invalid hub ID")
 )
 
 type Status string

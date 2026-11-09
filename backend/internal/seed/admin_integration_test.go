@@ -74,15 +74,32 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	migrationModels := append([]any{&authinfra.UserRecord{}, &hubinfra.Record{}, &bootstrapState{}, &demoBootstrapState{}}, shipmentinfra.MigrationModels()...)
-	if err := db.AutoMigrate(migrationModels...); err != nil {
-		t.Fatal(err)
-	}
-
 	legacyHash, err := authinfra.HashPassword("password")
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := db.Exec(`CREATE TABLE users (
+		id BIGSERIAL PRIMARY KEY,
+		name TEXT NOT NULL,
+		email TEXT NOT NULL UNIQUE,
+		password TEXT NOT NULL,
+		role TEXT NOT NULL DEFAULT 'customer',
+		created_at TIMESTAMPTZ
+	)`).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)", "Existing", "existing@example.test", legacyHash, "customer").Error; err != nil {
+		t.Fatal(err)
+	}
+	migrationModels := append([]any{&authinfra.UserRecord{}, &hubinfra.Record{}, &bootstrapState{}, &demoBootstrapState{}}, shipmentinfra.MigrationModels()...)
+	if err := db.AutoMigrate(migrationModels...); err != nil {
+		t.Fatal(err)
+	}
+	existing, err := authinfra.NewGormRepository(db).FindByEmail("existing@example.test")
+	if err != nil || existing.Role != "customer" || !authinfra.CheckPassword("password", existing.Password) {
+		t.Fatalf("pre-existing users row = %+v, err %v", existing, err)
+	}
+
 	legacy := authinfra.UserRecord{Name: "Legacy", Email: "legacy@example.test", Password: legacyHash, Role: "admin"}
 	otherLegacy := authinfra.UserRecord{Name: "Other Legacy", Email: "other-legacy@example.test", Password: legacyHash, Role: "admin"}
 	if err := db.Create(&legacy).Error; err != nil {

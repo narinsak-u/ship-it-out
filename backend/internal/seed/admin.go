@@ -67,7 +67,7 @@ func BootstrapDemoUser(db *gorm.DB) error {
 			return fmt.Errorf("hash demo password: %w", err)
 		}
 		user := authinfra.UserRecord{Name: demoUserName, Email: demoUserEmail, Password: hash, Role: "customer"}
-		if err := tx.Create(&user).Error; err != nil {
+		if err := authinfra.CreateUserRecord(tx, &user); err != nil {
 			return fmt.Errorf("create demo account: %w", err)
 		}
 		if err := tx.Create(&demoBootstrapState{Key: "public-demo-user-v1", UserID: user.ID, CreatedAt: time.Now().UTC()}).Error; err != nil {
@@ -120,7 +120,7 @@ func BootstrapAdmin(db *gorm.DB, name, email, password string, cutoverEnabled bo
 		if err != nil {
 			return fmt.Errorf("hash admin password: %w", err)
 		}
-		if err := tx.Model(&authinfra.UserRecord{}).Where("role = ?", "admin").Update("role", "customer").Error; err != nil {
+		if err := authinfra.DemoteAdminUsers(tx); err != nil {
 			return fmt.Errorf("demote legacy admins: %w", err)
 		}
 		admin := authinfra.UserRecord{Name: name, Email: email, Password: hash, Role: "admin"}

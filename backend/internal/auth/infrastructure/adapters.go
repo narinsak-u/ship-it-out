@@ -15,6 +15,13 @@ import (
 
 type GormRepository struct { db *gorm.DB }
 func NewGormRepository(db *gorm.DB) *GormRepository { return &GormRepository{db:db} }
+func CreateUserRecord(tx *gorm.DB, user *UserRecord) error {
+	return tx.Create(user).Error
+}
+
+func DemoteAdminUsers(tx *gorm.DB) error {
+	return tx.Model(&UserRecord{}).Where("role = ?", domain.RoleAdmin).Update("role", domain.RoleCustomer).Error
+}
 func (r *GormRepository) Create(user *domain.User) error {
 	row := UserRecord{Name:user.Name, Email:user.Email, Password:user.Password, Role:user.Role}
 	if err := r.db.Create(&row).Error; err != nil {
