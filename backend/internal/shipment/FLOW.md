@@ -29,9 +29,9 @@ This guide traces how a request travels through the codebase **end-to-end**. If 
 
 ---
 
-## 2. Step 1 — main.go Wires Everything Together
+## 2. Step 1 — routes.go Centralizes Route Registration
 
-In `cmd/server/main.go`:
+In `routes.go`:
 
 ```go
 // 1. Create the repository (real GORM implementation)
@@ -40,8 +40,9 @@ shipmentRepo := shipment.NewGormRepository(database.DB)
 // 2. Create the hub repository (needed by UpdateStatus)
 hubRepo := hub.NewGormRepository(database.DB)
 
-// 3. Create the handler, passing the repository in
-shipmentHandler := shipment.NewHandler(shipmentRepo, hubRepo)
+// 3. Create the workflow service and inject it into the handler.
+shipmentService := shipment.NewService(shipmentRepo, hubRepo)
+shipmentHandler := shipment.NewHandler(shipmentService)
 
 // 4. Register routes — the handler methods handle requests
 api.Get("/shipments", shipmentHandler.List)             // public
@@ -128,22 +129,11 @@ Think of it like a USB port: your laptop (the handler) doesn't care what's on th
 
 In `gorm_repository.go`:
 
-```go
-type GormRepository struct {
-    db *gorm.DB  // real database connection
-}
-
-func (r *GormRepository) Create(shipment *models.Shipment) error {
-    shipment.OrderID = r.generateOrderID()       // "ORD-10246"
-    shipment.TrackingNumber = r.generateTrackingNumber() // "TH2026..."
-    return r.db.Create(shipment).Error            // INSERT INTO Postgres
-}
-```
-
-This is where the real database operations happen:
-- `r.db` is a *gorm.DB connection set up in `database.ConnectPostgres()`
-- `r.db.Create(shipment)` runs `INSERT INTO shipments ...`
-- GORM converts the Go struct into SQL automatically
+Shipment workflows call focused repository interfaces. `GormRepository` uses PostgreSQL
+transactions for shipment-plus-event creation, status-plus-event updates, and deletion
+of shipments with their events. ID allocation takes a PostgreSQL advisory lock and
+selects the next values from existing database rows, retaining the public ID formats
+while preventing concurrent instances from allocating the same IDs.
 
 ---
 
@@ -256,9 +246,9 @@ func TestCreate(t *testing.T) {
 │                                                              │
 │  shipmentRepo := NewGormRepository(database.DB)              │
 │  hubRepo      := hub.NewGormRepository(database.DB)          │
-│  handler      := NewHandler(shipmentRepo, hubRepo)           │
-│                                                              │
-│  app.Post("/api/shipments", handler.Create)                  │
+│  service      := NewService(shipmentRepo, hubRepo)            │
+│  handler      := NewHandler(service)                          │
+│  app.Post("/api/shipments", handler.Create)                    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼ request comes in
@@ -313,7 +303,7 @@ func TestCreate(t *testing.T) {
 | Pattern | Where | Why |
 |---------|-------|-----|
 | **Interface as contract** | `repository.go` | Decouples handler from database |
-| **Dependency injection** | `main.go` → `NewHandler(repo, hubRepo)` | main.go decides what implementations to use |
+| **Dependency injection** | `routes.go` → `NewService` → `NewHandler` | Startup wires repository, service, and handler |
 | **Constructor function** | `NewGormRepository(db)` | Ensures the struct is properly initialized |
 | **Pointer receiver** | `func (r *GormRepository) Create(...)` | Methods can modify the struct (e.g. generate IDs) |
 | **Returning errors** | Every method returns `error` | Go's idiomatic way to handle failures — never exceptions |

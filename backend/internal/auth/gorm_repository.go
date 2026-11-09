@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"errors"
+
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/narinsak-u/backend/internal/models"
 	"gorm.io/gorm"
 )
@@ -18,15 +21,22 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 // violation) if a user with the same email already exists. The password field must already be
 // hashed by the caller.
 func (r *GormRepository) Create(user *models.User) error {
-	return r.db.Create(user).Error
+	if err := r.db.Create(user).Error; err != nil {
+		if isDuplicateEmail(err) {
+			return ErrEmailAlreadyRegistered
+		}
+		return err
+	}
+	return nil
 }
 
-// FindByEmail looks up a user by their email address. Returns nil + error if not found.
-// The caller should NOT distinguish "user not found" from "wrong password" in error messages
-// (see handler Login — both return 401 "invalid email or password").
+// FindByEmail looks up a user by their email address. Returns ErrUserNotFound if absent.
 func (r *GormRepository) FindByEmail(email string) (*models.User, error) {
 	var user models.User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
 	}
 	return &user, nil
@@ -37,7 +47,18 @@ func (r *GormRepository) FindByEmail(email string) (*models.User, error) {
 func (r *GormRepository) FindByID(id uint) (*models.User, error) {
 	var user models.User
 	if err := r.db.First(&user, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
 	}
 	return &user, nil
+}
+
+func isDuplicateEmail(err error) bool {
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }

@@ -20,47 +20,24 @@ go run .
 
 ```
 backend/
-├── cmd/server/main.go       # Entry point: config → DB → migrate → seed → routes → server
+├── main.go                    # Startup, migration/seeding, dependency construction, server start
 ├── internal/
-│   ├── config/config.go     # Env-based config (Port, DatabaseURL, JWTSecret, JWTTTL)
-│   ├── data/regions.go      # Static Thailand province-to-region mapping
-│   ├── database/
-│   │   └── postgres.go      # GORM connection
-│   ├── seed/
-│   │   ├── hubs.go          # Demo hub data (10 hubs, nationwide)
-│   │   └── shipments.go     # Demo shipments + tracking events (20 orders, nationwide)
-│   ├── models/
-│   │   ├── user.go          # User model
-│   │   ├── shipment.go      # Shipment + ContactInfo + GeoPoint
-│   │   ├── shipment_event.go# ShipmentEvent + Location
-│   │   └── hub.go           # Hub model
-│   ├── middleware/
-│   │   ├── auth.go          # JWT Bearer/cookie verification
-│   │   ├── cors.go          # CORS headers for frontend dev server
-│   │   ├── logger.go        # Request logging via zerolog
-│   │   └── ratelimit.go     # In-memory rate limiter (5 req/min on auth)
-│   ├── auth/
-│   │   ├── handler.go       # Handler (Register, Login, Me, Logout)
-│   │   ├── repository.go    # Repository interface
-│   │   └── gorm_repository.go
-│   ├── shipment/
-│   │   ├── handler.go       # Handler (List, Create, GetByID, Update, UpdateStatus, Delete)
-│   │   ├── repository.go    # Repository interface + filter/result types
-│   │   └── gorm_repository.go
-│   ├── hub/
-│   │   ├── handler.go       # Handler (List, GetByID, Create, Update, Delete)
-│   │   ├── repository.go    # Repository interface
-│   │   └── gorm_repository.go
-│   ├── tracking/handler.go  # Handler (Track) — uses shipment.Repository
-│   ├── analytics/handler.go # Handler (Overview, TimeSeries) — uses shipment.Repository
-├── pkg/utils/
-│   ├── hash.go              # bcrypt helpers
-│   └── response.go          # Standard JSON response writers
+│   ├── server/routes.go       # Route registration for prebuilt feature handlers
+│   ├── config/                # Environment config and validation
+│   ├── database/              # PostgreSQL connection
+│   ├── seed/                  # Admin/demo, hub, and shipment bootstrap
+│   ├── models/                # GORM models and coordinate hooks
+│   ├── middleware/            # Auth, staff checks, CORS, security, logging, rate limits
+│   ├── auth/                  # Handler, service, repository, GORM adapter
+│   ├── shipment/              # Handler, service, repository, GORM adapter, PostgreSQL tests
+│   ├── hub/                   # Handler, service, repository, GORM adapter
+│   ├── tracking/              # Focused public tracking handler and service
+│   ├── analytics/             # Handler, service, repository, GORM adapter
+│   └── health/                # Health endpoint
+├── pkg/utils/                 # Response and password helpers
 ├── Dockerfile
-├── docker-compose.yml       # Postgres 16 + backend
-└── docs/
-    ├── OVERVIEW.md          # Full API reference + architecture
-    └── WORKFLOW.md          # Workflow descriptions
+├── docker-compose.yml
+└── docs/                      # Overview, workflows, data, and logging references
 ```
 
 ## API Overview
@@ -159,7 +136,7 @@ go test ./internal/seed -run TestAdminCutoverHTTPAndPersistence -count=1
 
 ## Testing
 
-Tests use [testify](https://github.com/stretchr/testify) (assert, require, mock) with Fiber's `app.Test()` for HTTP integration. Handler tests mock the repository layer — **no database required**.
+Tests use [testify](https://github.com/stretchr/testify) (assert, require, mock). Auth service tests use fake repositories; Fiber handler tests cover HTTP responses and error mapping without a database.
 
 ### Run all tests
 
@@ -201,12 +178,18 @@ go tool cover -html=coverage.out          # HTML report
 | `pkg/utils` | Unit | 100% | Hash/response helpers |
 | `internal/config` | Unit | 100% | Env loading |
 | `internal/models` | Unit | 100% | GORM BeforeSave/AfterFind hooks |
-| `internal/tracking` | HTTP + mock | 89% | Handler via `shipment.Repository` |
-| `internal/analytics` | HTTP + mock | 81% | Handler via `shipment.Repository` |
+| `internal/tracking` | HTTP + mock | 89% | Handler + tracking service |
+| `internal/analytics` | HTTP + mock | 81% | Handler + analytics service |
 | `internal/auth` | HTTP + mock | 74% | Handler + repository |
 | `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
 | `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
 | `internal/hub` | HTTP + mock | 49% | Handler + repository |
-| `cmd/server`, `database`, `seed` | — | 0% | Require live PostgreSQL |
+| `main.go`, `internal/database`, `internal/seed` | Integration | PostgreSQL-backed startup/seed behavior |
+Shipment repository integration coverage requires an expendable PostgreSQL database. It creates a private schema and drops it on cleanup:
 
-Handler/business logic coverage is 70-100%. GORM repository implementations (`gorm_repository.go`) are untested in unit tests — they require a live PostgreSQL connection or test containers to execute.
+```bash
+export SHIPMENT_TEST_DATABASE_URL='postgres://user:pass@127.0.0.1:5432/shipments_test?sslmode=disable'
+go test ./internal/shipment -run TestGormRepositoryTransactionsAndConcurrentIDs -count=1
+```
+
+The test verifies creation, status-update, and deletion rollback behavior, plus concurrent order/tracking ID uniqueness across separate database connections. Repository mappings and unique-constraint behavior remain covered by database schema/hooks and must be verified against PostgreSQL when running the suite.

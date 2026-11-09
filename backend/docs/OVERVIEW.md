@@ -22,51 +22,23 @@ Go API server for the Thun-u-der Express shipment tracking platform. Built with 
 
 ```
 backend/
-├── cmd/server/main.go          # Entry point: config load, DB init, migrate, seed, route setup, server start
+├── main.go                     # Startup, migration/seeding, dependency construction, server start
 ├── internal/
-│   ├── config/config.go        # Global Config struct (Port, DatabaseURL, JWTSecret, JWTTTL)
-│   ├── data/regions.go         # Static Thailand province-to-region mapping
-│   ├── database/
-│   │   └── postgres.go         # GORM connection (global DB var, 15x retry)
-│   ├── seed/
-│   │   ├── hubs.go             # SeedHubs — inserts 10 demo hubs (idempotent)
-│   │   └── shipments.go        # SeedShipments — inserts 20 demo shipments + events (idempotent)
-│   ├── models/
-│   │   ├── user.go             # User model
-│   │   ├── shipment.go         # Shipment + ContactInfo + GeoPoint (GORM hooks for coords)
-│   │   ├── shipment_event.go   # ShipmentEvent + Location
-│   │   └── hub.go              # Hub model
-│   ├── middleware/
-│   │   ├── auth.go             # JWT Bearer token / cookie verification
-│   │   ├── cors.go             # Manual CORS headers (default origin: localhost:3000)
-│   │   ├── logger.go           # Request logging via zerolog
-│   │   └── ratelimit.go        # In-memory sliding-window rate limiter (5 req/min on auth)
-│   ├── auth/
-│   │   ├── handler.go          # Handler struct (Register, Login, Me, Logout)
-│   │   ├── repository.go       # Repository interface
-│   │   └── gorm_repository.go  # GORM implementation
-│   ├── shipment/
-│   │   ├── handler.go          # Handler struct (List, Create, GetByID, Update, UpdateStatus, Delete)
-│   │   ├── repository.go       # Repository interface + filter/result types
-│   │   └── gorm_repository.go  # GORM implementation (CRUD, events, analytics queries)
-│   ├── hub/
-│   │   ├── handler.go          # Handler struct (List, GetByID, Create, Update, Delete)
-│   │   ├── repository.go       # Repository interface
-│   │   └── gorm_repository.go  # GORM implementation (CRUD + ID generation)
-│   ├── tracking/handler.go     # Handler struct (Track) — uses shipment.Repository
-│   └── analytics/handler.go    # Handler struct (Overview, TimeSeries) — uses shipment.Repository
-├── pkg/utils/
-│   ├── hash.go                 # bcrypt hash/compare helpers
-│   └── response.go             # Standard JSON response writers (Success/Error/SuccessWithPagination)
-├── Dockerfile                  # Multi-stage build (golang:1.24-alpine → alpine:3.19)
-├── docker-compose.yml          # Postgres 16 + backend
-├── .env.example
-├── .dockerignore
-├── go.mod / go.sum
-├── README.md
-└── docs/
-    ├── OVERVIEW.md
-    └── WORKFLOW.md
+│   ├── server/routes.go        # Route registration; receives prebuilt handlers and auth repository
+│   ├── config/config.go        # Environment config and validation
+│   ├── database/postgres.go    # PostgreSQL connection
+│   ├── seed/                   # Admin/demo account, hubs, and shipment bootstrap
+│   ├── models/                 # GORM models and coordinate hooks
+│   ├── middleware/             # Auth, staff authorization, CORS, logging, rate limits
+│   ├── auth/                   # Handler, service, repository interface + GORM adapter
+│   ├── shipment/               # Handler, service, repository interface + GORM adapter
+│   ├── hub/                    # Handler, service, repository interface + GORM adapter
+│   ├── tracking/               # Focused public tracking handler and service
+│   ├── analytics/              # Focused analytics handler, service, repository + GORM adapter
+│   └── health/                 # Health endpoint
+├── pkg/utils/                  # Shared response and password helpers
+├── Dockerfile / docker-compose.yml
+└── docs/                       # Overview, workflows, data, and logging references
 ```
 
 ---
@@ -144,14 +116,14 @@ This gives clean JSON with nested objects while keeping normal DB columns for qu
 
 ## Architecture Notes
 
-- **Repository pattern:** Each domain package (auth, hub, shipment) defines a `Repository` interface and a GORM implementation. Handlers receive their repository via constructor injection (`NewHandler(repo)`), making them testable without a real database.
-- **Dependency injection:** `main.go` wires GORM repositories → handlers → routes. No packages call `database.DB` directly except repositories and seed code.
-- **Cross-domain dependency:** The shipment handler receives both a `shipment.Repository` and a `HubRepository` interface (defined locally in the shipment package to avoid circular imports) for status updates that need hub location data.
-- **Standardized responses:** All endpoints return `{"success": true/false, "data": ...}` or `{"success": false, "error": "..."}`. Paginated endpoints include a `pagination` block.
-- **JWT auth:** HS256 bearer tokens with `user_id` and `role` claims. Token TTL is hardcoded to 24h. Auth middleware checks `Authorization: Bearer` header first, then falls back to the `jwt` cookie. Auth endpoints are rate-limited to 5 requests/minute per IP via an in-memory sliding-window limiter.
-- **Seed data:** On first startup, `main.go` runs `seed.SeedHubs()` and `seed.SeedShipments()` after AutoMigrate. Both skip if their table already has rows (idempotent).
-- **Testing:** 19 test files, 64+ tests across 10 packages using testify (assert, require, mock). Handler tests use mocked repositories with Fiber's `app.Test()`. Pure-logic tests cover models (GORM hooks), middleware (rate limiter, JWT auth), utils, config, and data.
-- **Middlewares run in order:** CORS → Logger → Rate limit (auth routes only) → Auth (protected routes only).
+- Feature packages keep HTTP handlers, Fiber-independent services, focused repository interfaces, and GORM adapters together.
+- `main.go` owns startup and manual dependency construction. `internal/server` only registers routes and middleware around supplied handlers.
+- Tracking and analytics use dedicated service/repository interfaces rather than shipment persistence APIs.
+- Shipment creation, status changes, and deletion run their related database writes in transactions. PostgreSQL constraints and database-backed ID allocation protect writes across server instances.
+- Coordinate hooks preserve the nested API representation while storing flat latitude/longitude columns.
+- Staff writes require a fresh database role check; public reads, registration role assignment, cookie/JWT behavior, and route contracts remain unchanged.
+- Seed/bootstrap functions run after AutoMigrate and preserve existing data; no refactor migration is introduced.
+- Middleware order: CORS → security headers → logger; auth-specific rate limiting and auth/staff checks are attached to routes.
 
 ---
 

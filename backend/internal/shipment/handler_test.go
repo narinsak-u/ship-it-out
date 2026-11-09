@@ -1,11 +1,11 @@
 package shipment
 
 import (
+	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ type mockRepo struct {
 	mock.Mock
 }
 
-func (m *mockRepo) List(filter ShipmentFilter) ([]models.Shipment, int64, error) {
+func (m *mockRepo) List(_ context.Context, filter ShipmentFilter) ([]models.Shipment, int64, error) {
 	args := m.Called(filter)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
@@ -26,7 +26,7 @@ func (m *mockRepo) List(filter ShipmentFilter) ([]models.Shipment, int64, error)
 	return args.Get(0).([]models.Shipment), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *mockRepo) FindByOrderID(orderID string) (*models.Shipment, error) {
+func (m *mockRepo) FindByOrderID(_ context.Context, orderID string) (*models.Shipment, error) {
 	args := m.Called(orderID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -46,6 +46,20 @@ func (m *mockRepo) Create(shipment *models.Shipment) error {
 	args := m.Called(shipment)
 	return args.Error(0)
 }
+func (m *mockRepo) CreateWithEvent(_ context.Context, shipment *models.Shipment, event *models.ShipmentEvent) error {
+	if err := m.Create(shipment); err != nil {
+		return err
+	}
+	event.ShipmentID = shipment.ID
+	return m.CreateEvent(event)
+}
+
+func (m *mockRepo) SaveWithEvent(_ context.Context, shipment *models.Shipment, event *models.ShipmentEvent) error {
+	if err := m.Save(shipment); err != nil || event == nil {
+		return err
+	}
+	return m.CreateEvent(event)
+}
 
 func (m *mockRepo) Save(shipment *models.Shipment) error {
 	args := m.Called(shipment)
@@ -62,7 +76,7 @@ func (m *mockRepo) CreateEvent(event *models.ShipmentEvent) error {
 	return args.Error(0)
 }
 
-func (m *mockRepo) FindEventsByShipmentID(shipmentID uint) ([]models.ShipmentEvent, error) {
+func (m *mockRepo) FindEventsByShipmentID(_ context.Context, shipmentID uint) ([]models.ShipmentEvent, error) {
 	args := m.Called(shipmentID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -70,58 +84,23 @@ func (m *mockRepo) FindEventsByShipmentID(shipmentID uint) ([]models.ShipmentEve
 	return args.Get(0).([]models.ShipmentEvent), args.Error(1)
 }
 
+func (m *mockRepo) DeleteWithEvents(_ context.Context, shipment *models.Shipment) error {
+	if err := m.DeleteShipmentEvents(shipment.ID); err != nil {
+		return err
+	}
+	return m.Delete(shipment)
+}
+
 func (m *mockRepo) DeleteShipmentEvents(shipmentID uint) error {
 	args := m.Called(shipmentID)
 	return args.Error(0)
-}
-
-func (m *mockRepo) Count() (int64, error) {
-	args := m.Called()
-	return args.Get(0).(int64), args.Error(1)
-}
-
-func (m *mockRepo) CountActive() (int64, error) {
-	args := m.Called()
-	return args.Get(0).(int64), args.Error(1)
-}
-
-func (m *mockRepo) CountByStatus() ([]StatusCountResult, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]StatusCountResult), args.Error(1)
-}
-
-func (m *mockRepo) CountByMonth() ([]MonthCountResult, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]MonthCountResult), args.Error(1)
-}
-
-func (m *mockRepo) CountByDayOfWeek() ([]DayCountResult, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]DayCountResult), args.Error(1)
-}
-
-func (m *mockRepo) CountByProvince() ([]ProvinceCountResult, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]ProvinceCountResult), args.Error(1)
 }
 
 type mockHubRepo struct {
 	mock.Mock
 }
 
-func (m *mockHubRepo) FindByID(id string) (*models.Hub, error) {
+func (m *mockHubRepo) FindByID(_ context.Context, id string) (*models.Hub, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -139,7 +118,7 @@ func TestShipmentList(t *testing.T) {
 	}, int64(1), nil)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Get("/api/shipments", h.List)
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/shipments", nil), 1000)
@@ -159,7 +138,7 @@ func TestShipmentCreate_Success(t *testing.T) {
 	repo.On("CreateEvent", mock.Anything).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Post("/api/shipments", h.Create)
 
 	body := `{"customer":{"name":"John","zipcode":"10110","province":"Bangkok"},"receiver":{"name":"Jane","zipcode":"20110","province":"Chonburi"},"carrier":"Express","weight":5.5,"items":2}`
@@ -175,7 +154,7 @@ func TestShipmentCreate_ValidationErrors(t *testing.T) {
 	repo := new(mockRepo)
 	hubRepo := new(mockHubRepo)
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Post("/api/shipments", h.Create)
 
 	tests := []struct {
@@ -205,7 +184,7 @@ func TestShipmentGetByID_Found(t *testing.T) {
 	}, nil)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Get("/api/shipments/:orderId", h.GetByID)
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/shipments/ORD-10245", nil), 1000)
@@ -215,14 +194,25 @@ func TestShipmentGetByID_Found(t *testing.T) {
 func TestShipmentGetByID_NotFound(t *testing.T) {
 	repo := new(mockRepo)
 	hubRepo := new(mockHubRepo)
-	repo.On("FindByOrderID", "ORD-99999").Return(nil, assert.AnError)
+	repo.On("FindByOrderID", "ORD-99999").Return(nil, ErrNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Get("/api/shipments/:orderId", h.GetByID)
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/shipments/ORD-99999", nil), 1000)
 	assert.Equal(t, 404, resp.StatusCode)
+}
+
+func TestShipmentGetByID_RepositoryError(t *testing.T) {
+	repo := new(mockRepo)
+	repo.On("FindByOrderID", "ORD-99999").Return(nil, assert.AnError)
+	handler := NewHandler(NewService(repo, nil))
+	app := fiber.New()
+	app.Get("/api/shipments/:orderId", handler.GetByID)
+
+	resp, _ := app.Test(httptest.NewRequest("GET", "/api/shipments/ORD-99999", nil), 1000)
+	assert.Equal(t, 500, resp.StatusCode)
 }
 
 func TestShipmentUpdate_Success(t *testing.T) {
@@ -234,7 +224,7 @@ func TestShipmentUpdate_Success(t *testing.T) {
 	repo.On("Save", mock.Anything).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Put("/api/shipments/:orderId", h.Update)
 
 	body := `{"carrier":"New Carrier"}`
@@ -247,10 +237,10 @@ func TestShipmentUpdate_Success(t *testing.T) {
 func TestShipmentUpdate_NotFound(t *testing.T) {
 	repo := new(mockRepo)
 	hubRepo := new(mockHubRepo)
-	repo.On("FindByOrderID", "ORD-99999").Return(nil, assert.AnError)
+	repo.On("FindByOrderID", "ORD-99999").Return(nil, ErrNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Put("/api/shipments/:orderId", h.Update)
 
 	req := httptest.NewRequest("PUT", "/api/shipments/ORD-99999", strings.NewReader(`{"carrier":"X"}`))
@@ -275,7 +265,7 @@ func TestShipmentUpdateStatus_WithHub(t *testing.T) {
 	repo.On("CreateEvent", mock.Anything).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Patch("/api/shipments/:orderId/status", h.UpdateStatus)
 
 	body := `{"status":"in_transit","hubId":"HUB-001"}`
@@ -299,7 +289,7 @@ func TestShipmentUpdateStatus_WithoutHub(t *testing.T) {
 	repo.On("CreateEvent", mock.Anything).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Patch("/api/shipments/:orderId/status", h.UpdateStatus)
 
 	body := `{"status":"picked_up"}`
@@ -319,7 +309,7 @@ func TestShipmentDelete_Success(t *testing.T) {
 	repo.On("Delete", mock.Anything).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Delete("/api/shipments/:orderId", h.Delete)
 
 	resp, _ := app.Test(httptest.NewRequest("DELETE", "/api/shipments/ORD-10245", nil), 1000)
@@ -329,10 +319,10 @@ func TestShipmentDelete_Success(t *testing.T) {
 func TestShipmentDelete_NotFound(t *testing.T) {
 	repo := new(mockRepo)
 	hubRepo := new(mockHubRepo)
-	repo.On("FindByOrderID", "ORD-99999").Return(nil, assert.AnError)
+	repo.On("FindByOrderID", "ORD-99999").Return(nil, ErrNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo, hubRepo)
+	h := NewHandler(NewService(repo, hubRepo))
 	app.Delete("/api/shipments/:orderId", h.Delete)
 
 	resp, _ := app.Test(httptest.NewRequest("DELETE", "/api/shipments/ORD-99999", nil), 1000)

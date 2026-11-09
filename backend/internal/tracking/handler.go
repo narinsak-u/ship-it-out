@@ -4,34 +4,31 @@
 package tracking
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
 type Handler struct {
-	repo shipment.Repository
+	service *Service
 }
 
-func NewHandler(repo shipment.Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(service *Service) *Handler {
+	return &Handler{service: service}
 }
 
 func (h *Handler) Track(c *fiber.Ctx) error {
-	trackingNumber := c.Params("trackingNumber")
-
-	shipment, err := h.repo.FindByTrackingNumber(trackingNumber)
-	if err != nil {
+	result, err := h.service.Track(c.UserContext(), c.Params("trackingNumber"))
+	if errors.Is(err, ErrShipmentNotFound) {
 		return utils.Error(c, 404, "shipment not found")
 	}
-
-	events, err := h.repo.FindEventsByShipmentID(shipment.ID)
 	if err != nil {
 		return utils.Error(c, 500, "failed to fetch events")
 	}
 
 	return utils.Success(c, fiber.Map{
-		"shipment": shipment,
-		"events":   events,
+		"shipment": result.Shipment,
+		"events":   result.Events,
 	})
 }

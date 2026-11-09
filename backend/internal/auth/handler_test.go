@@ -2,6 +2,8 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -12,8 +14,8 @@ import (
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 func init() {
@@ -22,6 +24,10 @@ func init() {
 		JWTTTL:    24 * time.Minute,
 		Port:      "8080",
 	}
+}
+
+func newTestHandler(repo Repository) *Handler {
+	return NewHandler(NewService(repo, config.App.JWTSecret, config.App.JWTTTL))
 }
 
 type mockRepo struct {
@@ -56,7 +62,7 @@ func TestRegister_Success(t *testing.T) {
 	})).Return(nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Post("/api/auth/register", h.Register)
 
 	body := `{"name":"John","email":"john@test.com","password":"pass123","role":"admin"}`
@@ -66,15 +72,18 @@ func TestRegister_Success(t *testing.T) {
 
 	assert.Equal(t, 200, resp.StatusCode)
 	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 	assert.True(t, result["success"].(bool))
+	user := result["data"].(map[string]interface{})["user"].(map[string]interface{})
+	assert.Equal(t, "customer", user["role"])
+	assert.NotContains(t, user, "password")
 	repo.AssertExpectations(t)
 }
 
 func TestRegister_ValidationErrors(t *testing.T) {
 	repo := new(mockRepo)
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Post("/api/auth/register", h.Register)
 
 	for _, tt := range []struct{ name, body string }{
@@ -93,10 +102,10 @@ func TestRegister_ValidationErrors(t *testing.T) {
 
 func TestRegister_DuplicateEmail(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("Create", mock.Anything).Return(gorm.ErrDuplicatedKey)
+	repo.On("Create", mock.Anything).Return(ErrEmailAlreadyRegistered)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Post("/api/auth/register", h.Register)
 
 	body := `{"name":"John","email":"dup@test.com","password":"pass123"}`
@@ -115,7 +124,7 @@ func TestLogin_Success(t *testing.T) {
 	}, nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Post("/api/auth/login", h.Login)
 
 	body := `{"email":"john@test.com","password":"pass123"}`
@@ -125,9 +134,10 @@ func TestLogin_Success(t *testing.T) {
 
 	assert.Equal(t, 200, resp.StatusCode)
 	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 	data := result["data"].(map[string]interface{})
 	assert.NotEmpty(t, data["token"])
+	assert.NotContains(t, data["user"].(map[string]interface{}), "password")
 	repo.AssertExpectations(t)
 }
 
@@ -139,7 +149,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 	}, nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Post("/api/auth/login", h.Login)
 
 	body := `{"email":"john@test.com","password":"wrong"}`
@@ -151,10 +161,10 @@ func TestLogin_WrongPassword(t *testing.T) {
 
 func TestLogin_UserNotFound(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByEmail", "unknown@test.com").Return(nil, gorm.ErrRecordNotFound)
+	repo.On("FindByEmail", "unknown@test.com").Return(nil, ErrUserNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Post("/api/auth/login", h.Login)
 
 	body := `{"email":"unknown@test.com","password":"pass123"}`
@@ -171,7 +181,7 @@ func TestMe_Success(t *testing.T) {
 	}, nil)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Get("/api/auth/me", func(c *fiber.Ctx) error {
 		c.Locals("user_id", uint(1))
 		return h.Me(c)
@@ -179,12 +189,14 @@ func TestMe_Success(t *testing.T) {
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/auth/me", nil), 1000)
 	assert.Equal(t, 200, resp.StatusCode)
+	var result map[string]interface{}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+	assert.NotContains(t, result["data"].(map[string]interface{}), "password")
 }
-
 func TestMe_NotAuthenticated(t *testing.T) {
 	repo := new(mockRepo)
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Get("/api/auth/me", h.Me)
 
 	resp, _ := app.Test(httptest.NewRequest("GET", "/api/auth/me", nil), 1000)
@@ -193,10 +205,10 @@ func TestMe_NotAuthenticated(t *testing.T) {
 
 func TestMe_UserNotFound(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByID", uint(999)).Return(nil, gorm.ErrRecordNotFound)
+	repo.On("FindByID", uint(999)).Return(nil, ErrUserNotFound)
 
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Get("/api/auth/me", func(c *fiber.Ctx) error {
 		c.Locals("user_id", uint(999))
 		return h.Me(c)
@@ -206,10 +218,36 @@ func TestMe_UserNotFound(t *testing.T) {
 	assert.Equal(t, 404, resp.StatusCode)
 }
 
+func TestAuthRepositoryFailuresReturnGenericServerErrors(t *testing.T) {
+	repo := new(mockRepo)
+	repo.On("FindByEmail", "john@test.com").Return(nil, errors.New("database details"))
+	repo.On("FindByID", uint(1)).Return(nil, errors.New("database details"))
+	app := fiber.New()
+	h := newTestHandler(repo)
+	app.Post("/api/auth/login", h.Login)
+	app.Get("/api/auth/me", func(c *fiber.Ctx) error {
+		c.Locals("user_id", uint(1))
+		return h.Me(c)
+	})
+
+	login := httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"email":"john@test.com","password":"password"}`))
+	login.Header.Set("Content-Type", "application/json")
+	loginResponse, _ := app.Test(login, 1000)
+	assert.Equal(t, 500, loginResponse.StatusCode)
+	loginBody, _ := io.ReadAll(loginResponse.Body)
+	assert.NotContains(t, string(loginBody), "database details")
+
+	profileResponse, _ := app.Test(httptest.NewRequest("GET", "/api/auth/me", nil), 1000)
+	assert.Equal(t, 500, profileResponse.StatusCode)
+	profileBody, _ := io.ReadAll(profileResponse.Body)
+	assert.NotContains(t, string(profileBody), "database details")
+	repo.AssertExpectations(t)
+}
+
 func TestLogout(t *testing.T) {
 	repo := new(mockRepo)
 	app := fiber.New()
-	h := NewHandler(repo)
+	h := newTestHandler(repo)
 	app.Post("/api/auth/logout", h.Logout)
 
 	resp, _ := app.Test(httptest.NewRequest("POST", "/api/auth/logout", nil), 1000)
