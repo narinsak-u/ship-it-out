@@ -1,7 +1,7 @@
 import "server-only";
 import { getApiOrigin } from "@/lib/api/server";
 import { mapShipment, mapShipments } from "./mappers";
-import type { Shipment, ShipmentDTO, ShipmentEvent, ShipmentPage } from "./types";
+import type { Shipment, ShipmentDTO, ShipmentPage } from "./types";
 
 interface Envelope<T> {
   success: boolean;
@@ -40,12 +40,3 @@ export async function getShipment(id: string): Promise<Shipment | null> {
   return mapShipment(result.data);
 }
 
-export async function getShipmentEvents(trackingNumber: string): Promise<ShipmentEvent[]> {
-  const response = await fetch(
-    `${getApiOrigin()}/api/track/${encodeURIComponent(trackingNumber)}`,
-    { cache: "no-store" },
-  );
-  if (!response.ok) throw new Error(`Tracking API returned ${response.status}`);
-  const result = (await response.json()) as { data?: { events?: ShipmentEvent[] } };
-  return result.data?.events ?? [];
-}

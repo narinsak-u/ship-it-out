@@ -14,7 +14,6 @@ export function mapShipment(dto: ShipmentDTO): Shipment {
     estimatedDelivery: formatDate(dto.estimatedDelivery),
     estimatedDeliveryRaw: dto.estimatedDelivery,
     createdAt: formatDate(dto.createdAt),
-    events: [],
   };
 }
 export function mapShipments(dtos: ShipmentDTO[]): Shipment[] {

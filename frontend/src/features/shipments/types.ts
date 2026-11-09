@@ -28,12 +28,6 @@ export interface ShipmentContact {
   coords: GeoPoint;
 }
 
-export interface ShipmentEvent {
-  timestamp: string;
-  location: { name: string; lat: number; lng: number };
-  status: string;
-  description?: string;
-}
 
 export interface Shipment {
   id: string;
@@ -52,7 +46,6 @@ export interface Shipment {
   estimatedDeliveryRaw?: string;
   createdAt: string;
   progress: number;
-  events: ShipmentEvent[];
 }
 
 export interface ShipmentDTO {
