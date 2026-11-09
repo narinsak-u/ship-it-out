@@ -41,3 +41,4 @@ backend/tmp/
 # Test output
 frontend/coverage/
 frontend/test-results/
+backend/.env
