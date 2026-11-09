@@ -50,11 +50,13 @@ func (r *GormRepository) Create(ctx context.Context, hub *domain.Hub) error {
 		}
 		hub.ID = id
 	}
-	return r.db.WithContext(ctx).Create(recordFromHub(*hub)).Error
+	record := recordFromHub(*hub)
+	return r.db.WithContext(ctx).Create(&record).Error
 }
 
 func (r *GormRepository) Save(ctx context.Context, hub *domain.Hub) error {
-	return r.db.WithContext(ctx).Save(recordFromHub(*hub)).Error
+	record := recordFromHub(*hub)
+	return r.db.WithContext(ctx).Save(&record).Error
 }
 
 func (r *GormRepository) Delete(ctx context.Context, id string) error {
