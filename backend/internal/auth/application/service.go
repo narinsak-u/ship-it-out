@@ -15,10 +15,14 @@ var (
 	ErrTokenGeneration        = errors.New("failed to generate token")
 )
 
+type CurrentUserRepository interface {
+	FindByID(uint) (*domain.User, error)
+}
+
 type UserRepository interface {
+	CurrentUserRepository
 	Create(*domain.User) error
 	FindByEmail(string) (*domain.User, error)
-	FindByID(uint) (*domain.User, error)
 }
 type Passwords interface {
 	Hash(string) (string, error)

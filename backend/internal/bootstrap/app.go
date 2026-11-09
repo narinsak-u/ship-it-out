@@ -18,7 +18,6 @@ import (
 	authapplication "github.com/narinsak-u/backend/internal/auth/application"
 	authinfra "github.com/narinsak-u/backend/internal/auth/infrastructure"
 	authpresentation "github.com/narinsak-u/backend/internal/auth/presentation"
-	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/platform/config"
 	"github.com/narinsak-u/backend/internal/platform/database"
 	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
@@ -39,8 +38,8 @@ func NewApp(db *gorm.DB) *fiber.App {
 	app.Use(middleware.SecurityHeaders())
 	app.Use(middleware.Logger())
 
-	authRepo := auth.NewGormRepository(db)
-	authService := authapplication.NewService(authinfra.NewGormRepository(db), authinfra.PasswordAdapter{}, authinfra.NewJWTAdapter(config.App.JWTSecret, config.App.JWTTTL))
+	authRepo := authinfra.NewGormRepository(db)
+	authService := authapplication.NewService(authRepo, authinfra.PasswordAdapter{}, authinfra.NewJWTAdapter(config.App.JWTSecret, config.App.JWTTTL))
 	authHandler := authpresentation.NewHandler(authService)
 	hubRepo := hubinfra.NewGormRepository(db)
 	hubHandler := hubpresentation.NewHandler(hubapplication.NewService(hubRepo))

@@ -11,12 +11,13 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/auth"
+	authapplication "github.com/narinsak-u/backend/internal/auth/application"
+	authinfra "github.com/narinsak-u/backend/internal/auth/infrastructure"
+	authpresentation "github.com/narinsak-u/backend/internal/auth/presentation"
 	"github.com/narinsak-u/backend/internal/platform/config"
 	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
 	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
 	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
-	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/pkg/utils"
@@ -81,23 +82,24 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	config.App.JWTSecret = "test-only-secret"
 	config.App.JWTTTL = time.Hour
 	t.Cleanup(func() { config.App = oldConfig })
-	repo := auth.NewGormRepository(db)
+	repo := authinfra.NewGormRepository(db)
+	authService := authapplication.NewService(repo, authinfra.PasswordAdapter{}, authinfra.NewJWTAdapter(config.App.JWTSecret, config.App.JWTTTL))
 	hubHandler := hubpresentation.NewHandler(hubapplication.NewService(hubinfra.NewGormRepository(db)))
 	app := fiber.New()
-	authHandler := auth.NewHandler(auth.NewService(repo, config.App.JWTSecret, config.App.JWTTTL))
+	authHandler := authpresentation.NewHandler(authService)
 	app.Post("/api/auth/register", authHandler.Register)
 	app.Post("/api/auth/login", authHandler.Login)
-	app.Get("/api/auth/me", middleware.AuthRequired(), authHandler.Me)
+	app.Get("/api/auth/me", authpresentation.AuthRequired(), authHandler.Me)
 	app.Post("/api/auth/logout", authHandler.Logout)
-	app.Post("/api/hubs", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Create)
-	app.Put("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Update)
-	app.Delete("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Delete)
+	app.Post("/api/hubs", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), hubHandler.Create)
+	app.Put("/api/hubs/:id", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), hubHandler.Update)
+	app.Delete("/api/hubs/:id", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), hubHandler.Delete)
 	shipmentRepo := shipment.NewGormRepository(db)
 	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hubinfra.NewGormRepository(db)))
-	app.Post("/api/shipments", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Create)
-	app.Patch("/api/shipments/:orderId/status", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.UpdateStatus)
-	app.Put("/api/shipments/:orderId", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Update)
-	app.Delete("/api/shipments/:orderId", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Delete)
+	app.Post("/api/shipments", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.Create)
+	app.Patch("/api/shipments/:orderId/status", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.UpdateStatus)
+	app.Put("/api/shipments/:orderId", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.Update)
+	app.Delete("/api/shipments/:orderId", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.Delete)
 	register := httptest.NewRequest("POST", "/api/auth/register", strings.NewReader(`{"name":"Elevated","email":"elevated@example.test","password":"password","role":"admin"}`))
 	register.Header.Set("Content-Type", "application/json")
 	registerResponse, err := app.Test(register)
