@@ -124,7 +124,7 @@ func BootstrapAdmin(db *gorm.DB, name, email, password string, cutoverEnabled bo
 			return fmt.Errorf("demote legacy admins: %w", err)
 		}
 		admin := authinfra.UserRecord{Name: name, Email: email, Password: hash, Role: "admin"}
-		if err := tx.Create(&admin).Error; err != nil {
+		if err := authinfra.CreateUserRecord(tx, &admin); err != nil {
 			return fmt.Errorf("create configured admin: %w", err)
 		}
 		if err := tx.Create(&bootstrapState{Key: adminCutoverKey, AdminEmail: email, Completed: time.Now().UTC()}).Error; err != nil {

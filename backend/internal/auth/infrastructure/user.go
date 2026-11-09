@@ -10,4 +10,5 @@ type UserRecord struct {
 	Role      string    `gorm:"not null;default:customer" json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
 func (UserRecord) TableName() string { return "users" }

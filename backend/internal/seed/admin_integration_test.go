@@ -1,10 +1,10 @@
 package seed
 
 import (
-	"encoding/json"
-	"github.com/gofiber/fiber/v2"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -16,11 +16,11 @@ import (
 	authapplication "github.com/narinsak-u/backend/internal/auth/application"
 	authinfra "github.com/narinsak-u/backend/internal/auth/infrastructure"
 	authpresentation "github.com/narinsak-u/backend/internal/auth/presentation"
-	"github.com/narinsak-u/backend/internal/platform/config"
 	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
+	hubdomain "github.com/narinsak-u/backend/internal/hub/domain"
 	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
 	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
-	hubdomain "github.com/narinsak-u/backend/internal/hub/domain"
+	"github.com/narinsak-u/backend/internal/platform/config"
 	shipmentapplication "github.com/narinsak-u/backend/internal/shipment/application"
 	shipmentdomain "github.com/narinsak-u/backend/internal/shipment/domain"
 	shipmentinfra "github.com/narinsak-u/backend/internal/shipment/infrastructure"
@@ -41,9 +41,9 @@ type testShipmentRecord struct {
 func (testShipmentRecord) TableName() string { return "shipments" }
 
 type testShipmentEventRecord struct {
-	ID         uint `gorm:"primaryKey"`
-	ShipmentID uint
-	Status     string
+	ID           uint `gorm:"primaryKey"`
+	ShipmentID   uint
+	Status       string
 	LocationName string
 }
 
@@ -142,9 +142,10 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	app.Patch("/api/shipments/:orderId/status", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.UpdateStatus)
 	app.Put("/api/shipments/:orderId", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.Update)
 	app.Delete("/api/shipments/:orderId", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.Delete)
+	const requestTimeoutMS = 10_000
 	register := httptest.NewRequest("POST", "/api/auth/register", strings.NewReader(`{"name":"Elevated","email":"elevated@example.test","password":"password","role":"admin"}`))
 	register.Header.Set("Content-Type", "application/json")
-	registerResponse, err := app.Test(register)
+	registerResponse, err := app.Test(register, requestTimeoutMS)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +160,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	login := func(email, password string) (int, string) {
 		request := httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(fmt.Sprintf(`{"email":%q,"password":%q}`, email, password)))
 		request.Header.Set("Content-Type", "application/json")
-		response, err := app.Test(request)
+		response, err := app.Test(request, requestTimeoutMS)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,7 +177,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 		request := httptest.NewRequest("POST", "/api/hubs", strings.NewReader(`{"id":"HUB-WRITE","name":"Write test","carrierId":"carrier","address":"test","capacity":10,"currentUtilization":1,"coords":{"lat":1,"lng":2}}`))
 		request.Header.Set("Content-Type", "application/json")
 		request.Header.Set("Authorization", "Bearer "+token)
-		response, err := app.Test(request)
+		response, err := app.Test(request, requestTimeoutMS)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -187,7 +188,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 		request := httptest.NewRequest(method, path, strings.NewReader(`{}`))
 		request.Header.Set("Content-Type", "application/json")
 		request.Header.Set("Authorization", "Bearer "+token)
-		response, err := app.Test(request)
+		response, err := app.Test(request, requestTimeoutMS)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -250,7 +251,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	}
 	cookieLogin := httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(fmt.Sprintf(`{"email":%q,"password":%q}`, demoUserEmail, demoUserPassword)))
 	cookieLogin.Header.Set("Content-Type", "application/json")
-	cookieLoginResponse, err := app.Test(cookieLogin)
+	cookieLoginResponse, err := app.Test(cookieLogin, requestTimeoutMS)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +262,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	}
 	refresh := httptest.NewRequest("GET", "/api/auth/me", nil)
 	refresh.AddCookie(cookies[0])
-	refreshResponse, err := app.Test(refresh)
+	refreshResponse, err := app.Test(refresh, requestTimeoutMS)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +272,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	}
 	logout := httptest.NewRequest("POST", "/api/auth/logout", nil)
 	logout.AddCookie(cookies[0])
-	logoutResponse, err := app.Test(logout)
+	logoutResponse, err := app.Test(logout, requestTimeoutMS)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +281,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if logoutResponse.StatusCode != 200 || len(logoutCookies) != 1 || logoutCookies[0].Name != "jwt" || logoutCookies[0].Value != "" {
 		t.Fatalf("demo logout cookie = %#v, status %d", logoutCookies, logoutResponse.StatusCode)
 	}
-	unsignedRefresh, err := app.Test(httptest.NewRequest("GET", "/api/auth/me", nil))
+	unsignedRefresh, err := app.Test(httptest.NewRequest("GET", "/api/auth/me", nil), requestTimeoutMS)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -358,5 +359,13 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 		t.Fatalf("second legacy role after cutover = %q, err %v", otherLegacyAfter.Role, err)
 	}
 }
-type seedShipmentHubReader struct { service *hubapplication.Service }
-func(r seedShipmentHubReader)FindByID(ctx context.Context,id string)(*hubdomain.Hub,error){hub,err:=r.service.GetByID(ctx,id);if errors.Is(err,hubapplication.ErrNotFound){return nil,shipmentdomain.ErrNotFound};return hub,err}
+
+type seedShipmentHubReader struct{ service *hubapplication.Service }
+
+func (r seedShipmentHubReader) FindByID(ctx context.Context, id string) (*hubdomain.Hub, error) {
+	hub, err := r.service.GetByID(ctx, id)
+	if errors.Is(err, hubapplication.ErrNotFound) {
+		return nil, shipmentdomain.ErrNotFound
+	}
+	return hub, err
+}

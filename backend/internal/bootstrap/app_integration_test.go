@@ -63,7 +63,9 @@ func TestNewAppComposesPublicAndProtectedRoutes(t *testing.T) {
 		{"GET", "/api/analytics/timeseries"},
 	} {
 		response := apiRequest(t, app, route.method, route.path, "", nil)
-		var body struct { Success bool `json:"success"` }
+		var body struct {
+			Success bool `json:"success"`
+		}
 		_ = json.NewDecoder(response.Body).Decode(&body)
 		response.Body.Close()
 		if response.StatusCode != 200 || !body.Success {
@@ -76,7 +78,9 @@ func TestNewAppComposesPublicAndProtectedRoutes(t *testing.T) {
 		{"GET", "/api/track/TRACK-MISSING", "shipment not found"},
 	} {
 		response := apiRequest(t, app, route.method, route.path, "", nil)
-		var body struct { Error string `json:"error"` }
+		var body struct {
+			Error string `json:"error"`
+		}
 		_ = json.NewDecoder(response.Body).Decode(&body)
 		response.Body.Close()
 		if response.StatusCode != 404 || body.Error != route.want {
@@ -106,7 +110,9 @@ func TestNewAppComposesPublicAndProtectedRoutes(t *testing.T) {
 	loginCookies := login.Cookies()
 	var loginBody struct {
 		Success bool `json:"success"`
-		Data struct { Token string `json:"token"` } `json:"data"`
+		Data    struct {
+			Token string `json:"token"`
+		} `json:"data"`
 	}
 	_ = json.NewDecoder(login.Body).Decode(&loginBody)
 	login.Body.Close()
@@ -137,12 +143,20 @@ func TestNewAppComposesPublicAndProtectedRoutes(t *testing.T) {
 	}
 }
 
-func apiRequest(t *testing.T, app interface{ Test(*http.Request, ...int) (*http.Response, error) }, method, path, body string, cookie *http.Cookie) *http.Response {
+func apiRequest(t *testing.T, app interface {
+	Test(*http.Request, ...int) (*http.Response, error)
+}, method, path, body string, cookie *http.Cookie) *http.Response {
 	t.Helper()
 	request := httptest.NewRequest(method, path, strings.NewReader(body))
-	if body != "" { request.Header.Set("Content-Type", "application/json") }
-	if cookie != nil { request.AddCookie(cookie) }
+	if body != "" {
+		request.Header.Set("Content-Type", "application/json")
+	}
+	if cookie != nil {
+		request.AddCookie(cookie)
+	}
 	response, err := app.Test(request)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	return response
 }
