@@ -22,7 +22,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.Error(c, 500, "failed to fetch hubs")
 	}
-	return utils.Success(c, hubs)
+	return utils.Success(c, hubResponses(hubs))
 }
 
 func (h *Handler) GetByID(c *fiber.Ctx) error {
@@ -33,7 +33,7 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 		}
 		return utils.Error(c, 500, "failed to fetch hub")
 	}
-	return utils.Success(c, hub)
+	return utils.Success(c, hubResponse(hub))
 }
 
 func (h *Handler) Create(c *fiber.Ctx) error {
@@ -45,7 +45,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	if err := h.service.Create(c.UserContext(), hub); err != nil {
 		return utils.Error(c, 500, "failed to create hub")
 	}
-	return utils.Success(c, hub)
+	return utils.Success(c, hubResponse(hub))
 }
 
 func (h *Handler) Update(c *fiber.Ctx) error {
@@ -67,7 +67,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 		}
 		return utils.Error(c, 500, "failed to update hub")
 	}
-	return utils.Success(c, hub)
+	return utils.Success(c, hubResponse(hub))
 }
 
 func (h *Handler) Delete(c *fiber.Ctx) error {
