@@ -17,6 +17,7 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { statusLabels, type Shipment, type ShipmentPage, type ShipmentStatus } from "./types";
+import { formatShipmentDate } from "./mappers";
 import { deleteShipment, getManifestPage } from "./browser-api";
 
 const pageSize = 10;
@@ -33,13 +34,6 @@ function statusLabel(status: string) {
   return statusLabels[status as ShipmentStatus] ?? status.replaceAll("_", " ");
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 const statusStyles: Record<ShipmentStatus, string> = {
   pending: "border-amber-400/30 bg-amber-400/10 text-amber-400",
@@ -285,7 +279,7 @@ export default function Manifest({
                         className="whitespace-nowrap px-2.5 py-3 font-mono text-sm text-muted-foreground"
                         data-label="ETA"
                       >
-                        {formatDate(shipment.estimatedDelivery)}
+                        {formatShipmentDate(shipment.estimatedDelivery)}
                       </td>
                       <td className="px-2.5 py-3" data-label="Actions">
                         <div className="flex items-center gap-0.5">
