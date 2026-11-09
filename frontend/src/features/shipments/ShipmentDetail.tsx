@@ -1,28 +1,18 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getShipment, getShipmentEvents } from "@/lib/api/preview";
-import RouteMap from "./route-map";
+import RouteMap from "@/features/tracking/RouteMap";
+import type { TrackingEvent } from "@/features/tracking/types";
+import { formatShipmentDate } from "./mappers";
+import type { Shipment } from "./types";
 
-function date(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-export default async function ShipmentPage({
-  params,
-  searchParams,
+export default function ShipmentDetail({
+  shipment,
+  events,
+  updated,
 }: {
-  params: Promise<{ orderId: string }>;
-  searchParams: Promise<{ updated?: string }>;
+  shipment: Shipment;
+  events: TrackingEvent[];
+  updated?: string;
 }) {
-  const [{ orderId }, { updated }] = await Promise.all([params, searchParams]);
-  const shipment = await getShipment(orderId);
-  if (!shipment) notFound();
-  const events = await getShipmentEvents(shipment.trackingNumber);
-
   return (
     <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.8fr)]">
       <section className="min-w-0 space-y-6">
@@ -87,12 +77,12 @@ export default async function ShipmentPage({
             </div>
             <div>
               <small className="text-xs text-muted-foreground">CREATED</small>
-              <div className="mt-1">{date(shipment.createdAt)}</div>
+              <div className="mt-1">{formatShipmentDate(shipment.createdAt)}</div>
             </div>
             <div>
               <small className="text-xs text-muted-foreground">ETA</small>
               <div className="mt-1 font-semibold text-primary">
-                {date(shipment.estimatedDelivery)}
+                {formatShipmentDate(shipment.estimatedDelivery)}
               </div>
             </div>
           </div>
@@ -109,7 +99,7 @@ export default async function ShipmentPage({
             ["Customer", shipment.customer.name],
             ["Carrier", shipment.carrier],
             ["Weight/Kg", `${shipment.weight} kg`],
-            ["Created", date(shipment.createdAt)],
+            ["Created", formatShipmentDate(shipment.createdAt)],
           ].map(([label, value]) => (
             <article className="min-w-0 rounded-lg border border-border bg-card p-4" key={label}>
               <small className="text-xs text-muted-foreground">{label}</small>

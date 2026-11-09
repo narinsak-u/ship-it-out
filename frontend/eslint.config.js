@@ -8,7 +8,7 @@ export default tseslint.config(
   { ignores: ["dist", ".next"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended, eslintPluginPrettier],
-    files: ["app/**/*.{ts,tsx}", "src/lib/api/preview.ts"],
+    files: ["src/app/**/*.{ts,tsx}", "src/features/shipments/browser-api.ts"],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,

@@ -1,17 +1,18 @@
 # Frontend architecture
 
-Next.js App Router is the sole supported frontend and runs on Vercel. The Go API is deployed separately. Next server components fetch public data from `API_BASE_URL`; browser components call the same-origin `/api/*` proxy in `app/api/[...path]/route.ts`. The proxy forwards methods, query strings, and request bodies, plus only `Accept`, `Authorization`, `Content-Type`, `Origin`, and the `jwt` cookie; unrelated browser headers and cookies stay at the Next boundary.
+Next.js App Router is the sole supported frontend and runs on Vercel. The Go API is deployed separately. Next server components fetch public data from `API_BASE_URL`; browser components call the same-origin `/api/*` proxy in `src/app/api/[...path]/route.ts`. The proxy forwards methods, query strings, and request bodies, plus only `Accept`, `Authorization`, `Content-Type`, `Origin`, and the `jwt` cookie; unrelated browser headers and cookies stay at the Next boundary.
 
 ## Application structure
 
-- `app/`: routes, layouts, and server-only route handlers.
-- `src/features/auth/`: Zustand auth store and sign-in controls.
-- `src/features/shipments/`: public homepage, server-rendered data helpers, manifest, shipment forms, and tracking search.
-- `src/features/operations/`: carrier operations, hubs, deliveries, and maps.
-- `src/features/analytics/`: API-backed analytics with Recharts charts.
-- `src/components/ui/`: shadcn/ui primitives; `src/lib/utils.ts` merges utility classes.
-- `app/globals.css`: Tailwind v4 theme and base layer; Leaflet vendor CSS and map marker rules are the only global style exceptions.
-- `src/lib/`: shared shipment and hub types, API response mappers, and Next server API helpers.
+- `src/app/`: routes, layouts, and server-only route handlers; pages compose feature-owned UI and data.
+- `src/features/auth/`: auth API operations, user types, Zustand session state, and sign-in controls.
+- `src/features/shipments/`: canonical Shipment model and transport mappings, server/browser APIs, homepage data, manifest, and forms.
+- `src/features/tracking/`: tracking lookup, tracking events, server API access, and route visualization.
+- `src/features/hubs/`: canonical Hub model and management API, forms, and controls.
+- `src/features/operations/`: active delivery monitoring, status workflow, and maps; consumes Shipments and Hubs through their feature APIs and models.
+- `src/features/analytics/`: analytics API access, data mapping, and Recharts charts.
+- `src/components/ui/`: business-independent shadcn/ui primitives; `src/lib/`: business-independent helpers, including generic API utilities and the server API origin helper.
+- `src/app/globals.css`: Tailwind v4 theme and base layer; Leaflet vendor CSS and map marker rules are the only global style exceptions.
 - `tests/e2e/next-*.spec.ts`: supported Playwright browser coverage.
 
 ## Request and security model

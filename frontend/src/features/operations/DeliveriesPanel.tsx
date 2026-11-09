@@ -1,13 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { mapShipmentToOrder, type BackendShipment } from "@/lib/api/mappers";
-import type { Hub } from "@/lib/hubs";
-import { statusLabels, type Order, type ShipmentStatus } from "@/lib/orders";
-import { useAuthStore } from "@/features/auth/auth-store";
+import {
+  getActiveShipments,
+  updateShipmentStatus,
+} from "@/features/shipments/browser-api";
+import { statusLabels, type Shipment, type ShipmentStatus } from "@/features/shipments/types";
+import type { Hub } from "@/features/hubs/types";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { DeliveryMap } from "@/features/operations/DeliveryMap";
 import { Check, ChevronLeft, ChevronRight, Eye, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatShipmentDate } from "@/features/shipments/mappers";
 
 const pageSize = 10;
 const statuses: ShipmentStatus[] = [
@@ -29,20 +33,11 @@ const hubRequiredStatuses: Record<ShipmentStatus, boolean> = {
   delivered: false,
 };
 
-async function fetchDeliveries(): Promise<Order[]> {
-  const response = await fetch("/api/shipments?limit=-1&exclude_status=delivered", {
-    cache: "no-store",
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
-  return (result.data as BackendShipment[]).map(mapShipmentToOrder);
-}
-
 export function DeliveriesPanel({
   initialDeliveries,
   hubs,
   initialError,
-}: Readonly<{ initialDeliveries: Order[]; hubs: Hub[]; initialError: boolean }>) {
+}: Readonly<{ initialDeliveries: Shipment[]; hubs: Hub[]; initialError: boolean }>) {
   const isStaff = useAuthStore((state) => state.isStaff);
   const [deliveries, setDeliveries] = useState(initialDeliveries);
   const [search, setSearch] = useState("");
@@ -59,7 +54,7 @@ export function DeliveriesPanel({
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      setDeliveries(await fetchDeliveries());
+      setDeliveries(await getActiveShipments());
       setUpdatedAt(Date.now());
       setError("");
     } catch {
@@ -97,7 +92,7 @@ export function DeliveriesPanel({
     selected && filtered.some((delivery) => delivery.id === selected.id) ? selected : null;
   const activeHubs = useMemo(() => hubs.filter((hub) => hub.status === "active"), [hubs]);
 
-  async function updateStatus(order: Order) {
+  async function updateStatus(order: Shipment) {
     const status = draftStatus[order.id] ?? order.status;
     const hubId = draftHubId[order.id] ?? order.hubId ?? "";
     if (hubRequiredStatuses[status] && !hubId) {
@@ -106,14 +101,7 @@ export function DeliveriesPanel({
     }
     setFeedback("");
     try {
-      const response = await fetch(`/api/shipments/${encodeURIComponent(order.id)}/status`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status, ...(hubId ? { hubId } : {}) }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
-      const updated = mapShipmentToOrder(result.data as BackendShipment);
+      const updated = await updateShipmentStatus(order.id, status, hubId);
       setDeliveries((current) =>
         updated.status === "delivered"
           ? current.filter((delivery) => delivery.id !== updated.id)
@@ -298,7 +286,7 @@ export function DeliveriesPanel({
                     )}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
-                    {order.estimatedDelivery || "—"}
+                    {order.estimatedDelivery ? formatShipmentDate(order.estimatedDelivery) : "—"}
                   </td>
                   <td className="px-2 py-2">
                     <div className="flex items-center gap-1">

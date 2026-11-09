@@ -1,4 +1,4 @@
-import type { GeoPoint } from "@/lib/orders";
+import type { GeoPoint } from "@/lib/geo";
 
 export type HubStatus = "active" | "maintenance" | "closed" | "full";
 

@@ -3,12 +3,13 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { getDistrictNames, getProvinceName, getSubDistrictNames } from "thai-data";
 import { useRouter } from "next/navigation";
-import type { Order } from "@/lib/orders";
-import { useAuthStore } from "@/features/auth/auth-store";
+import type { Shipment } from "./types";
+import { saveShipment } from "./browser-api";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type AddressDraft = Omit<Order["customer"], "coords">;
+type AddressDraft = Omit<Shipment["customer"], "coords">;
 const emptyAddress: AddressDraft = {
   name: "",
   zipcode: "",
@@ -17,7 +18,7 @@ const emptyAddress: AddressDraft = {
   province: "",
 };
 
-function addressDraft(contact?: Order["customer"]): AddressDraft {
+function addressDraft(contact?: Shipment["customer"]): AddressDraft {
   return contact
     ? {
         name: contact.name,
@@ -130,7 +131,7 @@ function AddressFields({
   );
 }
 
-export function ShipmentForm({ initial }: { initial?: Order }) {
+export function ShipmentForm({ initial }: { initial?: Shipment }) {
   const router = useRouter();
   const isStaff = useAuthStore((state) => state.isStaff);
   const editing = !!initial;
@@ -185,24 +186,14 @@ export function ShipmentForm({ initial }: { initial?: Order }) {
         geocode(sender),
         geocode(receiver),
       ]);
-      const response = await fetch(
-        initial ? `/api/shipments/${encodeURIComponent(initial.id)}` : "/api/shipments",
-        {
-          method: initial ? "PUT" : "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            customer: { ...sender, coords: senderCoords },
-            receiver: { ...receiver, coords: receiverCoords },
-            carrier: initial?.carrier ?? "Thun-u-der Express",
-            weight,
-            items,
-            ...(editing ? { estimatedDelivery: new Date(estimatedDelivery).toISOString() } : {}),
-          }),
-        },
-      );
-      const result = await response.json();
-      if (!response.ok || !result.success)
-        throw new Error(result.error || `Shipment save failed (${response.status})`);
+      await saveShipment(initial?.id, {
+        customer: { ...sender, coords: senderCoords },
+        receiver: { ...receiver, coords: receiverCoords },
+        carrier: initial?.carrier ?? "Thun-u-der Express",
+        weight,
+        items,
+        ...(editing ? { estimatedDelivery: new Date(estimatedDelivery).toISOString() } : {}),
+      });
       window.location.assign(
         initial ? `/orders/${encodeURIComponent(initial.id)}?updated=1` : "/orders?created=1",
       );

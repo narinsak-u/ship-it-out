@@ -1,46 +1,16 @@
 import { ChartNoAxesColumnIncreasing, Package, Warehouse } from "lucide-react";
 import Link from "next/link";
+import type { AnalyticsData } from "@/features/analytics/data";
+import { getAnalyticsData } from "@/features/analytics/server-api";
 import { AnalyticsPanel } from "@/features/analytics/AnalyticsPanel";
 import { DeliveriesPanel } from "@/features/operations/DeliveriesPanel";
-import { HubsPanel } from "@/features/operations/HubsPanel";
-import type { Hub } from "@/lib/hubs";
-import type { Order } from "@/lib/orders";
-import { mapShipmentToOrder, type BackendShipment } from "@/lib/api/mappers";
-import { toAnalyticsData, type AnalyticsData } from "@/features/analytics/data";
-import { getApiOrigin } from "@/lib/api/server";
+import { HubsPanel } from "@/features/hubs/HubsPanel";
+import type { Hub } from "@/features/hubs/types";
+import { getHubs } from "@/features/hubs/server-api";
+import type { Shipment } from "@/features/shipments/types";
+import { getActiveShipments } from "@/features/shipments/server-api";
 
 export const dynamic = "force-dynamic";
-
-async function getHubs(): Promise<Hub[]> {
-  const response = await fetch(`${getApiOrigin()}/api/hubs`, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Hub API returned ${response.status}`);
-  const result = await response.json();
-  return result.data as Hub[];
-}
-
-async function getActiveDeliveries(): Promise<Order[]> {
-  const response = await fetch(
-    `${getApiOrigin()}/api/shipments?limit=-1&exclude_status=delivered`,
-    { cache: "no-store" },
-  );
-  if (!response.ok) throw new Error(`Shipment API returned ${response.status}`);
-  const result = await response.json();
-  return (result.data as BackendShipment[]).map(mapShipmentToOrder);
-}
-
-async function getAnalytics(): Promise<AnalyticsData> {
-  const origin = getApiOrigin();
-  const [overviewResponse, seriesResponse] = await Promise.all([
-    fetch(`${origin}/api/analytics/overview`, { cache: "no-store" }),
-    fetch(`${origin}/api/analytics/timeseries`, { cache: "no-store" }),
-  ]);
-  if (!overviewResponse.ok || !seriesResponse.ok) throw new Error("Analytics request failed");
-  const [overviewResult, seriesResult] = await Promise.all([
-    overviewResponse.json(),
-    seriesResponse.json(),
-  ]);
-  return toAnalyticsData(overviewResult, seriesResult);
-}
 
 export default async function CarriersPage({
   searchParams,
@@ -52,13 +22,13 @@ export default async function CarriersPage({
   const hubsSelected = tab === "hubs";
   let hubs: Hub[] = [];
   let error = false;
-  let deliveries: Order[] = [];
+  let deliveries: Shipment[] = [];
   let deliveriesError = false;
   let analytics: AnalyticsData | null = null;
   let analyticsError = false;
   if (analyticsSelected) {
     try {
-      analytics = await getAnalytics();
+      analytics = await getAnalyticsData();
     } catch {
       analyticsError = true;
     }
@@ -70,7 +40,7 @@ export default async function CarriersPage({
     }
   } else {
     try {
-      [deliveries, hubs] = await Promise.all([getActiveDeliveries(), getHubs()]);
+      [deliveries, hubs] = await Promise.all([getActiveShipments(), getHubs()]);
     } catch {
       deliveriesError = true;
     }
