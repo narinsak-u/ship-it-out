@@ -11,7 +11,7 @@ export async function getManifestPage(
   if (search) params.set("search", search);
   if (status !== "all") params.set("status", status);
   const response = await fetch(`/api/shipments?${params}`, { cache: "no-store", signal });
-  const result = (await response.json()) as Envelope<ShipmentDTO[]>;
+  const result = (await response.json()) as ApiEnvelope<ShipmentDTO[]>;
   if (!response.ok || !result.success) {
     throw new Error(result.error || `Shipment API returned ${response.status}`);
   }
@@ -22,7 +22,7 @@ export async function getActiveShipments(): Promise<Shipment[]> {
   const response = await fetch("/api/shipments?limit=-1&exclude_status=delivered", {
     cache: "no-store",
   });
-  const result = (await response.json()) as Envelope<ShipmentDTO[]>;
+  const result = (await response.json()) as ApiEnvelope<ShipmentDTO[]>;
   if (!response.ok || !result.success) {
     throw new Error(result.error || `Shipment API returned ${response.status}`);
   }
@@ -39,7 +39,7 @@ export async function updateShipmentStatus(
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ status, ...(hubId ? { hubId } : {}) }),
   });
-  const result = (await response.json()) as Envelope<ShipmentDTO>;
+  const result = (await response.json()) as ApiEnvelope<ShipmentDTO>;
   if (!response.ok || !result.success) {
     throw new Error(result.error || `Request failed (${response.status})`);
   }
@@ -52,7 +52,7 @@ export async function deleteShipment(id: string): Promise<void> {
     credentials: "same-origin",
     cache: "no-store",
   });
-  const result = (await response.json()) as Envelope<unknown>;
+  const result = (await response.json()) as ApiEnvelope<unknown>;
   if (!response.ok || result.success === false) {
     throw new Error(result.error || `Delete failed (${response.status})`);
   }
@@ -64,7 +64,7 @@ export async function saveShipment(id: string | undefined, payload: object): Pro
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const result = (await response.json()) as Envelope<unknown>;
+  const result = (await response.json()) as ApiEnvelope<unknown>;
   if (!response.ok || !result.success) {
     throw new Error(result.error || `Shipment save failed (${response.status})`);
   }
