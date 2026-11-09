@@ -21,7 +21,7 @@ func TestStaffOnlyChecksPersistedRole(t *testing.T) {
 	t.Cleanup(func() { config.App = oldConfig })
 
 	app := fiber.New()
-	user := &domain.User{ID: 7, Role: domain.RoleStaff}
+	user := &domain.User{ID: 7, Role: domain.RoleCustomer}
 	app.Post("/write", AuthRequired(), StaffOnly(&currentUserStub{user: user}), func(c *fiber.Ctx) error {
 		return c.SendStatus(204)
 	})
@@ -48,8 +48,12 @@ func TestStaffOnlyChecksPersistedRole(t *testing.T) {
 		return response.StatusCode
 	}
 
-	if got := request(makeToken(domain.RoleCustomer)); got != 204 {
-		t.Fatalf("staff database role with customer claim status = %d, want 204", got)
+	if got := request(makeToken(domain.RoleCustomer)); got != 403 {
+		t.Fatalf("customer write status = %d, want 403", got)
+	}
+	user.Role = domain.RoleStaff
+	if got := request(makeToken(domain.RoleStaff)); got != 204 {
+		t.Fatalf("staff write status = %d, want 204", got)
 	}
 	user.Role = domain.RoleCustomer
 	if got := request(makeToken(domain.RoleStaff)); got != 403 {
