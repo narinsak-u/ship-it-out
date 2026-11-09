@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { mapShipment } from "@/features/shipments/mappers";
 import { statusLabels, type Shipment, type ShipmentDTO, type ShipmentStatus } from "@/features/shipments/types";
 import type { Hub } from "@/lib/hubs";
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { DeliveryMap } from "@/features/operations/DeliveryMap";
 import { Check, ChevronLeft, ChevronRight, Eye, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";

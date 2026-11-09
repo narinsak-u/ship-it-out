@@ -5,7 +5,7 @@ import { getDistrictNames, getProvinceName, getSubDistrictNames } from "thai-dat
 import { useRouter } from "next/navigation";
 import type { Shipment } from "./types";
 import { saveShipment } from "./browser-api";
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
