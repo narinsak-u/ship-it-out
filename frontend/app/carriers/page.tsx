@@ -1,3 +1,4 @@
+import { ChartNoAxesColumnIncreasing, Package, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { AnalyticsPanel } from "@/features/analytics/AnalyticsPanel";
 import { DeliveriesPanel } from "@/features/operations/DeliveriesPanel";
@@ -76,13 +77,13 @@ export default async function CarriersPage({
   }
 
   return (
-    <main>
+    <main className="min-h-screen">
       <section className="border-b border-border bg-[linear-gradient(135deg,#102b35,#111b27_65%)]">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mx-auto max-w-screen-2xl px-4 py-12 sm:px-6 sm:py-20">
           <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-primary">
             / carriers
           </span>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="mt-3 font-mono text-3xl font-semibold tracking-tight sm:text-6xl">
             Carrier operations
           </h1>
           <p className="mt-2 text-muted-foreground">
@@ -90,24 +91,38 @@ export default async function CarriersPage({
           </p>
         </div>
       </section>
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-        <nav className="mb-[-1px] flex overflow-x-auto" aria-label="Carrier operations">
+      <section className="mx-auto w-full max-w-screen-2xl px-4 py-8 font-mono text-sm sm:px-6 sm:py-8">
+        <nav
+          className="flex overflow-x-auto border-b border-border"
+          aria-label="Carrier operations"
+        >
           {[
-            ["Active Deliveries", "/carriers", !analyticsSelected && !hubsSelected],
-            ["Hubs", "/carriers?tab=hubs", hubsSelected],
-            ["Analytics", "/carriers?tab=analytics", analyticsSelected],
-          ].map(([label, href, active]) => (
+            {
+              label: "Active Deliveries",
+              href: "/carriers",
+              active: !analyticsSelected && !hubsSelected,
+              icon: Package,
+            },
+            { label: "Hubs", href: "/carriers?tab=hubs", active: hubsSelected, icon: Warehouse },
+            {
+              label: "Analytics",
+              href: "/carriers?tab=analytics",
+              active: analyticsSelected,
+              icon: ChartNoAxesColumnIncreasing,
+            },
+          ].map(({ label, href, active, icon: Icon }) => (
             <Link
-              key={href as string}
-              className={`whitespace-nowrap rounded-t-lg border px-4 py-3 font-mono text-sm focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "border-border border-b-card bg-card text-foreground" : "border-border bg-secondary text-muted-foreground"}`}
-              href={href as string}
+              key={href}
+              className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap border border-b-0 px-5 py-3 sm:py-[18px] focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "mb-[-1px] rounded-t-lg border-border bg-card text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              href={href}
               aria-current={active ? "page" : undefined}
             >
+              <Icon className="size-5" aria-hidden="true" />
               {label}
             </Link>
           ))}
         </nav>
-        <div className="rounded-b-lg rounded-tr-lg border border-border bg-card p-4 shadow-xl sm:p-6">
+        <div className="min-h-[calc(100dvh-24rem)] rounded-b-xl rounded-tr-xl border border-t-0 border-border bg-card p-4 sm:p-8">
           {analyticsSelected ? (
             <AnalyticsPanel initialData={analytics} initialError={analyticsError} />
           ) : hubsSelected ? (

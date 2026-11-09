@@ -12,8 +12,20 @@ test.describe("Active deliveries", () => {
     );
     await expect(page.getByText("ORD-TEST1", { exact: true })).toBeVisible();
     await expect(page.getByText("TH-TEST-1", { exact: true })).toBeVisible();
+    await expect(page.getByRole("columnheader")).toHaveText([
+      "Order ID",
+      "Tracking",
+      "Customer",
+      "Carrier",
+      "Status",
+      "Hub",
+      "ETA",
+      "Actions",
+    ]);
+    await expect(page.locator(".leaflet-map")).toHaveCount(0);
+    await page.getByRole("button", { name: "View ORD-TEST1 location" }).click();
     await expect(page.locator(".leaflet-map")).toBeVisible();
-    await expect(page.getByText(/11 deliveries · Page 1 of 2/)).toBeVisible();
+    await expect(page.getByText(/Showing 1–10 of 11/)).toBeVisible();
     await page.getByRole("button", { name: "Next page" }).click();
     await expect(page.getByText("ORD-TEST11")).toBeVisible();
     await page.getByRole("button", { name: "Previous page" }).click();
@@ -45,6 +57,7 @@ test.describe("Active deliveries", () => {
     await page.locator('input[type="password"]').fill("preview-staff-password");
     await page.locator("form").getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByText("staff (Preview Staff)")).toBeVisible();
+    await page.getByRole("button", { name: "View ORD-TEST1 location" }).click();
 
     const row = page.getByRole("row", { name: /^ORD-TEST1\b/ });
     await row.getByLabel("Status for ORD-TEST1", { exact: true }).selectOption("out_for_delivery");
@@ -81,6 +94,6 @@ test.describe("Active deliveries", () => {
     });
     expect(response.status()).toBe(403);
     const row = page.getByRole("row", { name: /^ORD-TEST1\b/ });
-    await expect(row.getByRole("cell").nth(4)).toHaveText("in transit");
+    await expect(row.getByRole("cell").nth(4)).toHaveText("In Transit");
   });
 });

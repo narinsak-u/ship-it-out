@@ -6,6 +6,7 @@ import type { Hub } from "@/lib/hubs";
 import { statusLabels, type Order, type ShipmentStatus } from "@/lib/orders";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { DeliveryMap } from "@/features/operations/DeliveryMap";
+import { Check, ChevronLeft, ChevronRight, Eye, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const pageSize = 10;
@@ -93,7 +94,7 @@ export function DeliveriesPanel({
   }, [totalPages]);
   const selected = deliveries.find((delivery) => delivery.id === selectedId);
   const mapDelivery =
-    selected && filtered.some((delivery) => delivery.id === selected.id) ? selected : filtered[0];
+    selected && filtered.some((delivery) => delivery.id === selected.id) ? selected : null;
   const activeHubs = useMemo(() => hubs.filter((hub) => hub.status === "active"), [hubs]);
 
   async function updateStatus(order: Order) {
@@ -142,11 +143,15 @@ export function DeliveriesPanel({
           Public delivery view. Sign in as staff to change delivery status.
         </p>
       )}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 max-md:flex-col max-md:items-stretch">
-        <label className="grid gap-1.5 font-mono text-[11px] text-muted-foreground max-md:w-full">
-          <span>Search active deliveries</span>
+      <div className="mb-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
+        <label className="relative block w-full max-w-sm">
+          <span className="sr-only">Search active deliveries</span>
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
           <input
-            className="h-10 rounded-md border border-border bg-secondary px-3 text-foreground focus-visible:outline-2 focus-visible:outline-primary max-md:w-full"
+            className="h-11 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary"
             aria-label="Search active deliveries"
             type="search"
             value={search}
@@ -154,21 +159,23 @@ export function DeliveriesPanel({
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Order, tracking, customer, carrier"
+            placeholder="Search active shipments..."
           />
         </label>
-        <div className="flex items-center justify-between gap-3 font-mono text-[11px] text-muted-foreground max-md:flex-col max-md:items-stretch">
+        <div className="flex items-center gap-3 font-mono text-xs text-muted-foreground">
           <span>
             {deliveries.length} active · updated {Math.max(0, Math.floor((now - updatedAt) / 1000))}
             s ago
           </span>
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={refresh}
             disabled={loading}
             aria-label="Refresh active deliveries"
           >
-            {loading ? "Refreshing…" : "Refresh"}
+            <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -192,34 +199,33 @@ export function DeliveriesPanel({
         </p>
       )}
       <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full border-collapse text-left text-xs">
+        <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
           <thead>
             <tr>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 Order ID
               </th>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 Tracking
               </th>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 Customer
               </th>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 Carrier
               </th>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 Status
               </th>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                Current hub
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Hub
               </th>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                Current location
-              </th>
-              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 ETA
               </th>
-              {isStaff && <th>Actions</th>}
+              <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -227,19 +233,27 @@ export function DeliveriesPanel({
               const hub = hubs.find((item) => item.id === order.hubId);
               return (
                 <tr
-                  className="cursor-pointer border-b border-border hover:bg-primary/10 aria-selected:bg-primary/10"
+                  className="cursor-pointer border-b border-border last:border-0 hover:bg-primary/5 aria-selected:bg-primary/5"
                   key={order.id}
                   onClick={() => setSelectedId(order.id)}
                   aria-selected={mapDelivery?.id === order.id}
                 >
-                  <td>{order.id}</td>
-                  <td>{order.trackingNumber}</td>
-                  <td>{order.customer.name}</td>
-                  <td>{order.carrier}</td>
-                  <td>
+                  <td className="whitespace-nowrap px-3 py-3.5 font-mono font-semibold text-primary">
+                    {order.id}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
+                    {order.trackingNumber}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3.5 font-mono font-semibold text-foreground">
+                    {order.customer.name}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
+                    {order.carrier}
+                  </td>
+                  <td className="px-3 py-2.5">
                     {isStaff ? (
                       <select
-                        className="h-10 max-w-[170px] rounded-md border border-border bg-secondary px-2.5 text-foreground"
+                        className="h-11 max-w-[180px] rounded-lg border border-border bg-background px-2.5 font-mono text-sm text-foreground"
                         aria-label={`Status for ${order.id}`}
                         value={draftStatus[order.id] ?? order.status}
                         onChange={(event) =>
@@ -256,13 +270,13 @@ export function DeliveriesPanel({
                         ))}
                       </select>
                     ) : (
-                      statusLabels[order.status].toLowerCase()
+                      <span className="font-mono">{statusLabels[order.status]}</span>
                     )}
                   </td>
-                  <td>
+                  <td className="px-3 py-2.5">
                     {isStaff && hubRequiredStatuses[draftStatus[order.id] ?? order.status] ? (
                       <select
-                        className="h-10 max-w-[170px] rounded-md border border-border bg-secondary px-2.5 text-foreground"
+                        className="h-11 min-w-40 max-w-[190px] rounded-lg border border-border bg-background px-2.5 font-mono text-sm text-foreground"
                         aria-label={`Hub for ${order.id}`}
                         value={draftHubId[order.id] ?? order.hubId ?? ""}
                         onChange={(event) =>
@@ -280,31 +294,46 @@ export function DeliveriesPanel({
                         ))}
                       </select>
                     ) : (
-                      (hub?.name ?? "—")
+                      <span className="font-mono text-muted-foreground">{hub?.name ?? "—"}</span>
                     )}
                   </td>
-                  <td>
-                    {order.currentCoords.lat.toFixed(4)}, {order.currentCoords.lng.toFixed(4)}
+                  <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
+                    {order.estimatedDelivery || "—"}
                   </td>
-                  <td>{order.estimatedDelivery || "—"}</td>
-                  {isStaff && (
-                    <td>
+                  <td className="px-2 py-2">
+                    <div className="flex items-center gap-1">
                       <Button
                         type="button"
-                        aria-label={`Save ${order.id} status`}
-                        disabled={
-                          (draftStatus[order.id] ?? order.status) === order.status &&
-                          (draftHubId[order.id] ?? order.hubId ?? "") === (order.hubId ?? "")
-                        }
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`View ${order.id} location`}
                         onClick={(event) => {
                           event.stopPropagation();
-                          void updateStatus(order);
+                          setSelectedId(order.id);
                         }}
                       >
-                        Save
+                        <Eye className="size-4" aria-hidden="true" />
                       </Button>
-                    </td>
-                  )}
+                      {isStaff && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Save ${order.id} status`}
+                          disabled={
+                            (draftStatus[order.id] ?? order.status) === order.status &&
+                            (draftHubId[order.id] ?? order.hubId ?? "") === (order.hubId ?? "")
+                          }
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void updateStatus(order);
+                          }}
+                        >
+                          <Check className="size-4" aria-hidden="true" />
+                        </Button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               );
             })}
@@ -317,37 +346,47 @@ export function DeliveriesPanel({
         )}
       </div>
       <nav
-        className="flex items-center justify-between gap-3 px-0.5 py-3 font-mono text-[11px] text-muted-foreground max-md:flex-col max-md:items-stretch"
+        className="flex items-center justify-between gap-3 px-2 py-2 font-mono text-xs text-muted-foreground max-sm:flex-col max-sm:items-stretch"
         aria-label="Active delivery pages"
       >
         <span>
-          {filtered.length} deliveries · Page {page} of {totalPages}
+          Showing {filtered.length ? (page - 1) * pageSize + 1 : 0}–
+          {Math.min(page * pageSize, filtered.length)} of {filtered.length}
         </span>
-        <div>
+        <div className="flex items-center gap-1">
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             aria-label="Previous page"
             disabled={page <= 1}
             onClick={() => setPage((current) => current - 1)}
           >
-            Previous
+            <ChevronLeft className="size-4" aria-hidden="true" />
           </Button>
+          <span aria-current="page" className="px-2 text-primary">
+            {page}
+          </span>
           <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             aria-label="Next page"
             disabled={page >= totalPages}
             onClick={() => setPage((current) => current + 1)}
           >
-            Next
+            <ChevronRight className="size-4" aria-hidden="true" />
           </Button>
         </div>
       </nav>
       {mapDelivery && (
-        <DeliveryMap
-          key={mapDelivery.id}
-          order={mapDelivery}
-          hub={hubs.find((item) => item.id === mapDelivery.hubId)}
-        />
+        <div className="mt-4 h-80 overflow-hidden rounded-lg border border-border">
+          <DeliveryMap
+            key={mapDelivery.id}
+            order={mapDelivery}
+            hub={hubs.find((item) => item.id === mapDelivery.hubId)}
+          />
+        </div>
       )}
     </section>
   );

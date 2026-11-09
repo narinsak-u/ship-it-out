@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Filter,
   Pencil,
   Plus,
   Search,
@@ -56,6 +57,16 @@ function formatDate(value: string) {
     year: "numeric",
   });
 }
+
+const statusStyles: Record<ShipmentStatus, string> = {
+  pending: "border-amber-400/30 bg-amber-400/10 text-amber-400",
+  picked_up: "border-sky-400/30 bg-sky-400/10 text-sky-400",
+  departed: "border-cyan-400/30 bg-cyan-400/10 text-cyan-400",
+  in_transit: "border-teal-400/30 bg-teal-400/10 text-teal-300",
+  out_for_delivery: "border-slate-400/20 bg-slate-400/10 text-slate-300",
+  delivered: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
+  delayed: "border-rose-400/30 bg-rose-400/10 text-rose-400",
+};
 
 export default function Manifest({
   initialData,
@@ -180,15 +191,15 @@ export default function Manifest({
           )}
         </div>
       </section>
-      <section className="mx-auto max-w-7xl space-y-5 px-4 py-8 sm:px-6">
-        <div className="flex flex-col gap-4">
-          <label className="relative block max-w-md">
+      <section className="mx-auto max-w-screen-2xl space-y-5 px-4 py-8 sm:px-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <label className="relative block w-full max-w-[30rem]">
             <Search
-              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
-              className="pl-9"
+              className="h-14 border-border bg-background/40 pl-14 font-mono text-base placeholder:text-muted-foreground"
               type="search"
               aria-label="Search shipments"
               placeholder="Search by ID, tracking, customer, destination"
@@ -196,13 +207,19 @@ export default function Manifest({
               onChange={(event) => changeSearch(event.target.value)}
             />
           </label>
-          <div className="flex flex-wrap gap-2" aria-label="Filter by status">
+          <div
+            className="flex flex-wrap items-center gap-2"
+            role="group"
+            aria-label="Filter by status"
+          >
+            <Filter className="mr-1 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
             {filters.map(([key, label]) => (
               <Button
                 key={key}
                 type="button"
-                variant={status === key ? "default" : "outline"}
+                variant="outline"
                 size="sm"
+                className={`h-9 rounded-full border-border bg-transparent px-4 font-mono text-xs uppercase tracking-wider text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground ${status === key ? "border-primary bg-primary/10 text-primary" : ""}`}
                 aria-pressed={status === key}
                 onClick={() => changeStatus(key)}
               >
@@ -235,91 +252,105 @@ export default function Manifest({
           aria-busy={loading}
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-muted/50 text-xs uppercase text-muted-foreground">
+            <table className="w-full min-w-[1100px] table-fixed text-left text-sm">
+              <thead className="border-b border-border bg-muted/50 font-mono text-xs uppercase tracking-widest text-muted-foreground">
                 <tr>
-                  <th>Order ID</th>
-                  <th>Tracking</th>
-                  <th>Customer</th>
-                  <th>Route</th>
-                  <th>Status</th>
-                  <th>ETA</th>
-                  <th>Actions</th>
+                  <th className="w-[11%] px-2.5 py-4">Order ID</th>
+                  <th className="w-[11%] px-2.5 py-4">Tracking</th>
+                  <th className="w-[10%] px-2.5 py-4">Customer</th>
+                  <th className="w-[35%] px-2.5 py-4">Route</th>
+                  <th className="w-[15%] px-2.5 py-4">Status</th>
+                  <th className="w-[9%] px-2.5 py-4">ETA</th>
+                  <th className="w-[9%] px-2.5 py-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {pageData.map((shipment) => (
-                  <tr className="border-b border-border last:border-0" key={shipment.id}>
-                    <td className="whitespace-nowrap px-4 py-3" data-label="Order ID">
-                      <Link
-                        className="font-medium text-primary hover:underline"
-                        href={`/orders/${encodeURIComponent(shipment.id)}`}
-                      >
-                        {shipment.id}
-                      </Link>
-                    </td>
-                    <td
-                      className="whitespace-nowrap px-4 py-3 font-mono text-xs"
-                      data-label="Tracking"
+                {pageData.map((shipment) => {
+                  const statusStyle =
+                    statusStyles[shipment.status as ShipmentStatus] ??
+                    "border-primary/30 bg-primary/10 text-primary";
+                  return (
+                    <tr
+                      className="border-b border-border last:border-0 hover:bg-muted/20"
+                      key={shipment.id}
                     >
-                      {shipment.trackingNumber}
-                    </td>
-                    <td className="px-4 py-3" data-label="Customer">
-                      {shipment.customer.name}
-                    </td>
-                    <td className="px-4 py-3" data-label="Route">
-                      <span className="flex min-w-64 items-center gap-2 text-xs text-muted-foreground">
-                        {shipment.origin}
-                        <ArrowRight size={13} aria-hidden="true" />
-                        {shipment.destination}
-                      </span>
-                    </td>
-                    <td data-label="Status">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium capitalize text-primary">
-                        <i aria-hidden="true" />
-                        {statusLabel(shipment.status)}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs" data-label="ETA">
-                      {formatDate(shipment.estimatedDelivery)}
-                    </td>
-                    <td data-label="Actions">
-                      <div className="flex items-center gap-1">
+                      <td className="whitespace-nowrap px-2.5 py-3 font-mono" data-label="Order ID">
                         <Link
-                          className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="block truncate font-medium text-primary hover:underline"
                           href={`/orders/${encodeURIComponent(shipment.id)}`}
-                          aria-label={`View shipment ${shipment.id}`}
-                          title="View details"
                         >
-                          <Eye size={16} />
+                          {shipment.id}
                         </Link>
-                        {isStaff && (
+                      </td>
+                      <td
+                        className="whitespace-nowrap px-2.5 py-3 font-mono text-sm text-muted-foreground"
+                        data-label="Tracking"
+                      >
+                        {shipment.trackingNumber}
+                      </td>
+                      <td className="truncate px-2.5 py-3 font-medium" data-label="Customer">
+                        {shipment.customer.name}
+                      </td>
+                      <td className="px-2.5 py-3" data-label="Route">
+                        <span className="flex min-w-0 items-center gap-2 font-mono text-xs text-muted-foreground">
+                          <span className="truncate">{shipment.origin}</span>
+                          <ArrowRight className="size-3 shrink-0 text-primary" aria-hidden="true" />
+                          <span className="truncate">{shipment.destination}</span>
+                        </span>
+                      </td>
+                      <td className="px-2.5 py-3" data-label="Status">
+                        <span
+                          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1 font-mono text-xs font-semibold uppercase tracking-wide ${statusStyle}`}
+                        >
+                          <i className="size-2 rounded-full bg-current" aria-hidden="true" />
+                          {statusLabel(shipment.status)}
+                        </span>
+                      </td>
+                      <td
+                        className="whitespace-nowrap px-2.5 py-3 font-mono text-sm text-muted-foreground"
+                        data-label="ETA"
+                      >
+                        {formatDate(shipment.estimatedDelivery)}
+                      </td>
+                      <td className="px-2.5 py-3" data-label="Actions">
+                        <div className="flex items-center gap-0.5">
                           <Link
-                            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            href={`/orders/${encodeURIComponent(shipment.id)}/edit`}
-                            aria-label={`Edit shipment ${shipment.id}`}
-                            title="Edit shipment"
+                            className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            href={`/orders/${encodeURIComponent(shipment.id)}`}
+                            aria-label={`View shipment ${shipment.id}`}
+                            title="View details"
                           >
-                            <Pencil size={16} />
+                            <Eye size={18} />
                           </Link>
-                        )}
-                        {isStaff && (
-                          <button
-                            type="button"
-                            aria-label={`Delete shipment ${shipment.id}`}
-                            title="Delete shipment"
-                            onClick={() => {
-                              setError(null);
-                              setDeleteTarget(shipment);
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {isStaff && (
+                            <Link
+                              className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              href={`/orders/${encodeURIComponent(shipment.id)}/edit`}
+                              aria-label={`Edit shipment ${shipment.id}`}
+                              title="Edit shipment"
+                            >
+                              <Pencil size={18} />
+                            </Link>
+                          )}
+                          {isStaff && (
+                            <button
+                              className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              type="button"
+                              aria-label={`Delete shipment ${shipment.id}`}
+                              title="Delete shipment"
+                              onClick={() => {
+                                setError(null);
+                                setDeleteTarget(shipment);
+                              }}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {!loading && !error && pageData.length === 0 && (
@@ -330,44 +361,56 @@ export default function Manifest({
           </div>
           {totalPages > 1 && (
             <nav
-              className="flex flex-wrap items-center justify-between gap-4 border-t border-border px-4 py-3 text-sm text-muted-foreground"
+              className="flex flex-wrap items-center justify-between gap-4 border-t border-border px-4 py-3 font-mono text-sm text-muted-foreground"
               aria-label="Shipment pages"
             >
               <span>
                 Showing {Math.min((page - 1) * pageSize + 1, total)}–
                 {Math.min(page * pageSize, total)} of {total}
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="size-9 text-muted-foreground"
                   aria-label="Previous page"
                   disabled={page <= 1}
                   onClick={() => setPage((current) => current - 1)}
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={18} />
                 </Button>
-                <span aria-current="page" className="min-w-14 text-center">
-                  {page} / {totalPages}
-                </span>
+                {Array.from(
+                  { length: Math.min(totalPages, 5) },
+                  (_, index) => Math.max(1, Math.min(page - 2, totalPages - 4)) + index,
+                ).map((pageNumber) => (
+                  <Button
+                    key={pageNumber}
+                    type="button"
+                    variant="ghost"
+                    className={`size-9 font-mono ${page === pageNumber ? "border border-primary text-primary" : "text-muted-foreground"}`}
+                    aria-label={`Page ${pageNumber}`}
+                    aria-current={page === pageNumber ? "page" : undefined}
+                    onClick={() => setPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </Button>
+                ))}
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
+                  className="size-9 text-muted-foreground"
                   aria-label="Next page"
                   disabled={page >= totalPages}
                   onClick={() => setPage((current) => current + 1)}
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={18} />
                 </Button>
               </div>
             </nav>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Status: {status === "all" ? "All" : statusLabel(status)}
-        </p>
       </section>
       <dialog
         ref={dialog}

@@ -15,13 +15,22 @@ test.describe("shipment manifest", () => {
     const rows = page.getByRole("row");
     await expect(rows).toHaveCount(11);
     await expect(rows.getByText("ORD-MANIFEST-01")).toBeVisible();
-    await page.getByRole("button", { name: "Next page" }).click();
+    await page.getByRole("button", { name: "Page 2" }).click();
+    await expect(page.getByRole("button", { name: "Page 2" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     await expect(rows.getByText("ORD-MANIFEST-11")).toBeVisible();
     await expect(rows.getByText("ORD-MANIFEST-01")).toHaveCount(0);
+    await page.getByRole("button", { name: "Page 1" }).click();
+    await expect(rows.getByText("ORD-MANIFEST-01")).toBeVisible();
 
     await page.getByRole("button", { name: "In Transit" }).click();
     await expect(rows.getByText("ORD-MANIFEST-01")).toBeVisible();
-    await expect(page.getByText("Status: In Transit")).toBeVisible();
+    await expect(page.getByRole("button", { name: "In Transit" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
 
     await page.getByRole("searchbox", { name: "Search shipments" }).fill("Receiver 10");
     await expect(rows.getByText("ORD-MANIFEST-10")).toBeVisible();
@@ -88,8 +97,9 @@ test.describe("shipment manifest", () => {
     expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole("button", { name: "Delete shipment ORD-MANIFEST-01" })).toBeFocused();
+    await expect(
+      page.getByRole("button", { name: "Delete shipment ORD-MANIFEST-01" }),
+    ).toBeFocused();
     await expect(page.getByRole("row").getByText("ORD-MANIFEST-01")).toBeVisible();
   });
-
 });

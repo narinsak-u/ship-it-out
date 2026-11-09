@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/features/auth/auth-store";
 import type { Hub, HubStatus } from "@/lib/hubs";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { HubForm } from "./HubForm";
 import { Button } from "@/components/ui/button";
 
@@ -56,13 +57,13 @@ export function HubsPanel({
   }
   const counts = useMemo(
     () =>
-      hubs.reduce<Record<string, number>>(
+      hubs.reduce<Record<HubStatus | "total", number>>(
         (result, hub) => {
           result.total++;
           result[hub.status]++;
           return result;
         },
-        { total: 0, active: 0, maintenance: 0, closed: 0, full: 0 },
+        { total: 0, active: 0, maintenance: 0, full: 0, closed: 0 },
       ),
     [hubs],
   );
@@ -105,42 +106,56 @@ export function HubsPanel({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label="Hub status counts">
-        <div className="grid gap-2.5 rounded-lg border border-border bg-card p-4">
-          <span>Total hubs</span>
-          <strong className="font-mono text-2xl">{counts.total}</strong>
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label="Hub status counts">
+        <div className="grid gap-2 rounded-lg border border-border bg-secondary/40 p-5">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            Total hubs
+          </span>
+          <strong className="font-mono text-4xl font-semibold leading-none">{counts.total}</strong>
         </div>
         {statuses.map((status) => (
-          <div key={status} className="grid gap-2.5 rounded-lg border border-border bg-card p-4">
-            <span className="capitalize text-muted-foreground">{status}</span>
+          <div
+            key={status}
+            className="grid gap-2 rounded-lg border border-border bg-secondary/40 p-5"
+          >
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              {status}
+            </span>
             <strong
-              className={`font-mono text-2xl ${status === "active" ? "text-emerald-400" : status === "closed" ? "text-destructive" : "text-amber-300"}`}
+              className={`font-mono text-4xl font-semibold leading-none ${status === "active" ? "text-emerald-400" : status === "maintenance" ? "text-amber-400" : "text-destructive"}`}
             >
               {counts[status]}
             </strong>
           </div>
         ))}
       </div>
-      <div className="my-5 grid max-w-sm gap-2">
-        <label htmlFor="hub-search">Search hubs</label>
-        <input
-          className="h-11 rounded-lg border border-border bg-card px-3 focus-visible:outline-2 focus-visible:outline-primary"
-          type="search"
-          placeholder="Search hubs..."
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setPage(1);
-          }}
-        />
-      </div>
-      {isStaff && (
-        <div className="my-4 flex justify-end">
-          <Button type="button" onClick={() => setEditing(null)}>
+      <div className="mb-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
+        <label className="relative block w-full max-w-sm">
+          <span className="sr-only">Search hubs</span>
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <input
+            className="h-11 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-primary"
+            id="hub-search"
+            aria-label="Search hubs"
+            type="search"
+            placeholder="Search hubs..."
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        {isStaff && (
+          <Button type="button" className="max-sm:w-full" onClick={() => setEditing(null)}>
+            <Plus className="size-4" aria-hidden="true" />
             Add Hub
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       {actionError && (
         <p role="alert" className="py-3 text-destructive">
           {actionError}
@@ -154,28 +169,32 @@ export function HubsPanel({
       {filtered.length ? (
         <>
           <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full border-collapse text-left">
+            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
               <thead>
                 <tr>
-                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     ID
                   </th>
-                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     Name
                   </th>
-                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     Carrier
                   </th>
-                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     Address
                   </th>
-                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     Capacity
                   </th>
-                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     Status
                   </th>
-                  {isStaff && <th>Actions</th>}
+                  {isStaff && (
+                    <th className="bg-secondary px-3 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -184,12 +203,23 @@ export function HubsPanel({
                     ? Math.round((hub.currentUtilization / hub.capacity) * 100)
                     : 0;
                   return (
-                    <tr key={hub.id} className="border-b border-border">
-                      <td data-label="ID">{hub.id}</td>
-                      <td data-label="Name">{hub.name}</td>
-                      <td data-label="Carrier">{hub.carrierId}</td>
-                      <td data-label="Address">{hub.address}</td>
-                      <td data-label="Capacity">
+                    <tr
+                      key={hub.id}
+                      className="border-b border-border last:border-0 hover:bg-primary/5"
+                    >
+                      <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
+                        {hub.id}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3.5 font-mono font-semibold text-foreground">
+                        {hub.name}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
+                        {hub.carrierId}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
+                        {hub.address}
+                      </td>
+                      <td className="px-3 py-3.5">
                         <div className="flex min-w-28 items-center gap-2">
                           <div
                             className="h-2 min-w-12 flex-1 overflow-hidden rounded-full bg-secondary [&>span]:block [&>span]:h-full [&>span]:rounded-full [&>span]:bg-primary"
@@ -203,34 +233,43 @@ export function HubsPanel({
                               style={{ width: `${Math.min(100, Math.max(0, utilization))}%` }}
                             />
                           </div>
-                          <span className="min-w-8 text-right text-xs text-muted-foreground">
+                          <span className="min-w-8 text-right font-mono text-xs text-muted-foreground">
                             {utilization}%
                           </span>
                         </div>
                       </td>
-                      <td data-label="Status">
+                      <td className="px-3 py-3.5">
                         <span
-                          className={`inline-flex rounded-full border px-2 py-1 capitalize ${hub.status === "active" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : hub.status === "closed" ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-amber-300/30 bg-amber-300/10 text-amber-200"}`}
+                          className={`inline-flex items-center gap-2 rounded-md border px-2 py-1 font-mono text-xs font-semibold uppercase tracking-wide ${hub.status === "active" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400" : hub.status === "closed" ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-amber-300/30 bg-amber-300/10 text-amber-300"}`}
                         >
+                          <span className="size-2 rounded-full bg-current" aria-hidden="true" />
                           {hub.status}
                         </span>
                       </td>
                       {isStaff && (
-                        <td data-label="Actions">
-                          <Button
-                            type="button"
-                            aria-label={`Edit ${hub.name}`}
-                            onClick={() => setEditing(hub)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            aria-label={`Delete ${hub.name}`}
-                            onClick={() => setDeleteTarget(hub)}
-                          >
-                            Delete
-                          </Button>
+                        <td className="px-2 py-2">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-primary"
+                              aria-label={`Edit ${hub.name}`}
+                              onClick={() => setEditing(hub)}
+                            >
+                              <Pencil className="size-4" aria-hidden="true" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground hover:text-destructive"
+                              aria-label={`Delete ${hub.name}`}
+                              onClick={() => setDeleteTarget(hub)}
+                            >
+                              <Trash2 className="size-4" aria-hidden="true" />
+                            </Button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -239,26 +278,43 @@ export function HubsPanel({
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between gap-3 py-4 font-mono text-xs text-muted-foreground max-sm:flex-col max-sm:items-stretch">
+          <div className="flex items-center justify-between gap-3 rounded-b-lg border border-t-0 border-border px-3 py-2 font-mono text-xs text-muted-foreground max-sm:flex-col max-sm:items-stretch">
             <span>
-              {filtered.length} hubs · Page {page} of {pages}
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} of{" "}
+              {filtered.length}
             </span>
-            <div>
+            <nav className="flex items-center gap-1" aria-label="Hub pages">
               <Button
+                variant="ghost"
+                size="icon-sm"
                 aria-label="Previous page"
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
               >
-                Previous
+                <ChevronLeft className="size-4" aria-hidden="true" />
               </Button>
+              {Array.from({ length: pages }, (_, index) => index + 1).map((pageNumber) => (
+                <Button
+                  key={pageNumber}
+                  variant={pageNumber === page ? "outline" : "ghost"}
+                  size="icon-sm"
+                  aria-label={`Page ${pageNumber}`}
+                  aria-current={pageNumber === page ? "page" : undefined}
+                  onClick={() => setPage(pageNumber)}
+                >
+                  {pageNumber}
+                </Button>
+              ))}
               <Button
+                variant="ghost"
+                size="icon-sm"
                 aria-label="Next page"
                 disabled={page >= pages}
                 onClick={() => setPage(page + 1)}
               >
-                Next
+                <ChevronRight className="size-4" aria-hidden="true" />
               </Button>
-            </div>
+            </nav>
           </div>
         </>
       ) : (
