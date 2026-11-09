@@ -1,5 +1,6 @@
 import Manifest from "@/features/shipments/Manifest";
-import { getShipmentsPage, type ShipmentPage } from "@/lib/api/preview";
+import { getShipmentsPage } from "@/features/shipments/server-api";
+import type { ShipmentPage } from "@/features/shipments/types";
 
 export const dynamic = "force-dynamic";
 

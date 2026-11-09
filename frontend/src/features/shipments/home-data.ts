@@ -1,5 +1,5 @@
 import { getApiOrigin } from "@/lib/api/server";
-import type { Shipment } from "@/lib/api/preview";
+import { getShipments } from "./server-api";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -24,7 +24,7 @@ async function get<T>(path: string): Promise<T> {
 export async function getHomeData() {
   const [analytics, shipments] = await Promise.allSettled([
     get<AnalyticsOverview>("analytics/overview"),
-    get<Shipment[]>("shipments?limit=3&exclude_status=delivered"),
+    getShipments("shipments?limit=3&exclude_status=delivered"),
   ]);
 
   return {

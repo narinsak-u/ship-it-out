@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import type { Map } from "leaflet";
 import type { Hub } from "@/lib/hubs";
-import type { Order } from "@/lib/orders";
+import type { Shipment } from "@/features/shipments/types";
 import "leaflet/dist/leaflet.css";
-export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }>) {
+export function DeliveryMap({ order, hub }: Readonly<{ order: Shipment; hub?: Hub }>) {
   const container = useRef<HTMLDivElement>(null);
   const cartoKey = process.env.NEXT_PUBLIC_CARTO_API_KEY;
 

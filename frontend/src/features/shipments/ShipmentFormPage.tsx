@@ -1,7 +1,7 @@
-import type { Order } from "@/lib/orders";
+import type { Shipment } from "./types";
 import { ShipmentForm } from "./ShipmentForm";
 
-export function ShipmentFormPage({ initial }: { initial?: Order }) {
+export function ShipmentFormPage({ initial }: { initial?: Shipment }) {
   const editing = !!initial;
   return (
     <main>

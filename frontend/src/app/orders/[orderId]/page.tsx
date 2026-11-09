@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getShipment, getShipmentEvents } from "@/lib/api/preview";
+import { getShipment, getShipmentEvents } from "@/features/shipments/server-api";
 import RouteMap from "./route-map";
 
 function date(value: string) {

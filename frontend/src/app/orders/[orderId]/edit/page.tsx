@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { ShipmentFormPage } from "@/features/shipments/ShipmentFormPage";
-import { mapShipmentToOrder } from "@/lib/api/mappers";
-import { getShipment } from "@/lib/api/preview";
+import { getShipment } from "@/features/shipments/server-api";
 
 export default async function EditShipmentPage({
   params,
@@ -11,5 +10,5 @@ export default async function EditShipmentPage({
   const { orderId } = await params;
   const shipment = await getShipment(orderId);
   if (!shipment) notFound();
-  return <ShipmentFormPage initial={mapShipmentToOrder(shipment)} />;
+  return <ShipmentFormPage initial={shipment} />;
 }

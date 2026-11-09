@@ -6,12 +6,12 @@ Next.js App Router is the sole supported frontend and runs on Vercel. The Go API
 
 - `src/app/`: routes, layouts, and server-only route handlers.
 - `src/features/auth/`: Zustand auth store and sign-in controls.
-- `src/features/shipments/`: public homepage, server-rendered data helpers, manifest, shipment forms, and tracking search.
+- `src/features/shipments/`: Shipment models, transport mappings, separate server/browser APIs, public homepage, manifest, forms, and tracking search.
 - `src/features/operations/`: carrier operations, hubs, deliveries, and maps.
 - `src/features/analytics/`: API-backed analytics with Recharts charts.
 - `src/components/ui/`: shadcn/ui primitives; `src/lib/utils.ts` merges utility classes.
 - `src/app/globals.css`: Tailwind v4 theme and base layer; Leaflet vendor CSS and map marker rules are the only global style exceptions.
-- `src/lib/`: shared shipment and hub types, API response mappers, and Next server API helpers.
+- `src/lib/`: business-independent helpers and generic Next server API origin helper.
 - `tests/e2e/next-*.spec.ts`: supported Playwright browser coverage.
 
 ## Request and security model
