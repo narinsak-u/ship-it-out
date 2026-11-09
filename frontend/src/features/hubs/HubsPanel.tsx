@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/features/auth/auth-store";
-import type { Hub, HubStatus } from "@/lib/hubs";
+import { deleteHub, getHubs } from "./api";
+import type { Hub, HubStatus } from "./types";
 import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { HubForm } from "./HubForm";
 import { Button } from "@/components/ui/button";
@@ -34,19 +35,14 @@ export function HubsPanel({
     else if (!deleteTarget && confirmRef.current?.open) confirmRef.current.close();
   }, [deleteTarget]);
   async function refresh() {
-    const response = await fetch("/api/hubs", { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || `Hub API returned ${response.status}`);
-    setHubs(result.data as Hub[]);
+    setHubs(await getHubs());
   }
 
   async function removeHub(hub: Hub) {
     setActionError("");
     setNotice("");
     try {
-      const response = await fetch(`/api/hubs/${encodeURIComponent(hub.id)}`, { method: "DELETE" });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || `Hub API returned ${response.status}`);
+      await deleteHub(hub.id);
       setHubs((current) => current.filter((item) => item.id !== hub.id));
       setNotice("Hub deleted.");
       setDeleteTarget(null);
@@ -55,6 +51,7 @@ export function HubsPanel({
       setDeleteTarget(null);
     }
   }
+
   const counts = useMemo(
     () =>
       hubs.reduce<Record<HubStatus | "total", number>>(
