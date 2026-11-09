@@ -13,7 +13,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { statusLabels, type Shipment, type ShipmentPage, type ShipmentStatus } from "./types";

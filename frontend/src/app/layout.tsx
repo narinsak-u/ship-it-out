@@ -1,7 +1,7 @@
 import Link from "next/link";
 import "./globals.css";
 
-import AuthControls from "@/features/auth/AuthControls";
+import AuthControls from "@/features/auth/components/AuthControls";
 
 export const metadata = { title: "thun-u-der/express", description: "Shipment tracking" };
 

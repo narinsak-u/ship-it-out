@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuthStore } from "@/features/auth/store/auth-store";
 import { deleteHub, getHubs } from "./api";
 import type { Hub, HubStatus } from "./types";
 import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
