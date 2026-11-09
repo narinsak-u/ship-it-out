@@ -7,8 +7,8 @@ import (
 )
 
 type StatusCount struct {
-	Status string `json:"status"`
-	Count  int64  `json:"count"`
+	Status string
+	Count  int64
 }
 
 type ProvinceCount struct {
@@ -17,13 +17,13 @@ type ProvinceCount struct {
 }
 
 type MonthCount struct {
-	Month string `json:"month"`
-	Count int64  `json:"count"`
+	Month string
+	Count int64
 }
 
 type DayCount struct {
-	Day   string `json:"day"`
-	Count int64  `json:"count"`
+	Day   string
+	Count int64
 }
 
 type OverviewReadPort interface {
@@ -39,21 +39,21 @@ type TimeSeriesReadPort interface {
 }
 
 type RegionCount struct {
-	Name  string `json:"name"`
-	Total int64  `json:"total"`
+	Name  string
+	Total int64
 }
 
 type Overview struct {
-	Total     int64         `json:"total"`
-	Active    int64         `json:"active"`
-	Delivered int64         `json:"delivered"`
-	ByStatus  []StatusCount `json:"by_status"`
-	ByRegion  []RegionCount `json:"by_region"`
+	Total     int64
+	Active    int64
+	Delivered int64
+	ByStatus  []StatusCount
+	ByRegion  []RegionCount
 }
 
 type TimeSeries struct {
-	ByMonth     []MonthCount `json:"by_month"`
-	ByDayOfWeek []DayCount   `json:"by_day_of_week"`
+	ByMonth     []MonthCount
+	ByDayOfWeek []DayCount
 }
 
 type Service struct {
