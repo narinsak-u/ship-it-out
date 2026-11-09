@@ -1,4 +1,4 @@
-package analytics
+package application
 
 import (
 	"context"
@@ -26,11 +26,14 @@ type DayCount struct {
 	Count int64  `json:"count"`
 }
 
-type Repository interface {
+type OverviewReadPort interface {
 	Count(context.Context) (int64, error)
 	CountActive(context.Context) (int64, error)
 	CountByStatus(context.Context) ([]StatusCount, error)
 	CountByProvince(context.Context) ([]ProvinceCount, error)
+}
+
+type TimeSeriesReadPort interface {
 	CountByMonth(context.Context) ([]MonthCount, error)
 	CountByDayOfWeek(context.Context) ([]DayCount, error)
 }
@@ -49,38 +52,62 @@ type Overview struct {
 }
 
 type TimeSeries struct {
-	ByMonth      []MonthCount `json:"by_month"`
-	ByDayOfWeek  []DayCount   `json:"by_day_of_week"`
+	ByMonth     []MonthCount `json:"by_month"`
+	ByDayOfWeek []DayCount   `json:"by_day_of_week"`
 }
 
-type Service struct{ repo Repository }
+type Service struct {
+	overview   OverviewReadPort
+	timeSeries TimeSeriesReadPort
+}
 
-func NewService(repo Repository) *Service { return &Service{repo: repo} }
+func NewService(overview OverviewReadPort, timeSeries TimeSeriesReadPort) *Service {
+	return &Service{overview: overview, timeSeries: timeSeries}
+}
 
 func (s *Service) Overview(ctx context.Context) (Overview, error) {
 	var result Overview
 	var err error
-	if result.Total, err = s.repo.Count(ctx); err != nil { return Overview{}, err }
-	if result.Active, err = s.repo.CountActive(ctx); err != nil { return Overview{}, err }
-	if result.ByStatus, err = s.repo.CountByStatus(ctx); err != nil { return Overview{}, err }
-	for _, status := range result.ByStatus {
-		if status.Status == "delivered" { result.Delivered = status.Count; break }
+	if result.Total, err = s.overview.Count(ctx); err != nil {
+		return Overview{}, err
 	}
-	provinces, err := s.repo.CountByProvince(ctx)
-	if err != nil { return Overview{}, err }
+	if result.Active, err = s.overview.CountActive(ctx); err != nil {
+		return Overview{}, err
+	}
+	if result.ByStatus, err = s.overview.CountByStatus(ctx); err != nil {
+		return Overview{}, err
+	}
+	for _, status := range result.ByStatus {
+		if status.Status == "delivered" {
+			result.Delivered = status.Count
+			break
+		}
+	}
+	provinces, err := s.overview.CountByProvince(ctx)
+	if err != nil {
+		return Overview{}, err
+	}
 	regions := map[string]int64{"Central": 0, "East": 0, "North": 0, "West": 0, "North-east": 0, "South": 0}
 	for _, province := range provinces {
-		if region := data.ThailandProvinceRegion[province.Province]; region != "" { regions[region] += province.Total }
+		if region := data.ThailandProvinceRegion[province.Province]; region != "" {
+			regions[region] += province.Total
+		}
 	}
 	result.ByRegion = make([]RegionCount, 0, len(regions))
-	for name, total := range regions { result.ByRegion = append(result.ByRegion, RegionCount{Name: name, Total: total}) }
+	for name, total := range regions {
+		result.ByRegion = append(result.ByRegion, RegionCount{Name: name, Total: total})
+	}
 	return result, nil
 }
 
 func (s *Service) TimeSeries(ctx context.Context) (TimeSeries, error) {
-	months, err := s.repo.CountByMonth(ctx)
-	if err != nil { return TimeSeries{}, err }
-	days, err := s.repo.CountByDayOfWeek(ctx)
-	if err != nil { return TimeSeries{}, err }
+	months, err := s.timeSeries.CountByMonth(ctx)
+	if err != nil {
+		return TimeSeries{}, err
+	}
+	days, err := s.timeSeries.CountByDayOfWeek(ctx)
+	if err != nil {
+		return TimeSeries{}, err
+	}
 	return TimeSeries{ByMonth: months, ByDayOfWeek: days}, nil
 }

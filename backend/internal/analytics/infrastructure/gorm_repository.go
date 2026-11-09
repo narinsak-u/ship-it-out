@@ -1,8 +1,9 @@
-package analytics
+package infrastructure
 
 import (
 	"context"
 
+	"github.com/narinsak-u/backend/internal/analytics/application"
 	"github.com/narinsak-u/backend/internal/models"
 	"gorm.io/gorm"
 )
@@ -23,26 +24,26 @@ func (r *GormRepository) CountActive(ctx context.Context) (int64, error) {
 	return count, err
 }
 
-func (r *GormRepository) CountByStatus(ctx context.Context) ([]StatusCount, error) {
-	var results []StatusCount
+func (r *GormRepository) CountByStatus(ctx context.Context) ([]application.StatusCount, error) {
+	var results []application.StatusCount
 	err := r.db.WithContext(ctx).Model(&models.Shipment{}).Select("status, count(*) as count").Group("status").Scan(&results).Error
 	return results, err
 }
 
-func (r *GormRepository) CountByProvince(ctx context.Context) ([]ProvinceCount, error) {
-	var results []ProvinceCount
+func (r *GormRepository) CountByProvince(ctx context.Context) ([]application.ProvinceCount, error) {
+	var results []application.ProvinceCount
 	err := r.db.WithContext(ctx).Model(&models.Shipment{}).Select("receiver_province as province, count(*) as total").Group("receiver_province").Scan(&results).Error
 	return results, err
 }
 
-func (r *GormRepository) CountByMonth(ctx context.Context) ([]MonthCount, error) {
-	var results []MonthCount
+func (r *GormRepository) CountByMonth(ctx context.Context) ([]application.MonthCount, error) {
+	var results []application.MonthCount
 	err := r.db.WithContext(ctx).Model(&models.Shipment{}).Select("to_char(created_at, 'YYYY-MM') as month, count(*) as count").Group("month").Order("month").Scan(&results).Error
 	return results, err
 }
 
-func (r *GormRepository) CountByDayOfWeek(ctx context.Context) ([]DayCount, error) {
-	var results []DayCount
+func (r *GormRepository) CountByDayOfWeek(ctx context.Context) ([]application.DayCount, error) {
+	var results []application.DayCount
 	err := r.db.WithContext(ctx).Model(&models.Shipment{}).Select("trim(to_char(created_at, 'Day')) as day, count(*) as count").Group("day").Order("min(extract(dow from created_at))").Scan(&results).Error
 	return results, err
 }

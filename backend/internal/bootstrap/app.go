@@ -12,7 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
-	"github.com/narinsak-u/backend/internal/analytics"
+	"github.com/narinsak-u/backend/internal/analytics/application"
+	"github.com/narinsak-u/backend/internal/analytics/infrastructure"
+	"github.com/narinsak-u/backend/internal/analytics/presentation"
 	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/platform/config"
 	"github.com/narinsak-u/backend/internal/platform/database"
@@ -40,8 +42,8 @@ func NewApp(db *gorm.DB) *fiber.App {
 	shipmentRepo := shipment.NewGormRepository(db)
 	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hubRepo))
 	trackingHandler := tracking.NewHandler(tracking.NewService(shipmentRepo))
-	analyticsRepo := analytics.NewGormRepository(db)
-	analyticsHandler := analytics.NewHandler(analytics.NewService(analyticsRepo))
+	analyticsRepo := infrastructure.NewGormRepository(db)
+	analyticsHandler := presentation.NewHandler(application.NewService(analyticsRepo, analyticsRepo))
 	server.RegisterRoutes(app, authRepo, authHandler, hubHandler, shipmentHandler, trackingHandler, analyticsHandler)
 	return app
 }

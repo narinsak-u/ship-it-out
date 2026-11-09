@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/narinsak-u/backend/internal/analytics"
+	"github.com/narinsak-u/backend/internal/analytics/presentation"
 	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/health"
 	"github.com/narinsak-u/backend/internal/hub"
@@ -13,7 +13,7 @@ import (
 )
 
 // RegisterRoutes attaches feature handlers and access middleware to the API.
-func RegisterRoutes(app *fiber.App, authRepo middleware.UserRepository, authHandler *auth.Handler, hubHandler *hub.Handler, shipmentHandler *shipment.Handler, trackingHandler *tracking.Handler, analyticsHandler *analytics.Handler) {
+func RegisterRoutes(app *fiber.App, authRepo middleware.UserRepository, authHandler *auth.Handler, hubHandler *hub.Handler, shipmentHandler *shipment.Handler, trackingHandler *tracking.Handler, analyticsHandler *presentation.Handler) {
 	api := app.Group("/api")
 	api.Get("/health", health.Check)
 
