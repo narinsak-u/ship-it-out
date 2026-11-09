@@ -59,6 +59,12 @@ export default function RouteMap(props: Props) {
           iconSize: [14, 14],
           iconAnchor: [7, 7],
         });
+      const currentMarker = L.divIcon({
+        className: "",
+        html: `<span class="route-current-location" role="img" aria-label="Current shipment location"></span>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
       const popup = (label: string) => {
         const node = document.createElement("span");
         node.textContent = label;
@@ -70,7 +76,7 @@ export default function RouteMap(props: Props) {
       L.marker(points[2], { icon: marker("oklch(0.65 0.12 210)") })
         .bindPopup(popup(`Destination · ${props.destinationLabel}`))
         .addTo(map);
-      L.marker(points[1], { icon: marker("oklch(0.78 0.15 75)") })
+      L.marker(points[1], { icon: currentMarker })
         .bindPopup(popup(`${props.carrier} · Current location`))
         .addTo(map);
       map.fitBounds(L.latLngBounds(points), { padding: [50, 50] });

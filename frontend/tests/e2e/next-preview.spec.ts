@@ -6,6 +6,13 @@ test("direct detail URL renders API-backed shipment and timeline", async ({ page
   await expect(page.getByText("in transit", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Bangkok Hub")).toBeVisible();
   await expect(page.getByRole("region", { name: "Shipment route map" })).toBeVisible();
+  const currentLocation = page.getByRole("img", { name: "Current shipment location" });
+  await expect(currentLocation).toBeVisible();
+  await expect
+    .poll(() =>
+      currentLocation.evaluate((element) => getComputedStyle(element, "::before").animationName),
+    )
+    .toBe("route-location-pulse");
 });
 
 test("missing shipment has not-found state without a map", async ({ page }) => {

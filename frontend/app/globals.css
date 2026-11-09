@@ -302,6 +302,48 @@ nav a.active {
   width: 100%;
   background: #2e3440;
 }
+
+.route-current-location {
+  display: block;
+  position: relative;
+  width: 28px;
+  height: 28px;
+}
+.route-current-location::before,
+.route-current-location::after {
+  position: absolute;
+  content: "";
+  border-radius: 50%;
+}
+.route-current-location::before {
+  inset: 0;
+  background: oklch(0.78 0.15 75 / 30%);
+  animation: route-location-pulse 2s ease-out infinite;
+}
+.route-current-location::after {
+  top: 7px;
+  left: 7px;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid white;
+  background: oklch(0.78 0.15 75);
+}
+@keyframes route-location-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-current-location::before {
+    animation: none;
+  }
+}
 .telemetry {
   position: absolute;
   top: 16px;
