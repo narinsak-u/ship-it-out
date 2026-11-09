@@ -24,10 +24,8 @@ import (
 	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
 	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
 	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
-	"github.com/narinsak-u/backend/internal/middleware"
-	"github.com/narinsak-u/backend/internal/models"
+	"github.com/narinsak-u/backend/internal/platform/middleware"
 	"github.com/narinsak-u/backend/internal/seed"
-	"github.com/narinsak-u/backend/internal/server"
 	shipmentapp "github.com/narinsak-u/backend/internal/shipment/application"
 	shipmentdomain "github.com/narinsak-u/backend/internal/shipment/domain"
 	shipmentinfra "github.com/narinsak-u/backend/internal/shipment/infrastructure"
@@ -55,7 +53,7 @@ func NewApp(db *gorm.DB) *fiber.App {
 	trackingHandler := trackingpresentation.NewHandler(trackingapplication.NewService(shipmentRepo))
 	analyticsRepo := infrastructure.NewGormRepository(db)
 	analyticsHandler := presentation.NewHandler(application.NewService(analyticsRepo, analyticsRepo))
-	server.RegisterRoutes(app, authRepo, authHandler, hubHandler, shipmentHandler, trackingHandler, analyticsHandler)
+	registerRoutes(app, authRepo, authHandler, hubHandler, shipmentHandler, trackingHandler, analyticsHandler)
 	return app
 }
 
@@ -85,7 +83,7 @@ func Run() error {
 	}
 	defer sqlDB.Close()
 
-	if err := db.AutoMigrate(append([]any{&models.User{}, &hubinfra.Record{}}, shipmentinfra.MigrationModels()...)...); err != nil {
+	if err := db.AutoMigrate(append([]any{&authinfra.UserRecord{}, &hubinfra.Record{}}, shipmentinfra.MigrationModels()...)...); err != nil {
 		return fmt.Errorf("database migration failed: %w", err)
 	}
 	if err := seed.BootstrapAdmin(db, config.App.AdminName, config.App.AdminEmail, config.App.AdminPassword, config.App.AdminRoleCutover); err != nil {
@@ -97,7 +95,7 @@ func Run() error {
 	if err := seed.SeedHubs(db); err != nil {
 		return fmt.Errorf("hub seed failed: %w", err)
 	}
-	if err := seed.SeedShipments(db); err != nil {
+	if err := shipmentinfra.SeedShipments(db); err != nil {
 		return fmt.Errorf("shipment seed failed: %w", err)
 	}
 

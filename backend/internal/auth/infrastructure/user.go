@@ -1,8 +1,8 @@
-package models
+package infrastructure
 
 import "time"
 
-type User struct {
+type UserRecord struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Name      string    `gorm:"not null" json:"name"`
 	Email     string    `gorm:"unique;not null" json:"email"`

@@ -11,14 +11,14 @@
 //
 // This is a single-instance in-process limiter. For horizontally-scaled deployments
 // it should be replaced with a shared backend (e.g. Redis).
-package middleware
+package presentation
 
 import (
 	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/pkg/utils"
+	utils "github.com/narinsak-u/backend/internal/platform/http"
 )
 
 // rateLimiter implements a sliding-window rate limit using an in-memory map.
@@ -120,9 +120,7 @@ var authRateLimiter = newRateLimiter(5, time.Minute)
 // is exceeded it returns a 429 Too Many Requests response instead of passing
 // the request to the next handler.
 //
-// Usage (in internal/server/routes.go):
-//
-//	authGroup.Post("/login", middleware.RateLimitAuth(), auth.Login)
+// Usage: authGroup.Post("/login", RateLimitAuth(), auth.Login)
 func RateLimitAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ip := c.IP()

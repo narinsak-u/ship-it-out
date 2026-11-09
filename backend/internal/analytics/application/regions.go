@@ -1,5 +1,5 @@
 // Package data provides static data mappings used across the backend.
-package data
+package application
 
 // ThailandProvinceRegion maps Thai provinces to their geographic regions.
 var ThailandProvinceRegion = map[string]string{

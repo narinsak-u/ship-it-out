@@ -3,7 +3,7 @@ package presentation
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/analytics/application"
-	"github.com/narinsak-u/backend/pkg/utils"
+	utils "github.com/narinsak-u/backend/internal/platform/http"
 )
 
 type statusCountResponse struct {

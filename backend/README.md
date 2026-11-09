@@ -22,20 +22,14 @@ go run ./cmd/server
 backend/
 ├── cmd/server/main.go         # Server process entry point
 ├── internal/
-│   ├── bootstrap/             # Startup, initialization, dependency and route composition, shutdown
-│   ├── server/routes.go       # Route registration for prebuilt feature handlers
-│   ├── platform/config/        # Environment config and validation
-│   ├── platform/database/      # PostgreSQL connection
-│   ├── seed/                  # Admin/demo, hub, and shipment bootstrap
-│   ├── models/                # GORM models and coordinate hooks
-│   ├── middleware/            # Auth, staff checks, CORS, security, logging, rate limits
-│   ├── auth/                  # Handler, service, repository, GORM adapter
-│   ├── shipment/              # Handler, service, repository, GORM adapter, PostgreSQL tests
-│   ├── hub/                   # Handler, service, repository, GORM adapter
-│   ├── tracking/              # Focused public tracking handler and service
-│   ├── analytics/             # Handler, service, repository, GORM adapter
-│   └── health/                # Health endpoint
-├── pkg/utils/                 # Response and password helpers
+│   ├── bootstrap/             # Startup, route composition, health, and shutdown
+│   ├── platform/              # Config, database, HTTP utilities, generic middleware
+│   ├── seed/                  # Admin/demo account and hub bootstrap
+│   ├── auth/                  # Authentication workflow, GORM user adapter, and rate limit
+│   ├── shipment/              # Shipment workflow, GORM adapter, PostgreSQL tests
+│   ├── hub/                   # Hub workflow and GORM adapter
+│   ├── tracking/              # Public tracking workflow
+│   └── analytics/             # Analytics workflow and aggregation adapter
 ├── Dockerfile
 ├── docker-compose.yml
 └── docs/                      # Overview, workflows, data, and logging references
@@ -176,13 +170,11 @@ go tool cover -html=coverage.out          # HTML report
 
 | Package | Type | Coverage | Notes |
 |---------|------|----------|-------|
-| `pkg/utils` | Unit | 100% | Hash/response helpers |
+| `internal/platform/http` | Unit | — | Response envelope helpers |
 | `internal/platform/config` | Unit | 100% | Env loading |
-| `internal/models` | Unit | 100% | GORM BeforeSave/AfterFind hooks |
 | `internal/tracking` | HTTP + mock | 89% | Handler + tracking service |
 | `internal/analytics` | HTTP + mock | 81% | Handler + analytics service |
-| `internal/auth` | HTTP + mock | 74% | Handler + repository |
-| `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
+| `internal/auth` | HTTP + mock | 74% | Handler, repository, and rate limiter |
 | `internal/shipment/{domain,application,infrastructure,presentation}` | HTTP + unit + PostgreSQL | — | Domain workflows, API DTOs, GORM adapter, and transaction/ID guarantees |
 | `internal/hub/{domain,application,infrastructure,presentation}` | HTTP + mock | 49% | Layered domain, use case, GORM adapter, and handler |
 | `internal/bootstrap` | HTTP smoke | — | Route composition, health, and access compatibility |

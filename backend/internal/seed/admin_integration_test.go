@@ -21,17 +21,35 @@ import (
 	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
 	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
 	hubdomain "github.com/narinsak-u/backend/internal/hub/domain"
-	"github.com/narinsak-u/backend/internal/models"
 	shipmentapplication "github.com/narinsak-u/backend/internal/shipment/application"
 	shipmentdomain "github.com/narinsak-u/backend/internal/shipment/domain"
 	shipmentinfra "github.com/narinsak-u/backend/internal/shipment/infrastructure"
 	shipmentpresentation "github.com/narinsak-u/backend/internal/shipment/presentation"
-	"github.com/narinsak-u/backend/pkg/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+type testShipmentRecord struct {
+	ID             uint `gorm:"primaryKey"`
+	OrderID        string
+	TrackingNumber string
+	Origin         string
+	Destination    string
+	Status         string
+}
+
+func (testShipmentRecord) TableName() string { return "shipments" }
+
+type testShipmentEventRecord struct {
+	ID         uint `gorm:"primaryKey"`
+	ShipmentID uint
+	Status     string
+	LocationName string
+}
+
+func (testShipmentEventRecord) TableName() string { return "shipment_events" }
 func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
+
 	dsn := os.Getenv("ADMIN_BOOTSTRAP_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("set ADMIN_BOOTSTRAP_TEST_DATABASE_URL to an expendable PostgreSQL database")
@@ -56,23 +74,24 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hubinfra.Record{}, &bootstrapState{}, &demoBootstrapState{}); err != nil {
+	migrationModels := append([]any{&authinfra.UserRecord{}, &hubinfra.Record{}, &bootstrapState{}, &demoBootstrapState{}}, shipmentinfra.MigrationModels()...)
+	if err := db.AutoMigrate(migrationModels...); err != nil {
 		t.Fatal(err)
 	}
 
-	legacyHash, err := utils.HashPassword("password")
+	legacyHash, err := authinfra.HashPassword("password")
 	if err != nil {
 		t.Fatal(err)
 	}
-	legacy := models.User{Name: "Legacy", Email: "legacy@example.test", Password: legacyHash, Role: "admin"}
-	otherLegacy := models.User{Name: "Other Legacy", Email: "other-legacy@example.test", Password: legacyHash, Role: "admin"}
+	legacy := authinfra.UserRecord{Name: "Legacy", Email: "legacy@example.test", Password: legacyHash, Role: "admin"}
+	otherLegacy := authinfra.UserRecord{Name: "Other Legacy", Email: "other-legacy@example.test", Password: legacyHash, Role: "admin"}
 	if err := db.Create(&legacy).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Create(&otherLegacy).Error; err != nil {
 		t.Fatal(err)
 	}
-	preservedShipment := models.Shipment{OrderID: "ORDER-PRESERVED", TrackingNumber: "TRACK-PRESERVED", Origin: "A", Destination: "B", Status: "pending"}
+	preservedShipment := testShipmentRecord{OrderID: "ORDER-PRESERVED", TrackingNumber: "TRACK-PRESERVED", Origin: "A", Destination: "B", Status: "pending"}
 	if err := db.Create(&preservedShipment).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +99,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err := db.Create(&preservedHub).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Create(&models.ShipmentEvent{ShipmentID: preservedShipment.ID, Status: "pending", Location: models.Location{Name: "A"}}).Error; err != nil {
+	if err := db.Create(&testShipmentEventRecord{ShipmentID: preservedShipment.ID, Status: "pending", LocationName: "A"}).Error; err != nil {
 		t.Fatal(err)
 	}
 
@@ -116,7 +135,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if registerResponse.StatusCode != 200 {
 		t.Fatalf("public signup status = %d, want 200", registerResponse.StatusCode)
 	}
-	var registered models.User
+	var registered authinfra.UserRecord
 	if err := db.Where("email = ?", "elevated@example.test").First(&registered).Error; err != nil || registered.Role != "customer" {
 		t.Fatalf("signup role = %q, err %v", registered.Role, err)
 	}
@@ -166,18 +185,18 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err := BootstrapAdmin(db, "New Staff", "admin@example.test", "new-secret", false); err == nil {
 		t.Fatal("bootstrap ran without explicit cutover opt-in")
 	}
-	var beforeOptIn models.User
+	var beforeOptIn authinfra.UserRecord
 	if err := db.First(&beforeOptIn, legacy.ID).Error; err != nil || beforeOptIn.Role != "admin" {
 		t.Fatalf("disabled cutover altered legacy role: %q, err %v", beforeOptIn.Role, err)
 	}
-	collision := models.User{Name: "Unrelated", Email: "admin@example.test", Password: legacyHash, Role: "customer"}
+	collision := authinfra.UserRecord{Name: "Unrelated", Email: "admin@example.test", Password: legacyHash, Role: "customer"}
 	if err := db.Create(&collision).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := BootstrapAdmin(db, "New Staff", "admin@example.test", "new-secret", true); err == nil {
 		t.Fatal("bootstrap accepted an existing email")
 	}
-	var unchanged models.User
+	var unchanged authinfra.UserRecord
 	if err := db.First(&unchanged, legacy.ID).Error; err != nil || unchanged.Role != "admin" {
 		t.Fatalf("collision altered legacy role: role %q, err %v", unchanged.Role, err)
 	}
@@ -188,14 +207,14 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err := BootstrapAdmin(db, "New Staff", "admin@example.test", "new-secret", true); err != nil {
 		t.Fatal(err)
 	}
-	demoCollision := models.User{Name: "Unrelated Demo Email Owner", Email: demoUserEmail, Password: legacyHash, Role: "customer"}
+	demoCollision := authinfra.UserRecord{Name: "Unrelated Demo Email Owner", Email: demoUserEmail, Password: legacyHash, Role: "customer"}
 	if err := db.Create(&demoCollision).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := BootstrapDemoUser(db); err == nil {
 		t.Fatal("demo bootstrap accepted an existing email")
 	}
-	var collisionUnchanged models.User
+	var collisionUnchanged authinfra.UserRecord
 	if err := db.First(&collisionUnchanged, demoCollision.ID).Error; err != nil || collisionUnchanged.Name != demoCollision.Name || collisionUnchanged.Role != "customer" || collisionUnchanged.Password != legacyHash {
 		t.Fatalf("demo collision account changed: %+v, err %v", collisionUnchanged, err)
 	}
@@ -252,12 +271,12 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if unsignedRefresh.StatusCode != 401 {
 		t.Fatalf("unsigned session refresh status = %d, want 401", unsignedRefresh.StatusCode)
 	}
-	var seededDemo models.User
+	var seededDemo authinfra.UserRecord
 	if err := db.Where("email = ?", demoUserEmail).First(&seededDemo).Error; err != nil {
 		t.Fatal(err)
 	}
 	var demoCount int64
-	if err := db.Model(&models.User{}).Where("email = ?", demoUserEmail).Count(&demoCount).Error; err != nil || demoCount != 1 {
+	if err := db.Model(&authinfra.UserRecord{}).Where("email = ?", demoUserEmail).Count(&demoCount).Error; err != nil || demoCount != 1 {
 		t.Fatalf("demo account count = %d, err %v", demoCount, err)
 	}
 	for _, write := range []struct{ method, path string }{
@@ -273,7 +292,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 			t.Errorf("demo %s %s status = %d, want 403", write.method, write.path, got)
 		}
 	}
-	var demoAfterRepeat models.User
+	var demoAfterRepeat authinfra.UserRecord
 	if err := db.First(&demoAfterRepeat, seededDemo.ID).Error; err != nil || demoAfterRepeat.Email != demoUserEmail || demoAfterRepeat.Role != "customer" || demoAfterRepeat.Password != seededDemo.Password {
 		t.Fatalf("repeat bootstrap changed demo identity or credentials: %+v, err %v", demoAfterRepeat, err)
 	}
@@ -302,17 +321,22 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 		model any
 		label string
 		want  int64
-	}{{&models.Shipment{}, "shipment", 1}, {&hubinfra.Record{}, "hub", 2}, {&models.ShipmentEvent{}, "event", 1}} {
+	}{{"shipments", "shipment", 1}, {&hubinfra.Record{}, "hub", 2}, {"shipment_events", "event", 1}} {
 		var count int64
-		if err := db.Model(record.model).Count(&count).Error; err != nil || count != record.want {
+		if record.model == "shipments" || record.model == "shipment_events" {
+			table := record.model.(string)
+			if err := db.Table(table).Count(&count).Error; err != nil || count != record.want {
+				t.Fatalf("preserved %s count = %d, want %d, err %v", record.label, count, record.want, err)
+			}
+		} else if err := db.Model(record.model).Count(&count).Error; err != nil || count != record.want {
 			t.Fatalf("preserved %s count = %d, want %d, err %v", record.label, count, record.want, err)
 		}
 	}
-	var legacyAfter models.User
+	var legacyAfter authinfra.UserRecord
 	if err := db.First(&legacyAfter, legacy.ID).Error; err != nil || legacyAfter.Role != "customer" {
 		t.Fatalf("legacy role after cutover = %q, err %v", legacyAfter.Role, err)
 	}
-	var otherLegacyAfter models.User
+	var otherLegacyAfter authinfra.UserRecord
 	if err := db.First(&otherLegacyAfter, otherLegacy.ID).Error; err != nil || otherLegacyAfter.Role != "customer" {
 		t.Fatalf("second legacy role after cutover = %q, err %v", otherLegacyAfter.Role, err)
 	}

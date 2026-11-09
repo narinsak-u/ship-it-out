@@ -8,7 +8,7 @@ import (
 	"github.com/narinsak-u/backend/internal/auth/application"
 	"github.com/narinsak-u/backend/internal/auth/domain"
 	"github.com/narinsak-u/backend/internal/platform/config"
-	"github.com/narinsak-u/backend/pkg/utils"
+	utils "github.com/narinsak-u/backend/internal/platform/http"
 )
 
 type Workflows interface {

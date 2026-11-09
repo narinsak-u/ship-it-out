@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/shipment/application"
 	"github.com/narinsak-u/backend/internal/shipment/domain"
-	"github.com/narinsak-u/backend/pkg/utils"
+	utils "github.com/narinsak-u/backend/internal/platform/http"
 )
 
 type Handler struct{ service *application.Service }

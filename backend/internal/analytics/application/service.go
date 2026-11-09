@@ -2,9 +2,8 @@ package application
 
 import (
 	"context"
-
-	"github.com/narinsak-u/backend/internal/data"
 )
+
 
 type StatusCount struct {
 	Status string
@@ -89,7 +88,7 @@ func (s *Service) Overview(ctx context.Context) (Overview, error) {
 	}
 	regions := map[string]int64{"Central": 0, "East": 0, "North": 0, "West": 0, "North-east": 0, "South": 0}
 	for _, province := range provinces {
-		if region := data.ThailandProvinceRegion[province.Province]; region != "" {
+		if region := ThailandProvinceRegion[province.Province]; region != "" {
 			regions[region] += province.Total
 		}
 	}

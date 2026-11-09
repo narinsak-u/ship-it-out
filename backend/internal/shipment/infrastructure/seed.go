@@ -1,10 +1,10 @@
-package seed
+package infrastructure
 
 import (
 	"math/rand"
 	"time"
 
-	"github.com/narinsak-u/backend/internal/models"
+	"github.com/narinsak-u/backend/internal/shipment/domain"
 	"gorm.io/gorm"
 )
 
@@ -16,7 +16,7 @@ func SeedShipments(db *gorm.DB) error {
 	defer tx.Rollback()
 
 	var count int64
-	if err := tx.Model(&models.Shipment{}).Count(&count).Error; err != nil {
+	if err := tx.Model(&shipmentRecord{}).Count(&count).Error; err != nil {
 		return err
 	}
 	if count > 0 {
@@ -83,7 +83,7 @@ func SeedShipments(db *gorm.DB) error {
 
 	hubs := []string{"HUB-001", "HUB-002", "HUB-003", "HUB-004", "HUB-005", "HUB-006", "HUB-007", "HUB-008", "HUB-009", "HUB-010"}
 
-	composeAddress := func(c models.ContactInfo) string {
+	composeAddress := func(c domain.Contact) string {
 		return c.SubDistrict + ", " + c.District + ", " + c.Province
 	}
 
@@ -235,47 +235,38 @@ func SeedShipments(db *gorm.DB) error {
 			makeEvent(rng.Intn(2)+6, 8, 12, 0, "Delayed", "Transit Hub", currLat, currLng, "Unexpected issue encountered.")
 		}
 
-		custContact := models.ContactInfo{
+		custContact := domain.Contact{
 			Name: cust.Name, Zipcode: cust.Zipcode,
 			SubDistrict: cust.SubDistrict, District: cust.District, Province: cust.Province,
-			Coords: models.GeoPoint{Lat: cust.Lat, Lng: cust.Lng},
+			Coords: domain.GeoPoint{Lat: cust.Lat, Lng: cust.Lng},
 		}
-		recvContact := models.ContactInfo{
+		recvContact := domain.Contact{
 			Name: recv.Name, Zipcode: recv.Zipcode,
 			SubDistrict: recv.SubDistrict, District: recv.District, Province: recv.Province,
-			Coords: models.GeoPoint{Lat: recv.Lat, Lng: recv.Lng},
+			Coords: domain.GeoPoint{Lat: recv.Lat, Lng: recv.Lng},
 		}
 
-		shipment := models.Shipment{
-			OrderID:           "ORD-" + padInt(orderNum),
-			TrackingNumber:    trackingNum,
-			Customer:          custContact,
-			Receiver:          recvContact,
-			Origin:            composeAddress(custContact),
-			Destination:       composeAddress(recvContact),
-			Status:            shipmentStatus,
-			HubID:             hubID,
-			Carrier:           carrier,
-			Weight:            weights[i],
-			Items:             rng.Intn(6) + 1,
-			EstimatedDelivery: estDelivery,
-			CreatedAt:         createdAt,
-			Progress:          progress,
-			CurrentCoords:     models.GeoPoint{Lat: currLat, Lng: currLng},
+		shipment := domain.Shipment{
+			OrderID: "ORD-" + padInt(orderNum), TrackingNumber: trackingNum,
+			Customer: custContact, Receiver: recvContact,
+			Origin: composeAddress(custContact), Destination: composeAddress(recvContact),
+			Status: domain.Status(shipmentStatus), HubID: hubID, Carrier: carrier,
+			Weight: weights[i], Items: rng.Intn(6) + 1, EstimatedDelivery: estDelivery,
+			CreatedAt: createdAt, Progress: progress,
+			CurrentCoords: domain.GeoPoint{Lat: currLat, Lng: currLng},
 		}
-		if err := tx.Create(&shipment).Error; err != nil {
+		record := shipmentRecordFromDomain(shipment)
+		if err := tx.Create(&record).Error; err != nil {
 			return err
 		}
 
 		for _, e := range events {
-			event := models.ShipmentEvent{
-				ShipmentID:  shipment.ID,
-				Status:      e.status,
-				Location:    models.Location{Name: e.locName, Lat: e.lat, Lng: e.lng},
-				Description: e.desc,
-				CreatedAt:   e.timestamp,
-			}
-			if err := tx.Create(&event).Error; err != nil {
+			eventRecord := eventRecordFromDomain(domain.ShipmentEvent{
+				ShipmentID: record.ID, Status: e.status,
+				Location: domain.Location{Name: e.locName, Lat: e.lat, Lng: e.lng},
+				Description: e.desc, CreatedAt: e.timestamp,
+			})
+			if err := tx.Create(&eventRecord).Error; err != nil {
 				return err
 			}
 		}

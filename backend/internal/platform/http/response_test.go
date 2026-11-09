@@ -1,28 +1,22 @@
-package utils_test
+package http_test
 
 import (
 	"encoding/json"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/models"
-	"github.com/narinsak-u/backend/pkg/utils"
+	platformhttp "github.com/narinsak-u/backend/internal/platform/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
 )
 
-func TestComposeAddress(t *testing.T) {
-	c := models.ContactInfo{SubDistrict: "S1", District: "D1", Province: "P1"}
-	result := utils.ComposeAddress(c)
-	assert.Equal(t, "S1, D1, P1", result)
-}
 
 func TestSuccess(t *testing.T) {
 	app := fiber.New()
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 
-	err := utils.Success(c, fiber.Map{"key": "value"})
+	err := platformhttp.Success(c, fiber.Map{"key": "value"})
 	assert.NoError(t, err)
 	assert.Equal(t, 200, c.Response().StatusCode())
 
@@ -37,7 +31,7 @@ func TestError(t *testing.T) {
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 
-	err := utils.Error(c, 400, "bad request")
+	err := platformhttp.Error(c, 400, "bad request")
 	assert.NoError(t, err)
 	assert.Equal(t, 400, c.Response().StatusCode())
 
@@ -53,7 +47,7 @@ func TestSuccessWithPagination(t *testing.T) {
 	defer app.ReleaseCtx(c)
 
 	data := []string{"a", "b"}
-	err := utils.SuccessWithPagination(c, data, 1, 10, 25)
+	err := platformhttp.SuccessWithPagination(c, data, 1, 10, 25)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, c.Response().StatusCode())
 
@@ -71,7 +65,7 @@ func TestSuccessWithPagination_ZeroTotal(t *testing.T) {
 	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	defer app.ReleaseCtx(c)
 
-	err := utils.SuccessWithPagination(c, []interface{}{}, 1, 10, 0)
+	err := platformhttp.SuccessWithPagination(c, []interface{}{}, 1, 10, 0)
 	assert.NoError(t, err)
 	var resp map[string]interface{}
 	json.Unmarshal(c.Response().Body(), &resp)

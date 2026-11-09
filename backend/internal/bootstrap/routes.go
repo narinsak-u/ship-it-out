@@ -1,25 +1,22 @@
-package server
+package bootstrap
 
 import (
 	"github.com/gofiber/fiber/v2"
-
 	"github.com/narinsak-u/backend/internal/analytics/presentation"
 	authpresentation "github.com/narinsak-u/backend/internal/auth/presentation"
-	"github.com/narinsak-u/backend/internal/health"
 	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
-	"github.com/narinsak-u/backend/internal/middleware"
+	platformhttp "github.com/narinsak-u/backend/internal/platform/http"
 	shipmentpresentation "github.com/narinsak-u/backend/internal/shipment/presentation"
 	trackingpresentation "github.com/narinsak-u/backend/internal/tracking/presentation"
 )
 
-// RegisterRoutes attaches feature handlers and access middleware to the API.
-func RegisterRoutes(app *fiber.App, authRepo authpresentation.CurrentUserRepository, authHandler *authpresentation.Handler, hubHandler *hubpresentation.Handler, shipmentHandler *shipmentpresentation.Handler, trackingHandler *trackingpresentation.Handler, analyticsHandler *presentation.Handler) {
+func registerRoutes(app *fiber.App, authRepo authpresentation.CurrentUserRepository, authHandler *authpresentation.Handler, hubHandler *hubpresentation.Handler, shipmentHandler *shipmentpresentation.Handler, trackingHandler *trackingpresentation.Handler, analyticsHandler *presentation.Handler) {
 	api := app.Group("/api")
-	api.Get("/health", health.Check)
+	api.Get("/health", func(c *fiber.Ctx) error { return platformhttp.Success(c, fiber.Map{"status": "ok"}) })
 
 	authGroup := api.Group("/auth")
-	authGroup.Post("/register", middleware.RateLimitAuth(), authHandler.Register)
-	authGroup.Post("/login", middleware.RateLimitAuth(), authHandler.Login)
+	authGroup.Post("/register", authpresentation.RateLimitAuth(), authHandler.Register)
+	authGroup.Post("/login", authpresentation.RateLimitAuth(), authHandler.Login)
 	authGroup.Get("/me", authpresentation.AuthRequired(), authHandler.Me)
 	authGroup.Post("/logout", authHandler.Logout)
 

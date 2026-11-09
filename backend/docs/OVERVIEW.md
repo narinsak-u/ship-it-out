@@ -24,20 +24,14 @@ Go API server for the Thun-u-der Express shipment tracking platform. Built with 
 backend/
 ├── cmd/server/main.go           # Server process entry point
 ├── internal/
-│   ├── bootstrap/               # Startup, initialization, dependency and route composition, shutdown
-│   ├── server/routes.go         # Route registration for prebuilt feature handlers
-│   ├── platform/config/         # Environment config and validation
-│   ├── platform/database/       # PostgreSQL connection
-│   ├── seed/                    # Admin/demo account, hubs, and shipment bootstrap
-│   ├── models/                  # GORM models and coordinate hooks
-│   ├── middleware/              # Auth, staff authorization, CORS, logging, rate limits
-│   ├── auth/                    # Handler, service, repository interface + GORM adapter
-│   ├── shipment/               # Handler, service, repository interface + GORM adapter
-│   ├── hub/                    # Handler, service, repository interface + GORM adapter
-│   ├── tracking/               # Focused public tracking handler and service
-│   ├── analytics/              # Focused analytics handler, service, repository + GORM adapter
-│   └── health/                 # Health endpoint
-├── pkg/utils/                   # Shared response and password helpers
+│   ├── bootstrap/               # Composition, startup, health route, and shutdown
+│   ├── platform/                # Config, database, HTTP utilities, generic middleware
+│   ├── seed/                    # Admin/demo account and hub bootstrap
+│   ├── auth/                    # Authentication workflow, GORM user adapter, rate limit
+│   ├── shipment/                # Shipment workflows, GORM adapter, PostgreSQL tests
+│   ├── hub/                     # Hub workflow and GORM adapter
+│   ├── tracking/                # Public tracking workflow
+│   └── analytics/               # Analytics workflow and aggregation adapter
 ├── Dockerfile / docker-compose.yml
 └── docs/                        # Overview, workflows, data, and logging references
 ```
@@ -107,9 +101,7 @@ Hub (standalone)
 
 ### Coords Storage Pattern
 
-`GeoPoint` fields use `gorm:"-"` (not stored directly). Values are synced to flat `_lat`/`_lng` columns via GORM hooks:
-- **`BeforeSave`** — copies `Coords.Lat/Lng` into flat columns before insert/update
-- **`AfterFind`** — reconstructs `Coords` from flat columns after query
+`GeoPoint` fields are stored in flat `_lat`/`_lng` database columns. Shipment infrastructure maps them to nested API values.
 
 This gives clean JSON with nested objects while keeping normal DB columns for querying.
 
@@ -118,10 +110,10 @@ This gives clean JSON with nested objects while keeping normal DB columns for qu
 ## Architecture Notes
 
 - Feature packages keep HTTP handlers, Fiber-independent services, focused repository interfaces, and GORM adapters together.
-- `cmd/server` delegates startup to `internal/bootstrap`, which initializes runtime state, composes feature dependencies and routes, and handles shutdown. `internal/server` registers routes around supplied handlers.
-- Tracking and analytics use dedicated service/repository interfaces rather than shipment persistence APIs.
+- `cmd/server` delegates startup and complete route composition to `internal/bootstrap`.
+- Generic CORS, security headers, logging, and response-envelope utilities live in `internal/platform`; auth owns JWT, staff, and rate-limit behavior.
+- Analytics application owns province-to-region mapping; analytics infrastructure owns the SQL aggregation over the existing shipments table.
 - Shipment creation, status changes, and deletion run their related database writes in transactions. PostgreSQL constraints and database-backed ID allocation protect writes across server instances.
-- Coordinate hooks preserve the nested API representation while storing flat latitude/longitude columns.
 - Staff writes require a fresh database role check; public reads, registration role assignment, cookie/JWT behavior, and route contracts remain unchanged.
 - Seed/bootstrap functions run after AutoMigrate and preserve existing data; no refactor migration is introduced.
 - Middleware order: CORS → security headers → logger; auth-specific rate limiting and auth/staff checks are attached to routes.
