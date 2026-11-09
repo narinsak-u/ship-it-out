@@ -12,7 +12,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/auth"
-	"github.com/narinsak-u/backend/internal/config"
+	"github.com/narinsak-u/backend/internal/platform/config"
 	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"

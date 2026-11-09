@@ -22,7 +22,7 @@ Set server-only `API_BASE_URL` to the Go API origin without `/api`. Browser API 
 
 | Command | Purpose |
 | --- | --- |
-| `go run .` | Start API server (needs Postgres) |
+| `go run ./cmd/server` | Start API server (needs Postgres) |
 | `docker compose up -d` | Start Postgres 16 |
 | `go build ./...` | Compile packages |
 | `go vet ./...` | Static analysis |

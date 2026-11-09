@@ -507,7 +507,7 @@ Request arrives at login or register
 
 ### Entry Point
 
-`main.go` after `AutoMigrate`:
+`internal/bootstrap.Run` migrates the database, then seeds it:
 
 ```go
 if err := seed.SeedHubs(database.DB); err != nil {

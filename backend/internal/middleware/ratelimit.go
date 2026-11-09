@@ -120,7 +120,7 @@ var authRateLimiter = newRateLimiter(5, time.Minute)
 // is exceeded it returns a 429 Too Many Requests response instead of passing
 // the request to the next handler.
 //
-// Usage (in main.go):
+// Usage (in internal/server/routes.go):
 //
 //	authGroup.Post("/login", middleware.RateLimitAuth(), auth.Login)
 func RateLimitAuth() fiber.Handler {

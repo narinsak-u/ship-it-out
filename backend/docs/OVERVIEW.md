@@ -22,23 +22,24 @@ Go API server for the Thun-u-der Express shipment tracking platform. Built with 
 
 ```
 backend/
-├── main.go                     # Startup, migration/seeding, dependency construction, server start
+├── cmd/server/main.go           # Server process entry point
 ├── internal/
-│   ├── server/routes.go        # Route registration; receives prebuilt handlers and auth repository
-│   ├── config/config.go        # Environment config and validation
-│   ├── database/postgres.go    # PostgreSQL connection
-│   ├── seed/                   # Admin/demo account, hubs, and shipment bootstrap
-│   ├── models/                 # GORM models and coordinate hooks
-│   ├── middleware/             # Auth, staff authorization, CORS, logging, rate limits
-│   ├── auth/                   # Handler, service, repository interface + GORM adapter
+│   ├── bootstrap/               # Startup, initialization, dependency and route composition, shutdown
+│   ├── server/routes.go         # Route registration for prebuilt feature handlers
+│   ├── platform/config/         # Environment config and validation
+│   ├── platform/database/       # PostgreSQL connection
+│   ├── seed/                    # Admin/demo account, hubs, and shipment bootstrap
+│   ├── models/                  # GORM models and coordinate hooks
+│   ├── middleware/              # Auth, staff authorization, CORS, logging, rate limits
+│   ├── auth/                    # Handler, service, repository interface + GORM adapter
 │   ├── shipment/               # Handler, service, repository interface + GORM adapter
 │   ├── hub/                    # Handler, service, repository interface + GORM adapter
 │   ├── tracking/               # Focused public tracking handler and service
 │   ├── analytics/              # Focused analytics handler, service, repository + GORM adapter
 │   └── health/                 # Health endpoint
-├── pkg/utils/                  # Shared response and password helpers
+├── pkg/utils/                   # Shared response and password helpers
 ├── Dockerfile / docker-compose.yml
-└── docs/                       # Overview, workflows, data, and logging references
+└── docs/                        # Overview, workflows, data, and logging references
 ```
 
 ---
@@ -117,7 +118,7 @@ This gives clean JSON with nested objects while keeping normal DB columns for qu
 ## Architecture Notes
 
 - Feature packages keep HTTP handlers, Fiber-independent services, focused repository interfaces, and GORM adapters together.
-- `main.go` owns startup and manual dependency construction. `internal/server` only registers routes and middleware around supplied handlers.
+- `cmd/server` delegates startup to `internal/bootstrap`, which initializes runtime state, composes feature dependencies and routes, and handles shutdown. `internal/server` registers routes around supplied handlers.
 - Tracking and analytics use dedicated service/repository interfaces rather than shipment persistence APIs.
 - Shipment creation, status changes, and deletion run their related database writes in transactions. PostgreSQL constraints and database-backed ID allocation protect writes across server instances.
 - Coordinate hooks preserve the nested API representation while storing flat latitude/longitude columns.
@@ -146,7 +147,7 @@ docker compose up
 
 # Without Docker
 cd backend
-go run .            # requires separate Postgres
+go run ./cmd/server # requires separate Postgres
 ```
 
 ---

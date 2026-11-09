@@ -1,4 +1,4 @@
-# Shipment Code Flow (main.go → Handler → Repository → GORM)
+# Shipment Code Flow (bootstrap → Handler → Repository → GORM)
 
 This guide traces how a request travels through the codebase **end-to-end**. If you're new to Go, read this top-to-bottom — each section builds on the last.
 
@@ -10,7 +10,7 @@ This guide traces how a request travels through the codebase **end-to-end**. If 
  Browser/CLI
      │
      ▼
-  main.go  ←  registers routes, wires up dependencies
+  bootstrap.NewApp  ←  registers routes, wires feature dependencies
      │
      ▼
   Handler  ←  parses HTTP request, calls repository
@@ -51,7 +51,7 @@ shipmentGroup := api.Group("/shipments", middleware.AuthRequired())
 shipmentGroup.Post("/", shipmentHandler.Create)
 ```
 
-This is called **dependency injection**: instead of the Handler creating its own database connection, main.go creates everything and "injects" the dependencies.
+This is called **dependency injection**: instead of the Handler creating its own database connection, `internal/bootstrap.NewApp` creates and injects the dependencies.
 
 ---
 
@@ -63,7 +63,7 @@ In `handler.go`:
 
 ```go
 func (h *Handler) Create(c *fiber.Ctx) error {
-    // h.repo is a Repository (set by NewHandler in main.go)
+    // h.repo is a Repository (set by NewHandler in internal/bootstrap.NewApp)
 
     // Parse JSON from the request body
     var req CreateRequest
@@ -242,7 +242,7 @@ func TestCreate(t *testing.T) {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     main.go                                  │
+│                 bootstrap.NewApp                           │
 │                                                              │
 │  shipmentRepo := NewGormRepository(database.DB)              │
 │  hubRepo      := hub.NewGormRepository(database.DB)          │

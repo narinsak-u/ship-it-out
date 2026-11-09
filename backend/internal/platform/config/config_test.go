@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/narinsak-u/backend/internal/config"
+	"github.com/narinsak-u/backend/internal/platform/config"
 	"github.com/stretchr/testify/assert"
 )
 

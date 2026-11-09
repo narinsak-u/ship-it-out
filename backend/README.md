@@ -13,18 +13,19 @@ docker compose up
 
 # Without Docker (requires separate Postgres)
 cp .env.example .env
-go run .
+go run ./cmd/server
 ```
 
 ## Directory Structure
 
 ```
 backend/
-├── main.go                    # Startup, migration/seeding, dependency construction, server start
+├── cmd/server/main.go         # Server process entry point
 ├── internal/
+│   ├── bootstrap/             # Startup, initialization, dependency and route composition, shutdown
 │   ├── server/routes.go       # Route registration for prebuilt feature handlers
-│   ├── config/                # Environment config and validation
-│   ├── database/              # PostgreSQL connection
+│   ├── platform/config/        # Environment config and validation
+│   ├── platform/database/      # PostgreSQL connection
 │   ├── seed/                  # Admin/demo, hub, and shipment bootstrap
 │   ├── models/                # GORM models and coordinate hooks
 │   ├── middleware/            # Auth, staff checks, CORS, security, logging, rate limits
@@ -82,7 +83,7 @@ docker compose down -v && docker compose up
 
 # Without Docker: connect to Postgres and truncate tables
 psql $DATABASE_URL -c "TRUNCATE hubs, shipments, shipment_events RESTART IDENTITY CASCADE;"
-go run .
+go run ./cmd/server
 ```
 
 
@@ -176,7 +177,7 @@ go tool cover -html=coverage.out          # HTML report
 | Package | Type | Coverage | Notes |
 |---------|------|----------|-------|
 | `pkg/utils` | Unit | 100% | Hash/response helpers |
-| `internal/config` | Unit | 100% | Env loading |
+| `internal/platform/config` | Unit | 100% | Env loading |
 | `internal/models` | Unit | 100% | GORM BeforeSave/AfterFind hooks |
 | `internal/tracking` | HTTP + mock | 89% | Handler + tracking service |
 | `internal/analytics` | HTTP + mock | 81% | Handler + analytics service |
@@ -184,7 +185,7 @@ go tool cover -html=coverage.out          # HTML report
 | `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
 | `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
 | `internal/hub` | HTTP + mock | 49% | Handler + repository |
-| `main.go`, `internal/database`, `internal/seed` | Integration | PostgreSQL-backed startup/seed behavior |
+| `internal/bootstrap` | HTTP smoke | — | Route composition, health, and access compatibility |
 Shipment repository integration coverage requires an expendable PostgreSQL database. It creates a private schema and drops it on cleanup:
 
 ```bash

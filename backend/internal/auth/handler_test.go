@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/config"
+	"github.com/narinsak-u/backend/internal/platform/config"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
