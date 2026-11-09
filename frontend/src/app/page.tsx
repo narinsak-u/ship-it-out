@@ -2,7 +2,7 @@ import { Activity, ArrowRight, Boxes, Globe2, Truck } from "lucide-react";
 
 import Link from "next/link";
 import { getHomeData } from "@/features/shipments/home-data";
-import TrackingSearch from "@/features/shipments/TrackingSearch";
+import TrackingSearch from "@/features/tracking/TrackingSearch";
 
 export const dynamic = "force-dynamic";
 

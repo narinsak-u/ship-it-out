@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getShipment, getShipmentEvents } from "@/features/shipments/server-api";
-import RouteMap from "./route-map";
+import { getShipment } from "@/features/shipments/server-api";
+import { getTrackingEvents } from "@/features/tracking/server-api";
+import RouteMap from "@/features/tracking/RouteMap";
 
 function date(value: string) {
   return new Date(value).toLocaleDateString("en-US", {
@@ -21,7 +22,7 @@ export default async function ShipmentPage({
   const [{ orderId }, { updated }] = await Promise.all([params, searchParams]);
   const shipment = await getShipment(orderId);
   if (!shipment) notFound();
-  const events = await getShipmentEvents(shipment.trackingNumber);
+  const events = await getTrackingEvents(shipment.trackingNumber);
 
   return (
     <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.8fr)]">
