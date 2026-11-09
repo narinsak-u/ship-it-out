@@ -16,7 +16,6 @@ async function getActiveDeliveries(): Promise<Shipment[]> {
   return getShipments("shipments?limit=-1&exclude_status=delivered");
 }
 
-
 export default async function CarriersPage({
   searchParams,
 }: {
