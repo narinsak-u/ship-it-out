@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/internal/shipment/application"
 	"github.com/narinsak-u/backend/internal/shipment/domain"
 	"gorm.io/gorm"
@@ -124,25 +123,25 @@ func allocateIDs(tx *gorm.DB, shipment *shipmentRecord) error {
 	return nil
 }
 
-func (r *GormRepository) FindByTrackingNumber(ctx context.Context, trackingNumber string) (*models.Shipment, error) {
+func (r *GormRepository) FindByTrackingNumber(ctx context.Context, trackingNumber string) (*domain.Shipment, error) {
 	var row shipmentRecord
 	if err := r.db.WithContext(ctx).Where("tracking_number = ?", trackingNumber).First(&row).Error; err != nil {
 		return nil, recordError(err)
 	}
-	shipment := modelsShipment(row)
+	shipment := shipmentDomain(row)
 	return &shipment, nil
 }
 
-func (r *GormRepository) FindEventsByShipmentID(ctx context.Context, shipmentID uint) ([]models.ShipmentEvent, error) {
+func (r *GormRepository) FindEventsByShipmentID(ctx context.Context, shipmentID uint) ([]domain.ShipmentEvent, error) {
 	var rows []eventRecord
 	if err := r.db.WithContext(ctx).Where("shipment_id = ?", shipmentID).Order("created_at asc").Find(&rows).Error; err != nil {
 		return nil, err
 	}
-	events := make([]models.ShipmentEvent, len(rows))
+	events := make([]domain.ShipmentEvent, len(rows))
 	for i, row := range rows {
-		events[i] = models.ShipmentEvent{
+		events[i] = domain.ShipmentEvent{
 			ID: row.ID, ShipmentID: row.ShipmentID, Status: row.Status,
-			Location: models.Location{Name: row.LocationName, Lat: row.LocationLat, Lng: row.LocationLng},
+			Location: domain.Location{Name: row.LocationName, Lat: row.LocationLat, Lng: row.LocationLng},
 			Description: row.Description, CreatedAt: row.CreatedAt,
 		}
 	}
@@ -200,27 +199,5 @@ func eventRecordFromDomain(event domain.ShipmentEvent) eventRecord {
 	}
 }
 
-func modelsShipment(row shipmentRecord) models.Shipment {
-	return models.Shipment{
-		ID: row.ID, OrderID: row.OrderID, TrackingNumber: row.TrackingNumber,
-		Customer: models.ContactInfo{
-			Name: row.CustomerName, Zipcode: row.CustomerZipcode,
-			SubDistrict: row.CustomerSubDistrict, District: row.CustomerDistrict, Province: row.CustomerProvince,
-			Coords: models.GeoPoint{Lat: row.CustomerLat, Lng: row.CustomerLng},
-		},
-		CustomerLat: row.CustomerLat, CustomerLng: row.CustomerLng,
-		Receiver: models.ContactInfo{
-			Name: row.ReceiverName, Zipcode: row.ReceiverZipcode,
-			SubDistrict: row.ReceiverSubDistrict, District: row.ReceiverDistrict, Province: row.ReceiverProvince,
-			Coords: models.GeoPoint{Lat: row.ReceiverLat, Lng: row.ReceiverLng},
-		},
-		ReceiverLat: row.ReceiverLat, ReceiverLng: row.ReceiverLng,
-		CurrentCoords: models.GeoPoint{Lat: row.CurrentLat, Lng: row.CurrentLng},
-		CurrentLat: row.CurrentLat, CurrentLng: row.CurrentLng,
-		Origin: row.Origin, Destination: row.Destination, Status: row.Status,
-		Carrier: row.Carrier, HubID: row.HubID, Weight: row.Weight, Items: row.Items,
-		EstimatedDelivery: row.EstimatedDelivery, CreatedAt: row.CreatedAt, Progress: row.Progress,
-	}
-}
 
 var _ application.Repository = (*GormRepository)(nil)

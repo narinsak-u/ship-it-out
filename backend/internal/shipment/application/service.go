@@ -23,6 +23,10 @@ type Repository interface {
 	SaveWithEvent(context.Context, *domain.Shipment, *domain.ShipmentEvent) error
 	DeleteWithEvents(context.Context, *domain.Shipment) error
 }
+type TrackingReader interface {
+	FindByTrackingNumber(context.Context, string) (*domain.Shipment, error)
+	FindEventsByShipmentID(context.Context, uint) ([]domain.ShipmentEvent, error)
+}
 
 type HubReader interface {
 	FindByID(context.Context, string) (*hubdomain.Hub, error)

@@ -33,7 +33,8 @@ import (
 	shipmentinfra "github.com/narinsak-u/backend/internal/shipment/infrastructure"
 	shipmentpresentation "github.com/narinsak-u/backend/internal/shipment/presentation"
 	hubdomain "github.com/narinsak-u/backend/internal/hub/domain"
-	"github.com/narinsak-u/backend/internal/tracking"
+	trackingapplication "github.com/narinsak-u/backend/internal/tracking/application"
+	trackingpresentation "github.com/narinsak-u/backend/internal/tracking/presentation"
 )
 
 // NewApp composes shared middleware and existing feature routes around db.
@@ -51,7 +52,7 @@ func NewApp(db *gorm.DB) *fiber.App {
 	shipmentRepo := shipmentinfra.NewGormRepository(db)
 	shipmentService := shipmentapp.NewService(shipmentRepo, shipmentHubReader{service: hubapplication.NewService(hubRepo)})
 	shipmentHandler := shipmentpresentation.NewHandler(shipmentService)
-	trackingHandler := tracking.NewHandler(tracking.NewService(shipmentRepo))
+	trackingHandler := trackingpresentation.NewHandler(trackingapplication.NewService(shipmentRepo))
 	analyticsRepo := infrastructure.NewGormRepository(db)
 	analyticsHandler := presentation.NewHandler(application.NewService(analyticsRepo, analyticsRepo))
 	server.RegisterRoutes(app, authRepo, authHandler, hubHandler, shipmentHandler, trackingHandler, analyticsHandler)
