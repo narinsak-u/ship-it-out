@@ -20,7 +20,8 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
-import { toAnalyticsData, type AnalyticsData } from "./data";
+import { getAnalyticsData } from "./client-api";
+import type { AnalyticsData } from "./data";
 
 const STATUS_COLORS = [
   "var(--chart-1)",
@@ -85,16 +86,7 @@ export function AnalyticsPanel({
       setLoading(true);
       setError(false);
       try {
-        const [overviewResponse, seriesResponse] = await Promise.all([
-          fetch("/api/analytics/overview", { signal: controller.signal }),
-          fetch("/api/analytics/timeseries", { signal: controller.signal }),
-        ]);
-        if (!overviewResponse.ok || !seriesResponse.ok) throw new Error("Analytics request failed");
-        const [overviewResult, seriesResult] = await Promise.all([
-          overviewResponse.json(),
-          seriesResponse.json(),
-        ]);
-        setData(toAnalyticsData(overviewResult, seriesResult));
+        setData(await getAnalyticsData(controller.signal));
       } catch {
         if (!controller.signal.aborted) setError(true);
       } finally {

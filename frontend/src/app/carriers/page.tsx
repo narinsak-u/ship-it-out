@@ -1,5 +1,7 @@
 import { ChartNoAxesColumnIncreasing, Package, Warehouse } from "lucide-react";
 import Link from "next/link";
+import type { AnalyticsData } from "@/features/analytics/data";
+import { getAnalyticsData } from "@/features/analytics/server-api";
 import { AnalyticsPanel } from "@/features/analytics/AnalyticsPanel";
 import { DeliveriesPanel } from "@/features/operations/DeliveriesPanel";
 import { HubsPanel } from "@/features/hubs/HubsPanel";
@@ -7,8 +9,6 @@ import type { Hub } from "@/features/hubs/types";
 import { getHubs } from "@/features/hubs/server-api";
 import type { Shipment } from "@/features/shipments/types";
 import { getShipments } from "@/features/shipments/server-api";
-import { toAnalyticsData, type AnalyticsData } from "@/features/analytics/data";
-import { getApiOrigin } from "@/lib/api/server";
 
 export const dynamic = "force-dynamic";
 
@@ -16,19 +16,6 @@ async function getActiveDeliveries(): Promise<Shipment[]> {
   return getShipments("shipments?limit=-1&exclude_status=delivered");
 }
 
-async function getAnalytics(): Promise<AnalyticsData> {
-  const origin = getApiOrigin();
-  const [overviewResponse, seriesResponse] = await Promise.all([
-    fetch(`${origin}/api/analytics/overview`, { cache: "no-store" }),
-    fetch(`${origin}/api/analytics/timeseries`, { cache: "no-store" }),
-  ]);
-  if (!overviewResponse.ok || !seriesResponse.ok) throw new Error("Analytics request failed");
-  const [overviewResult, seriesResult] = await Promise.all([
-    overviewResponse.json(),
-    seriesResponse.json(),
-  ]);
-  return toAnalyticsData(overviewResult, seriesResult);
-}
 
 export default async function CarriersPage({
   searchParams,
@@ -46,7 +33,7 @@ export default async function CarriersPage({
   let analyticsError = false;
   if (analyticsSelected) {
     try {
-      analytics = await getAnalytics();
+      analytics = await getAnalyticsData();
     } catch {
       analyticsError = true;
     }
