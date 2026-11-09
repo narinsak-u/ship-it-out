@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"errors"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,7 +28,11 @@ import (
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/internal/seed"
 	"github.com/narinsak-u/backend/internal/server"
-	"github.com/narinsak-u/backend/internal/shipment"
+	shipmentapp "github.com/narinsak-u/backend/internal/shipment/application"
+	shipmentdomain "github.com/narinsak-u/backend/internal/shipment/domain"
+	shipmentinfra "github.com/narinsak-u/backend/internal/shipment/infrastructure"
+	shipmentpresentation "github.com/narinsak-u/backend/internal/shipment/presentation"
+	hubdomain "github.com/narinsak-u/backend/internal/hub/domain"
 	"github.com/narinsak-u/backend/internal/tracking"
 )
 
@@ -43,13 +48,25 @@ func NewApp(db *gorm.DB) *fiber.App {
 	authHandler := authpresentation.NewHandler(authService)
 	hubRepo := hubinfra.NewGormRepository(db)
 	hubHandler := hubpresentation.NewHandler(hubapplication.NewService(hubRepo))
-	shipmentRepo := shipment.NewGormRepository(db)
-	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hubRepo))
+	shipmentRepo := shipmentinfra.NewGormRepository(db)
+	shipmentService := shipmentapp.NewService(shipmentRepo, shipmentHubReader{service: hubapplication.NewService(hubRepo)})
+	shipmentHandler := shipmentpresentation.NewHandler(shipmentService)
 	trackingHandler := tracking.NewHandler(tracking.NewService(shipmentRepo))
 	analyticsRepo := infrastructure.NewGormRepository(db)
 	analyticsHandler := presentation.NewHandler(application.NewService(analyticsRepo, analyticsRepo))
 	server.RegisterRoutes(app, authRepo, authHandler, hubHandler, shipmentHandler, trackingHandler, analyticsHandler)
 	return app
+}
+
+
+type shipmentHubReader struct { service *hubapplication.Service }
+
+func (r shipmentHubReader) FindByID(ctx context.Context, id string) (*hubdomain.Hub, error) {
+	hub, err := r.service.GetByID(ctx, id)
+	if errors.Is(err, hubapplication.ErrNotFound) {
+		return nil, shipmentdomain.ErrNotFound
+	}
+	return hub, err
 }
 
 // Run loads configuration, initializes persistent state, and serves the API.
@@ -67,7 +84,7 @@ func Run() error {
 	}
 	defer sqlDB.Close()
 
-	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hubinfra.Record{}); err != nil {
+	if err := db.AutoMigrate(append([]any{&models.User{}, &hubinfra.Record{}}, shipmentinfra.MigrationModels()...)...); err != nil {
 		return fmt.Errorf("database migration failed: %w", err)
 	}
 	if err := seed.BootstrapAdmin(db, config.App.AdminName, config.App.AdminEmail, config.App.AdminPassword, config.App.AdminRoleCutover); err != nil {

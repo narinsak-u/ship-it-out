@@ -2,6 +2,8 @@ package seed
 
 import (
 	"encoding/json"
+	"github.com/gofiber/fiber/v2"
+	"context"
 	"fmt"
 	"net/http/httptest"
 	"net/url"
@@ -10,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"errors"
 	authapplication "github.com/narinsak-u/backend/internal/auth/application"
 	authinfra "github.com/narinsak-u/backend/internal/auth/infrastructure"
 	authpresentation "github.com/narinsak-u/backend/internal/auth/presentation"
@@ -18,8 +20,12 @@ import (
 	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
 	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
 	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
+	hubdomain "github.com/narinsak-u/backend/internal/hub/domain"
 	"github.com/narinsak-u/backend/internal/models"
-	"github.com/narinsak-u/backend/internal/shipment"
+	shipmentapplication "github.com/narinsak-u/backend/internal/shipment/application"
+	shipmentdomain "github.com/narinsak-u/backend/internal/shipment/domain"
+	shipmentinfra "github.com/narinsak-u/backend/internal/shipment/infrastructure"
+	shipmentpresentation "github.com/narinsak-u/backend/internal/shipment/presentation"
 	"github.com/narinsak-u/backend/pkg/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -94,8 +100,8 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	app.Post("/api/hubs", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), hubHandler.Create)
 	app.Put("/api/hubs/:id", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), hubHandler.Update)
 	app.Delete("/api/hubs/:id", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), hubHandler.Delete)
-	shipmentRepo := shipment.NewGormRepository(db)
-	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hubinfra.NewGormRepository(db)))
+	shipmentRepo := shipmentinfra.NewGormRepository(db)
+	shipmentHandler := shipmentpresentation.NewHandler(shipmentapplication.NewService(shipmentRepo, seedShipmentHubReader{service: hubapplication.NewService(hubinfra.NewGormRepository(db))}))
 	app.Post("/api/shipments", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.Create)
 	app.Patch("/api/shipments/:orderId/status", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.UpdateStatus)
 	app.Put("/api/shipments/:orderId", authpresentation.AuthRequired(), authpresentation.StaffOnly(repo), shipmentHandler.Update)
@@ -311,3 +317,5 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 		t.Fatalf("second legacy role after cutover = %q, err %v", otherLegacyAfter.Role, err)
 	}
 }
+type seedShipmentHubReader struct { service *hubapplication.Service }
+func(r seedShipmentHubReader)FindByID(ctx context.Context,id string)(*hubdomain.Hub,error){hub,err:=r.service.GetByID(ctx,id);if errors.Is(err,hubapplication.ErrNotFound){return nil,shipmentdomain.ErrNotFound};return hub,err}

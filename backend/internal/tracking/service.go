@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/narinsak-u/backend/internal/models"
-	"github.com/narinsak-u/backend/internal/shipment"
+	shipmentapplication "github.com/narinsak-u/backend/internal/shipment/application"
 )
 
 var (
@@ -33,7 +33,7 @@ func NewService(query ShipmentQuery) *Service {
 
 func (s *Service) Track(ctx context.Context, trackingNumber string) (*TrackingResult, error) {
 	shipmentRecord, err := s.query.FindByTrackingNumber(ctx, trackingNumber)
-	if errors.Is(err, shipment.ErrNotFound) {
+	if errors.Is(err, shipmentapplication.ErrNotFound) {
 		return nil, ErrShipmentNotFound
 	}
 	if err != nil {

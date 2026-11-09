@@ -7,7 +7,7 @@ import (
 	"testing"
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/models"
-	"github.com/narinsak-u/backend/internal/shipment"
+	shipmentapplication "github.com/narinsak-u/backend/internal/shipment/application"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -59,7 +59,7 @@ func TestTrack_Found(t *testing.T) {
 
 func TestTrack_NotFound(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByTrackingNumber", "INVALID").Return(nil, shipment.ErrNotFound)
+	repo.On("FindByTrackingNumber", "INVALID").Return(nil, shipmentapplication.ErrNotFound)
 
 	app := fiber.New()
 	h := NewHandler(NewService(repo))

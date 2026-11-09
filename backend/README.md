@@ -183,14 +183,14 @@ go tool cover -html=coverage.out          # HTML report
 | `internal/analytics` | HTTP + mock | 81% | Handler + analytics service |
 | `internal/auth` | HTTP + mock | 74% | Handler + repository |
 | `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
-| `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
+| `internal/shipment/{domain,application,infrastructure,presentation}` | HTTP + unit + PostgreSQL | — | Domain workflows, API DTOs, GORM adapter, and transaction/ID guarantees |
 | `internal/hub/{domain,application,infrastructure,presentation}` | HTTP + mock | 49% | Layered domain, use case, GORM adapter, and handler |
 | `internal/bootstrap` | HTTP smoke | — | Route composition, health, and access compatibility |
 Shipment repository integration coverage requires an expendable PostgreSQL database. It creates a private schema and drops it on cleanup:
 
 ```bash
 export SHIPMENT_TEST_DATABASE_URL='postgres://user:pass@127.0.0.1:5432/shipments_test?sslmode=disable'
-go test ./internal/shipment -run TestGormRepositoryTransactionsAndConcurrentIDs -count=1
+go test ./internal/shipment/infrastructure -run TestGormRepositoryTransactionsAndConcurrentIDs -count=1
 ```
 
-The test verifies creation, status-update, and deletion rollback behavior, plus concurrent order/tracking ID uniqueness across separate database connections. Repository mappings and unique-constraint behavior remain covered by database schema/hooks and must be verified against PostgreSQL when running the suite.
+The test verifies coordinate mapping, creation/status/deletion rollback, and concurrent order/tracking ID uniqueness across separate database connections.
