@@ -24,14 +24,18 @@ Go API server for the Thun-u-der Express shipment tracking platform. Built with 
 backend/
 ├── cmd/server/main.go           # Server process entry point
 ├── internal/
-│   ├── bootstrap/               # Composition, startup, health route, and shutdown
-│   ├── platform/                # Config, database, HTTP utilities, generic middleware
-│   ├── seed/                    # Admin/demo account and hub bootstrap
-│   ├── auth/                    # Authentication workflow, GORM user adapter, rate limit
-│   ├── shipment/                # Shipment workflows, GORM adapter, PostgreSQL tests
-│   ├── hub/                     # Hub workflow and GORM adapter
-│   ├── tracking/                # Public tracking workflow
-│   └── analytics/               # Analytics workflow and aggregation adapter
+│   ├── bootstrap/               # Startup, dependency and route composition, health behavior, shutdown
+│   ├── platform/                # Config, database, generic middleware, and HTTP envelope utilities
+│   ├── seed/                    # Bootstrap orchestration; delegates seed writes to feature adapters
+│   ├── auth/
+│   │   ├── domain/              # User domain model
+│   │   ├── application/         # Authentication workflows
+│   │   ├── infrastructure/     # User GORM persistence and password adapter
+│   │   └── presentation/        # HTTP handlers, auth middleware, and auth rate limiter
+│   ├── shipment/                # Shipment domain, application, infrastructure, presentation
+│   ├── hub/                     # Hub domain, application, infrastructure, presentation
+│   ├── tracking/                # Public tracking application and presentation
+│   └── analytics/               # Analytics application, including region mapping
 ├── Dockerfile / docker-compose.yml
 └── docs/                        # Overview, workflows, data, and logging references
 ```
@@ -110,12 +114,13 @@ This gives clean JSON with nested objects while keeping normal DB columns for qu
 ## Architecture Notes
 
 - Feature packages keep HTTP handlers, Fiber-independent services, focused repository interfaces, and GORM adapters together.
-- `cmd/server` delegates startup and complete route composition to `internal/bootstrap`.
-- Generic CORS, security headers, logging, and response-envelope utilities live in `internal/platform`; auth owns JWT, staff, and rate-limit behavior.
-- Analytics application owns province-to-region mapping; analytics infrastructure owns the SQL aggregation over the existing shipments table.
+- `cmd/server` delegates startup to `internal/bootstrap`, which composes feature dependencies and routes, and owns health behavior and shutdown.
+- `internal/platform` provides generic middleware and HTTP envelope utilities; auth-specific middleware and rate limiting belong to auth presentation.
+- Auth infrastructure owns the user GORM model/repository and password adapter; analytics application owns province-to-region mapping.
+- Tracking and analytics use dedicated application and repository interfaces rather than shipment persistence APIs.
 - Shipment creation, status changes, and deletion run their related database writes in transactions. PostgreSQL constraints and database-backed ID allocation protect writes across server instances.
 - Staff writes require a fresh database role check; public reads, registration role assignment, cookie/JWT behavior, and route contracts remain unchanged.
-- Seed/bootstrap functions run after AutoMigrate and preserve existing data; no refactor migration is introduced.
+- Bootstrap runs seed orchestration after AutoMigrate; seed writes use feature-owned adapters and preserve existing data. No refactor migration changes API or schema behavior.
 - Middleware order: CORS → security headers → logger; auth-specific rate limiting and auth/staff checks are attached to routes.
 
 ---

@@ -22,14 +22,14 @@ go run ./cmd/server
 backend/
 ├── cmd/server/main.go         # Server process entry point
 ├── internal/
-│   ├── bootstrap/             # Startup, route composition, health, and shutdown
-│   ├── platform/              # Config, database, HTTP utilities, generic middleware
-│   ├── seed/                  # Admin/demo account and hub bootstrap
-│   ├── auth/                  # Authentication workflow, GORM user adapter, and rate limit
-│   ├── shipment/              # Shipment workflow, GORM adapter, PostgreSQL tests
-│   ├── hub/                   # Hub workflow and GORM adapter
-│   ├── tracking/              # Public tracking workflow
-│   └── analytics/             # Analytics workflow and aggregation adapter
+│   ├── bootstrap/             # Startup, dependency/route composition, health behavior, shutdown
+│   ├── platform/              # Config, database, generic middleware, HTTP envelope utilities
+│   ├── seed/                  # Bootstrap orchestration; feature-owned seed adapters write data
+│   ├── auth/                  # User domain, workflows, GORM/password infrastructure, presentation and auth rate limiter
+│   ├── shipment/              # Shipment domain, application, infrastructure, presentation
+│   ├── hub/                   # Hub domain, application, infrastructure, presentation
+│   ├── tracking/              # Public tracking application and presentation
+│   └── analytics/             # Analytics application (including region map) and infrastructure/presentation
 ├── Dockerfile
 ├── docker-compose.yml
 └── docs/                      # Overview, workflows, data, and logging references
@@ -170,11 +170,11 @@ go tool cover -html=coverage.out          # HTML report
 
 | Package | Type | Coverage | Notes |
 |---------|------|----------|-------|
-| `internal/platform/http` | Unit | — | Response envelope helpers |
-| `internal/platform/config` | Unit | 100% | Env loading |
+| `internal/platform` | Unit | — | Generic middleware and HTTP envelope utilities |
+| `internal/auth` | HTTP + mock | 74% | User persistence/password infrastructure, auth presentation and workflows |
 | `internal/tracking` | HTTP + mock | 89% | Handler + tracking service |
-| `internal/analytics` | HTTP + mock | 81% | Handler + analytics service |
-| `internal/auth` | HTTP + mock | 74% | Handler, repository, and rate limiter |
+| `internal/analytics` | HTTP + mock | 81% | Handler + analytics service and region mapping |
+| `internal/bootstrap` | HTTP smoke | — | Route composition, health behavior, and access compatibility |
 | `internal/shipment/{domain,application,infrastructure,presentation}` | HTTP + unit + PostgreSQL | — | Domain workflows, API DTOs, GORM adapter, and transaction/ID guarantees |
 | `internal/hub/{domain,application,infrastructure,presentation}` | HTTP + mock | 49% | Layered domain, use case, GORM adapter, and handler |
 | `internal/bootstrap` | HTTP smoke | — | Route composition, health, and access compatibility |

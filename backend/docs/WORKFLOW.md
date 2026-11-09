@@ -413,9 +413,7 @@ Client → GET /api/analytics/overview
           └─ 6. Return { total, active, delivered, by_status, by_region } → 200
 ```
 
-**Notes:**
-- `by_status` is a GROUP BY via GORM's `Select().Group().Scan()`.
-- `by_region` uses the province-to-region mapping in `internal/analytics/application`.
+- `by_region` maps each shipment's destination province to one of 6 Thai regions (Central, East, North, West, North-east, South) in the analytics application.
 
 **Response shape:**
 ```json
@@ -473,9 +471,9 @@ Client → GET /api/analytics/timeseries
 
 ---
 
-## 6. Authentication Rate Limiting
+## 6. Auth Rate Limiting
 
-**Purpose:** Prevent brute-force attacks on authentication endpoints using an in-memory sliding-window rate limiter keyed by client IP.
+**Purpose:** Prevent brute-force attacks on authentication endpoints using an in-memory sliding-window rate limiter keyed by client IP. The limiter belongs to auth presentation.
 
 **Configuration:**
 
@@ -507,16 +505,7 @@ Request arrives at login or register
 
 ### Entry Point
 
-`internal/bootstrap.Run` migrates the database, then seeds it:
-
-```go
-if err := seed.SeedHubs(database.DB); err != nil {
-	log.Fatal().Err(err).Msg("hub seed failed")
-}
-if err := shipmentinfra.SeedShipments(database.DB); err != nil {
-	log.Fatal().Err(err).Msg("shipment seed failed")
-}
-```
+Bootstrap runs migrations and coordinates seed workflows. Seed writes go through feature-owned adapters: the hub adapter writes hubs, and the shipment adapter writes shipments and their events. Existing seed behavior and data are preserved.
 
 ### 7.1 SeedHubs
 
