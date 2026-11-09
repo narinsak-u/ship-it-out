@@ -1,6 +1,6 @@
 # Frontend architecture
 
-Next.js App Router is the sole supported frontend and runs on Vercel. The Go API is deployed separately. Next server components fetch public data from `API_BASE_URL`; browser components call the same-origin `/api/*` proxy in `app/api/[...path]/route.ts`. The proxy forwards methods, query strings, request bodies, and cookies without changing the Go API contract.
+Next.js App Router is the sole supported frontend and runs on Vercel. The Go API is deployed separately. Next server components fetch public data from `API_BASE_URL`; browser components call the same-origin `/api/*` proxy in `app/api/[...path]/route.ts`. The proxy forwards methods, query strings, and request bodies, plus only `Accept`, `Authorization`, `Content-Type`, `Origin`, and the `jwt` cookie; unrelated browser headers and cookies stay at the Next boundary.
 
 ## Application structure
 

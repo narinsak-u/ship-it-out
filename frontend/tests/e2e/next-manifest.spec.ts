@@ -8,6 +8,14 @@ async function resetManifest(page: Page) {
 test.describe("shipment manifest", () => {
   test.beforeEach(async ({ page }) => resetManifest(page));
 
+  test("shipment list tolerates unrelated large browser cookies", async ({ request }) => {
+    const response = await request.get("/api/shipments?page=1&limit=10", {
+      headers: { cookie: `unrelated=${"x".repeat(6000)}` },
+    });
+    expect(response.status()).toBe(200);
+    expect((await response.json()).data).toHaveLength(10);
+  });
+
   test("search, status filters, and server pagination narrow persisted shipments", async ({
     page,
   }) => {

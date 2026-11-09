@@ -31,7 +31,7 @@ let nextUserId = 3;
 let manifestDeleteFailure = false;
 let nextShipmentNumber = 1;
 
-createServer(async (req, res) => {
+createServer({ maxHeaderSize: 4096 }, async (req, res) => {
   res.setHeader("content-type", "application/json");
   const cookies = Object.fromEntries((req.headers.cookie || "").split("; ").filter(Boolean).map((item) => item.split("=")));
   const user = authSessions.get(cookies.jwt);

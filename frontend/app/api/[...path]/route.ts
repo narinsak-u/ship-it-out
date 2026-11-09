@@ -8,8 +8,13 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     `/api/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`,
     base,
   );
-  const headers = new Headers(request.headers);
-  headers.delete("host");
+  const headers = new Headers();
+  for (const name of ["accept", "authorization", "content-type", "origin"]) {
+    const value = request.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  const jwt = request.cookies.get("jwt")?.value;
+  if (jwt) headers.set("cookie", `jwt=${jwt}`);
   const response = await fetch(target, {
     method: request.method,
     headers,
