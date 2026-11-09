@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/narinsak-u/backend/internal/hub"
+	hub "github.com/narinsak-u/backend/internal/hub/domain"
+	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
 	"gorm.io/gorm"
 )
 
@@ -16,7 +17,7 @@ func SeedHubs(db *gorm.DB) error {
 	defer tx.Rollback()
 
 	var count int64
-	if err := tx.Model(&hub.Record{}).Count(&count).Error; err != nil {
+	if err := tx.Model(&hubinfra.Record{}).Count(&count).Error; err != nil {
 		return err
 	}
 	if count > 0 {
@@ -136,7 +137,7 @@ func SeedHubs(db *gorm.DB) error {
 		},
 	}
 
-	repository := hub.NewGormRepository(tx)
+	repository := hubinfra.NewGormRepository(tx)
 	for i := range hubs {
 		if err := repository.Create(context.Background(), &hubs[i]); err != nil {
 			return err

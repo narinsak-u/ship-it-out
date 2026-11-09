@@ -5,7 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/narinsak-u/backend/internal/hub"
+	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
+	hub "github.com/narinsak-u/backend/internal/hub/domain"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
@@ -96,7 +97,7 @@ func (s *Service) UpdateStatus(ctx context.Context, orderID, status, hubID strin
 	if hubID != "" {
 		hubRecord, err = s.hubs.FindByID(ctx, hubID)
 		if err != nil {
-			if errors.Is(err, hub.ErrNotFound) {
+			if errors.Is(err, hubapplication.ErrNotFound) {
 				return nil, ErrInvalidHub
 			}
 			return nil, err

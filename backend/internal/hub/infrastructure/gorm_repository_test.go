@@ -1,4 +1,4 @@
-package hub
+package infrastructure
 
 import (
 	"context"
@@ -8,9 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/narinsak-u/backend/internal/hub/application"
+	"github.com/narinsak-u/backend/internal/hub/domain"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+type Hub = domain.Hub
+type GeoPoint = domain.GeoPoint
+var ErrNotFound = application.ErrNotFound
 
 func TestGormRepositoryCRUD(t *testing.T) {
 	dsn := os.Getenv("HUB_TEST_DATABASE_URL")

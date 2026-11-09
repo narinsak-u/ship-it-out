@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/hub"
+	hub "github.com/narinsak-u/backend/internal/hub/domain"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

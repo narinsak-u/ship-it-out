@@ -21,7 +21,9 @@ import (
 	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/platform/config"
 	"github.com/narinsak-u/backend/internal/platform/database"
-	"github.com/narinsak-u/backend/internal/hub"
+	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
+	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
+	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/internal/seed"
@@ -40,8 +42,8 @@ func NewApp(db *gorm.DB) *fiber.App {
 	authRepo := auth.NewGormRepository(db)
 	authService := authapplication.NewService(authinfra.NewGormRepository(db), authinfra.PasswordAdapter{}, authinfra.NewJWTAdapter(config.App.JWTSecret, config.App.JWTTTL))
 	authHandler := authpresentation.NewHandler(authService)
-	hubRepo := hub.NewGormRepository(db)
-	hubHandler := hub.NewHandler(hub.NewService(hubRepo))
+	hubRepo := hubinfra.NewGormRepository(db)
+	hubHandler := hubpresentation.NewHandler(hubapplication.NewService(hubRepo))
 	shipmentRepo := shipment.NewGormRepository(db)
 	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hubRepo))
 	trackingHandler := tracking.NewHandler(tracking.NewService(shipmentRepo))
@@ -66,7 +68,7 @@ func Run() error {
 	}
 	defer sqlDB.Close()
 
-	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hub.Record{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hubinfra.Record{}); err != nil {
 		return fmt.Errorf("database migration failed: %w", err)
 	}
 	if err := seed.BootstrapAdmin(db, config.App.AdminName, config.App.AdminEmail, config.App.AdminPassword, config.App.AdminRoleCutover); err != nil {

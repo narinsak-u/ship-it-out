@@ -3,7 +3,7 @@ package shipment
 import (
 	"testing"
 
-	"github.com/narinsak-u/backend/internal/hub"
+	hub "github.com/narinsak-u/backend/internal/hub/domain"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 )

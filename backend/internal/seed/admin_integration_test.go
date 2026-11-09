@@ -13,7 +13,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/narinsak-u/backend/internal/auth"
 	"github.com/narinsak-u/backend/internal/platform/config"
-	"github.com/narinsak-u/backend/internal/hub"
+	hubapplication "github.com/narinsak-u/backend/internal/hub/application"
+	hubinfra "github.com/narinsak-u/backend/internal/hub/infrastructure"
+	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/internal/shipment"
@@ -47,7 +49,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hub.Record{}, &bootstrapState{}, &demoBootstrapState{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hubinfra.Record{}, &bootstrapState{}, &demoBootstrapState{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,7 +69,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err := db.Create(&preservedShipment).Error; err != nil {
 		t.Fatal(err)
 	}
-	preservedHub := hub.Record{ID: "HUB-PRESERVED", Name: "Preserved", CarrierID: "carrier", Address: "address", Capacity: 10, CurrentUtilization: 1, Status: "active"}
+	preservedHub := hubinfra.Record{ID: "HUB-PRESERVED", Name: "Preserved", CarrierID: "carrier", Address: "address", Capacity: 10, CurrentUtilization: 1, Status: "active"}
 	if err := db.Create(&preservedHub).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +82,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	config.App.JWTTTL = time.Hour
 	t.Cleanup(func() { config.App = oldConfig })
 	repo := auth.NewGormRepository(db)
-	hubHandler := hub.NewHandler(hub.NewService(hub.NewGormRepository(db)))
+	hubHandler := hubpresentation.NewHandler(hubapplication.NewService(hubinfra.NewGormRepository(db)))
 	app := fiber.New()
 	authHandler := auth.NewHandler(auth.NewService(repo, config.App.JWTSecret, config.App.JWTTTL))
 	app.Post("/api/auth/register", authHandler.Register)
@@ -91,7 +93,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	app.Put("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Update)
 	app.Delete("/api/hubs/:id", middleware.AuthRequired(), middleware.StaffOnly(repo), hubHandler.Delete)
 	shipmentRepo := shipment.NewGormRepository(db)
-	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hub.NewGormRepository(db)))
+	shipmentHandler := shipment.NewHandler(shipment.NewService(shipmentRepo, hubinfra.NewGormRepository(db)))
 	app.Post("/api/shipments", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Create)
 	app.Patch("/api/shipments/:orderId/status", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.UpdateStatus)
 	app.Put("/api/shipments/:orderId", middleware.AuthRequired(), middleware.StaffOnly(repo), shipmentHandler.Update)
@@ -292,7 +294,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 		model any
 		label string
 		want  int64
-	}{{&models.Shipment{}, "shipment", 1}, {&hub.Record{}, "hub", 2}, {&models.ShipmentEvent{}, "event", 1}} {
+	}{{&models.Shipment{}, "shipment", 1}, {&hubinfra.Record{}, "hub", 2}, {&models.ShipmentEvent{}, "event", 1}} {
 		var count int64
 		if err := db.Model(record.model).Count(&count).Error; err != nil || count != record.want {
 			t.Fatalf("preserved %s count = %d, want %d, err %v", record.label, count, record.want, err)

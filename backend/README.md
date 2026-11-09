@@ -184,7 +184,7 @@ go tool cover -html=coverage.out          # HTML report
 | `internal/auth` | HTTP + mock | 74% | Handler + repository |
 | `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
 | `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
-| `internal/hub` | HTTP + mock | 49% | Handler + repository |
+| `internal/hub/{domain,application,infrastructure,presentation}` | HTTP + mock | 49% | Layered domain, use case, GORM adapter, and handler |
 | `internal/bootstrap` | HTTP smoke | — | Route composition, health, and access compatibility |
 Shipment repository integration coverage requires an expendable PostgreSQL database. It creates a private schema and drops it on cleanup:
 

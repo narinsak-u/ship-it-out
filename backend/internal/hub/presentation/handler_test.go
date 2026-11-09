@@ -1,4 +1,4 @@
-package hub
+package presentation
 
 import (
 	"context"
@@ -8,10 +8,17 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/narinsak-u/backend/internal/hub/application"
+	"github.com/narinsak-u/backend/internal/hub/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
 )
+
+type Hub = domain.Hub
+type GeoPoint = domain.GeoPoint
+var NewService = application.NewService
+var ErrNotFound = application.ErrNotFound
 
 type mockRepo struct{ mock.Mock }
 

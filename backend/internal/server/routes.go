@@ -6,14 +6,14 @@ import (
 	"github.com/narinsak-u/backend/internal/analytics/presentation"
 	authpresentation "github.com/narinsak-u/backend/internal/auth/presentation"
 	"github.com/narinsak-u/backend/internal/health"
-	"github.com/narinsak-u/backend/internal/hub"
+	hubpresentation "github.com/narinsak-u/backend/internal/hub/presentation"
 	"github.com/narinsak-u/backend/internal/middleware"
 	"github.com/narinsak-u/backend/internal/shipment"
 	"github.com/narinsak-u/backend/internal/tracking"
 )
 
 // RegisterRoutes attaches feature handlers and access middleware to the API.
-func RegisterRoutes(app *fiber.App, authRepo middleware.UserRepository, authHandler *authpresentation.Handler, hubHandler *hub.Handler, shipmentHandler *shipment.Handler, trackingHandler *tracking.Handler, analyticsHandler *presentation.Handler) {
+func RegisterRoutes(app *fiber.App, authRepo middleware.UserRepository, authHandler *authpresentation.Handler, hubHandler *hubpresentation.Handler, shipmentHandler *shipment.Handler, trackingHandler *tracking.Handler, analyticsHandler *presentation.Handler) {
 	api := app.Group("/api")
 	api.Get("/health", health.Check)
 

@@ -38,7 +38,7 @@ In `routes.go`:
 shipmentRepo := shipment.NewGormRepository(database.DB)
 
 // 2. Create the hub repository (needed by UpdateStatus)
-hubRepo := hub.NewGormRepository(database.DB)
+hubRepo := hubinfra.NewGormRepository(database.DB)
 
 // 3. Create the workflow service and inject it into the handler.
 shipmentService := shipment.NewService(shipmentRepo, hubRepo)
@@ -245,7 +245,7 @@ func TestCreate(t *testing.T) {
 │                 bootstrap.NewApp                           │
 │                                                              │
 │  shipmentRepo := NewGormRepository(database.DB)              │
-│  hubRepo      := hub.NewGormRepository(database.DB)          │
+│  hubRepo      := hubinfra.NewGormRepository(database.DB)          │
 │  service      := NewService(shipmentRepo, hubRepo)            │
 │  handler      := NewHandler(service)                          │
 │  app.Post("/api/shipments", handler.Create)                    │

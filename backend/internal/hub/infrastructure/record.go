@@ -1,6 +1,10 @@
-package hub
+package infrastructure
 
-import "time"
+import (
+	"time"
+
+	"github.com/narinsak-u/backend/internal/hub/domain"
+)
 
 type Record struct {
 	ID                 string    `gorm:"primaryKey"`
@@ -17,11 +21,11 @@ type Record struct {
 
 func (Record) TableName() string { return "hubs" }
 
-func recordFromHub(h Hub) Record {
+func recordFromHub(h domain.Hub) Record {
 	return Record{ID: h.ID, Name: h.Name, CarrierID: h.CarrierID, Address: h.Address, Lat: h.Coords.Lat, Lng: h.Coords.Lng, Capacity: h.Capacity, CurrentUtilization: h.CurrentUtilization, Status: h.Status, CreatedAt: h.CreatedAt}
 }
 
-func (r Record) hub() Hub {
-	return Hub{ID: r.ID, Name: r.Name, CarrierID: r.CarrierID, Address: r.Address, Lat: r.Lat, Lng: r.Lng, Coords: GeoPoint{Lat: r.Lat, Lng: r.Lng}, Capacity: r.Capacity, CurrentUtilization: r.CurrentUtilization, Status: r.Status, CreatedAt: r.CreatedAt}
+func (r Record) hub() domain.Hub {
+	return domain.Hub{ID: r.ID, Name: r.Name, CarrierID: r.CarrierID, Address: r.Address, Lat: r.Lat, Lng: r.Lng, Coords: domain.GeoPoint{Lat: r.Lat, Lng: r.Lng}, Capacity: r.Capacity, CurrentUtilization: r.CurrentUtilization, Status: r.Status, CreatedAt: r.CreatedAt}
 }
 

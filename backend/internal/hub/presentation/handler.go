@@ -1,18 +1,19 @@
-// Package hub provides HTTP handlers for managing logistics hubs.
-package hub
+// Package presentation provides HTTP handlers for managing logistics hubs.
+package presentation
 
 import (
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/narinsak-u/backend/internal/hub/application"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
 type Handler struct {
-	service *Service
+	service *application.Service
 }
 
-func NewHandler(service *Service) *Handler {
+func NewHandler(service *application.Service) *Handler {
 	return &Handler{service: service}
 }
 
@@ -27,7 +28,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 func (h *Handler) GetByID(c *fiber.Ctx) error {
 	hub, err := h.service.GetByID(c.UserContext(), c.Params("id"))
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, application.ErrNotFound) {
 			return utils.Error(c, 404, "hub not found")
 		}
 		return utils.Error(c, 500, "failed to fetch hub")
@@ -36,11 +37,12 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 }
 
 func (h *Handler) Create(c *fiber.Ctx) error {
-	var hub Hub
-	if err := c.BodyParser(&hub); err != nil {
+	var request HubRequest
+	if err := c.BodyParser(&request); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
-	if err := h.service.Create(c.UserContext(), &hub); err != nil {
+	hub := request.hub()
+	if err := h.service.Create(c.UserContext(), hub); err != nil {
 		return utils.Error(c, 500, "failed to create hub")
 	}
 	return utils.Success(c, hub)
@@ -49,22 +51,23 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 func (h *Handler) Update(c *fiber.Ctx) error {
 	id := c.Params("id")
 	if _, err := h.service.GetByID(c.UserContext(), id); err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, application.ErrNotFound) {
 			return utils.Error(c, 404, "hub not found")
 		}
 		return utils.Error(c, 500, "failed to update hub")
 	}
-	var hub Hub
-	if err := c.BodyParser(&hub); err != nil {
+	var request HubRequest
+	if err := c.BodyParser(&request); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
-	if err := h.service.Update(c.UserContext(), id, &hub); err != nil {
-		if errors.Is(err, ErrNotFound) {
+	hub := request.hub()
+	if err := h.service.Update(c.UserContext(), id, hub); err != nil {
+		if errors.Is(err, application.ErrNotFound) {
 			return utils.Error(c, 404, "hub not found")
 		}
 		return utils.Error(c, 500, "failed to update hub")
 	}
-	return utils.Success(c, &hub)
+	return utils.Success(c, hub)
 }
 
 func (h *Handler) Delete(c *fiber.Ctx) error {
