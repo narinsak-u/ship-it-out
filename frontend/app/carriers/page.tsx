@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AnalyticsPanel } from "@/features/analytics/AnalyticsPanel";
 import { DeliveriesPanel } from "@/features/operations/DeliveriesPanel";
 import { HubsPanel } from "@/features/operations/HubsPanel";
-import styles from "@/features/operations/CarrierShell.module.css";
 import type { Hub } from "@/lib/hubs";
 import type { Order } from "@/lib/orders";
 import { mapShipmentToOrder, type BackendShipment } from "@/lib/api/mappers";
@@ -35,7 +34,6 @@ async function getAnalytics(): Promise<AnalyticsData> {
     fetch(`${origin}/api/analytics/timeseries`, { cache: "no-store" }),
   ]);
   if (!overviewResponse.ok || !seriesResponse.ok) throw new Error("Analytics request failed");
-
   const [overviewResult, seriesResult] = await Promise.all([
     overviewResponse.json(),
     seriesResponse.json(),
@@ -57,7 +55,6 @@ export default async function CarriersPage({
   let deliveriesError = false;
   let analytics: AnalyticsData | null = null;
   let analyticsError = false;
-
   if (analyticsSelected) {
     try {
       analytics = await getAnalytics();
@@ -80,38 +77,37 @@ export default async function CarriersPage({
 
   return (
     <main>
-      <section className={styles.hero}>
-        <div className={styles.heroInner}>
-          <span className={styles.eyebrow}>/ carriers</span>
-          <h1>Carrier operations</h1>
-          <p>Manage carrier hubs and monitor active deliveries across the fleet.</p>
+      <section className="border-b border-border bg-[linear-gradient(135deg,#102b35,#111b27_65%)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-primary">
+            / carriers
+          </span>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
+            Carrier operations
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Manage carrier hubs and monitor active deliveries across the fleet.
+          </p>
         </div>
       </section>
-      <section className={styles.content}>
-        <nav className={styles.tabs} aria-label="Carrier operations">
-          <Link
-            className={styles.tab}
-            href="/carriers"
-            aria-current={!analyticsSelected && !hubsSelected ? "page" : undefined}
-          >
-            Active Deliveries
-          </Link>
-          <Link
-            className={styles.tab}
-            href="/carriers?tab=hubs"
-            aria-current={hubsSelected ? "page" : undefined}
-          >
-            Hubs
-          </Link>
-          <Link
-            className={styles.tab}
-            href="/carriers?tab=analytics"
-            aria-current={analyticsSelected ? "page" : undefined}
-          >
-            Analytics
-          </Link>
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+        <nav className="mb-[-1px] flex overflow-x-auto" aria-label="Carrier operations">
+          {[
+            ["Active Deliveries", "/carriers", !analyticsSelected && !hubsSelected],
+            ["Hubs", "/carriers?tab=hubs", hubsSelected],
+            ["Analytics", "/carriers?tab=analytics", analyticsSelected],
+          ].map(([label, href, active]) => (
+            <Link
+              key={href as string}
+              className={`whitespace-nowrap rounded-t-lg border px-4 py-3 font-mono text-sm focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? "border-border border-b-card bg-card text-foreground" : "border-border bg-secondary text-muted-foreground"}`}
+              href={href as string}
+              aria-current={active ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
-        <div className={styles.panel}>
+        <div className="rounded-b-lg rounded-tr-lg border border-border bg-card p-4 shadow-xl sm:p-6">
           {analyticsSelected ? (
             <AnalyticsPanel initialData={analytics} initialError={analyticsError} />
           ) : hubsSelected ? (

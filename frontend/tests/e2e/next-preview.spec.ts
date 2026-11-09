@@ -17,7 +17,9 @@ test("direct detail URL renders API-backed shipment and timeline", async ({ page
 
 test("missing shipment has not-found state without a map", async ({ page }) => {
   await page.goto("/orders/missing");
-  await expect(page.getByRole("heading", { name: "Shipment not found" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Shipment not found" })).toBeVisible({
+    timeout: 15000,
+  });
   await expect(page.locator(".leaflet-map")).toHaveCount(0);
 });
 test("warns when CARTO key is missing instead of fetching unusable tiles", async ({ page }) => {
@@ -27,8 +29,10 @@ test("warns when CARTO key is missing instead of fetching unusable tiles", async
   });
   await page.goto("/orders/ORD-TEST1");
   await expect(page.getByRole("region", { name: "Shipment route map" })).toBeVisible();
-  await expect(page.locator(".map-key-warning")).toHaveText(
-    "Map tiles unavailable. Configure NEXT_PUBLIC_CARTO_API_KEY.",
-  );
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Map tiles unavailable. Configure NEXT_PUBLIC_CARTO_API_KEY." }),
+  ).toBeVisible();
   expect(tileRequests).toHaveLength(0);
 });

@@ -45,4 +45,4 @@ For production cutover, configure Vercel `API_BASE_URL` to the Go API origin and
 
 Supported routes: `/`, `/orders`, `/orders/create`, `/orders/[orderId]`, `/orders/[orderId]/edit`, `/carriers`. Playwright tests in `tests/e2e/next-*.spec.ts` cover navigation, public SSR, auth cookie restore, staff writes, demo write denial, shipment management, hubs, and analytics. Tests start a local Next server and Go API-compatible fixture; live deployment smoke coverage must additionally exercise the deployed Next and Go origins.
 
-See `docs/OVERVIEW.md` and root `docs/adr/0001-nextjs-frontend-api-origin.md` for architecture and API origin details.
+See `docs/OVERVIEW.md`, root `docs/adr/0001-nextjs-frontend-api-origin.md`, and root `docs/adr/0003-tailwind-shadcn-zustand.md` for frontend architecture and UI decisions.

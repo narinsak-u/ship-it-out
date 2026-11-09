@@ -74,7 +74,8 @@ test("staff can create, edit, and confirm deletion of a hub", async ({ page }) =
   await page.getByRole("button", { name: "Add Hub" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Name").fill("Test Facility");
-  await dialog.getByLabel("Province").selectOption("Sakon Nakhon");
+  await dialog.getByRole("combobox", { name: "Province" }).click();
+  await page.getByRole("option", { name: "Sakon Nakhon" }).click();
   await dialog.getByLabel("Capacity (units)").fill("200");
   await dialog.getByLabel("Current Utilization").fill("40");
   await dialog.getByRole("button", { name: "Create Hub" }).click();
@@ -126,7 +127,8 @@ test("hub form shows geocoding failures inline and does not save fake coordinate
   await page.getByRole("button", { name: "Add Hub" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Name").fill("Unresolved Facility");
-  await dialog.getByLabel("Province").selectOption("Sakon Nakhon");
+  await dialog.getByRole("combobox", { name: "Province" }).click();
+  await page.getByRole("option", { name: "Sakon Nakhon" }).click();
   await dialog.getByRole("button", { name: "Create Hub" }).click();
   await expect(dialog.getByRole("alert")).toContainText("Could not resolve this address");
   await expect(dialog).toBeVisible();

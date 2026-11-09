@@ -5,20 +5,24 @@ Next.js App Router is the sole supported frontend and runs on Vercel. The Go API
 ## Application structure
 
 - `app/`: routes, layouts, and server-only route handlers.
-- `src/features/auth/`: client auth provider and sign-in controls.
+- `src/features/auth/`: Zustand auth store and sign-in controls.
 - `src/features/shipments/`: public homepage, server-rendered data helpers, manifest, shipment forms, and tracking search.
 - `src/features/operations/`: carrier operations, hubs, deliveries, and maps.
-- `src/features/analytics/`: API-backed analytics.
+- `src/features/analytics/`: API-backed analytics with Recharts charts.
+- `src/components/ui/`: shadcn/ui primitives; `src/lib/utils.ts` merges utility classes.
+- `app/globals.css`: Tailwind v4 theme and base layer; Leaflet vendor CSS and map marker rules are the only global style exceptions.
 - `src/lib/`: shared shipment and hub types, API response mappers, and Next server API helpers.
 - `tests/e2e/next-*.spec.ts`: supported Playwright browser coverage.
 
 ## Request and security model
 
-`API_BASE_URL` is required and server-only. Configure it as the Go API origin without an `/api` suffix. Browser code must request `/api/...` on the Next.js origin; Next forwards to Go. This keeps the HTTP-only `jwt` cookie first-party in the browser and avoids cross-origin browser API requests. Go enforces customer/staff roles and remains authoritative for all writes. Public pages do not require login; no guest mode or client-persisted auth exists.
+- `API_BASE_URL` is required and server-only. Configure it as the Go API origin without an `/api` suffix. Browser code must request `/api/...` on the Next.js origin; Next forwards to Go. This keeps the HTTP-only `jwt` cookie first-party in the browser and avoids cross-origin browser API requests. Go enforces customer/staff roles and remains authoritative for all writes. Zustand holds auth state in memory only; no guest mode or token persistence.
 
 Login UI visibly shows demo credentials `demo@shipitout.example` / `demo-read-only-2026`. This account is read-only; protected writes require staff. Geocoding is server-side and requires `OPENCAGE_API_KEY`. Never expose API credentials through `NEXT_PUBLIC_*`.
 
 For production cutover, retain existing accounts and shipments, demote existing admin accounts once, and grant write access only to the newly seeded admin and staff. See `docs/adr/0002-staff-only-writes.md`.
+
+Frontend styling, component, and client auth state decisions are recorded in `docs/adr/0003-tailwind-shadcn-zustand.md`.
 
 ## Rendering and verification
 

@@ -87,9 +87,17 @@ export default function RouteMap(props: Props) {
     };
   }, [props, cartoKey]);
   return (
-    <div className="leaflet-map" ref={element} role="region" aria-label="Shipment route map">
+    <div
+      className="leaflet-map h-full w-full"
+      ref={element}
+      role="region"
+      aria-label="Shipment route map"
+    >
       {!cartoKey && (
-        <p className="map-key-warning" role="status">
+        <p
+          className="absolute left-3 right-3 top-3 z-[1000] rounded-md border border-border bg-background/95 p-3 text-sm text-muted-foreground shadow"
+          role="status"
+        >
           Map tiles unavailable. Configure NEXT_PUBLIC_CARTO_API_KEY.
         </p>
       )}

@@ -3,9 +3,10 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { getDistrictNames, getProvinceName, getSubDistrictNames } from "thai-data";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/features/auth/AuthProvider";
 import type { Order } from "@/lib/orders";
-import styles from "./shipment-form.module.css";
+import { useAuthStore } from "@/features/auth/auth-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type AddressDraft = Omit<Order["customer"], "coords">;
 const emptyAddress: AddressDraft = {
@@ -58,12 +59,13 @@ function AddressFields({
   }
 
   return (
-    <fieldset className={styles.group}>
-      <legend>{title}</legend>
-      <div className={styles.fields}>
+    <fieldset className="rounded-xl border border-border bg-card p-5 sm:p-6">
+      <legend className="px-2 text-lg font-semibold">{title}</legend>
+      <div className="grid gap-4 sm:grid-cols-2">
         <label>
           Name
-          <input
+          <Input
+            className="mt-1"
             aria-label={`${title} name`}
             value={value.name}
             onChange={(event) => patch("name", event.target.value)}
@@ -73,7 +75,8 @@ function AddressFields({
         {errors.name && <p role="alert">{errors.name}</p>}
         <label>
           Zipcode
-          <input
+          <Input
+            className="mt-1"
             aria-label={`${title} zipcode`}
             inputMode="numeric"
             maxLength={5}
@@ -86,6 +89,7 @@ function AddressFields({
         <label>
           Sub-district
           <select
+            className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={`${title} sub-district`}
             value={value.subDistrict}
             onChange={(event) => selectSubDistrict(event.target.value)}
@@ -105,11 +109,21 @@ function AddressFields({
         {errors.subDistrict && <p role="alert">{errors.subDistrict}</p>}
         <label>
           District
-          <input aria-label={`${title} district`} value={value.district} readOnly />
+          <Input
+            className="mt-1"
+            aria-label={`${title} district`}
+            value={value.district}
+            readOnly
+          />
         </label>
         <label>
           Province
-          <input aria-label={`${title} province`} value={value.province} readOnly />
+          <Input
+            className="mt-1"
+            aria-label={`${title} province`}
+            value={value.province}
+            readOnly
+          />
         </label>
       </div>
     </fieldset>
@@ -118,7 +132,7 @@ function AddressFields({
 
 export function ShipmentForm({ initial }: { initial?: Order }) {
   const router = useRouter();
-  const { isStaff } = useAuth();
+  const isStaff = useAuthStore((state) => state.isStaff);
   const editing = !!initial;
   const [sender, setSender] = useState(() => addressDraft(initial?.customer));
   const [receiver, setReceiver] = useState(() => addressDraft(initial?.receiver));
@@ -201,14 +215,17 @@ export function ShipmentForm({ initial }: { initial?: Order }) {
 
   if (!isStaff)
     return (
-      <p className={styles.denied} role="status">
+      <p
+        className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+        role="status"
+      >
         Staff access required to {editing ? "edit" : "create"} shipments. Sign in with a staff
         account.
       </p>
     );
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate>
+    <form className="space-y-6" onSubmit={submit} noValidate>
       <AddressFields
         title="Sender Info"
         value={sender}
@@ -229,16 +246,17 @@ export function ShipmentForm({ initial }: { initial?: Order }) {
             .map(([key, message]) => [key.slice(9), message]),
         )}
       />
-      <fieldset className={styles.group}>
-        <legend>Parcel Info</legend>
-        <div className={styles.fields}>
+      <fieldset className="rounded-xl border border-border bg-card p-5 sm:p-6">
+        <legend className="px-2 text-lg font-semibold">Parcel Info</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
           <label>
             Carrier
-            <input value={initial?.carrier ?? "Thun-u-der Express"} readOnly />
+            <Input className="mt-1" value={initial?.carrier ?? "Thun-u-der Express"} readOnly />
           </label>
           <label>
             Weight/Kg
-            <input
+            <Input
+              className="mt-1"
               aria-label="Weight/Kg"
               type="number"
               min="0.1"
@@ -251,7 +269,8 @@ export function ShipmentForm({ initial }: { initial?: Order }) {
           {errors.weight && <p role="alert">{errors.weight}</p>}
           <label>
             Items
-            <input
+            <Input
+              className="mt-1"
               aria-label="Items"
               type="number"
               min="1"
@@ -265,7 +284,8 @@ export function ShipmentForm({ initial }: { initial?: Order }) {
           {editing && (
             <label>
               Estimated Delivery
-              <input
+              <Input
+                className="mt-1"
                 aria-label="Estimated Delivery"
                 type="date"
                 value={estimatedDelivery.slice(0, 10)}
@@ -278,22 +298,26 @@ export function ShipmentForm({ initial }: { initial?: Order }) {
         </div>
       </fieldset>
       {error && (
-        <p className={styles.error} role="alert">
+        <p
+          className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+          role="alert"
+        >
           {error}
         </p>
       )}
-      <div className={styles.actions}>
-        <button
+      <div className="flex justify-end gap-3">
+        <Button
           type="button"
+          variant="outline"
           onClick={() =>
             router.push(initial ? `/orders/${encodeURIComponent(initial.id)}` : "/orders")
           }
         >
           Cancel
-        </button>
-        <button type="submit" disabled={pending}>
+        </Button>
+        <Button type="submit" disabled={pending}>
           {pending ? "Resolving addresses…" : editing ? "Save Changes" : "Create Shipment"}
-        </button>
+        </Button>
       </div>
     </form>
   );

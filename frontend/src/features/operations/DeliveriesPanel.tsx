@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { mapShipmentToOrder, type BackendShipment } from "@/lib/api/mappers";
 import type { Hub } from "@/lib/hubs";
 import { statusLabels, type Order, type ShipmentStatus } from "@/lib/orders";
-import { useAuth } from "@/features/auth/AuthProvider";
+import { useAuthStore } from "@/features/auth/auth-store";
 import { DeliveryMap } from "@/features/operations/DeliveryMap";
-import styles from "@/features/operations/DeliveriesPanel.module.css";
+import { Button } from "@/components/ui/button";
 
 const pageSize = 10;
 const statuses: ShipmentStatus[] = [
@@ -42,7 +42,7 @@ export function DeliveriesPanel({
   hubs,
   initialError,
 }: Readonly<{ initialDeliveries: Order[]; hubs: Hub[]; initialError: boolean }>) {
-  const { isStaff } = useAuth();
+  const isStaff = useAuthStore((state) => state.isStaff);
   const [deliveries, setDeliveries] = useState(initialDeliveries);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -138,14 +138,15 @@ export function DeliveriesPanel({
   return (
     <section aria-label="Active deliveries">
       {!isStaff && (
-        <p className={styles.readOnly}>
+        <p className="mb-3.5 font-mono text-xs text-muted-foreground">
           Public delivery view. Sign in as staff to change delivery status.
         </p>
       )}
-      <div className={styles.controls}>
-        <label className={styles.searchLabel}>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 max-md:flex-col max-md:items-stretch">
+        <label className="grid gap-1.5 font-mono text-[11px] text-muted-foreground max-md:w-full">
           <span>Search active deliveries</span>
           <input
+            className="h-10 rounded-md border border-border bg-secondary px-3 text-foreground focus-visible:outline-2 focus-visible:outline-primary max-md:w-full"
             aria-label="Search active deliveries"
             type="search"
             value={search}
@@ -156,46 +157,68 @@ export function DeliveriesPanel({
             placeholder="Order, tracking, customer, carrier"
           />
         </label>
-        <div className={styles.updated}>
+        <div className="flex items-center justify-between gap-3 font-mono text-[11px] text-muted-foreground max-md:flex-col max-md:items-stretch">
           <span>
             {deliveries.length} active · updated {Math.max(0, Math.floor((now - updatedAt) / 1000))}
             s ago
           </span>
-          <button
+          <Button
             type="button"
             onClick={refresh}
             disabled={loading}
             aria-label="Refresh active deliveries"
           >
             {loading ? "Refreshing…" : "Refresh"}
-          </button>
+          </Button>
         </div>
       </div>
       {error && (
-        <div className={styles.error} role="alert">
+        <div
+          className="flex items-center gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-destructive"
+          role="alert"
+        >
           {error}
-          <button type="button" onClick={refresh}>
+          <Button type="button" variant="outline" onClick={refresh}>
             Retry
-          </button>
+          </Button>
         </div>
       )}
       {feedback && (
-        <p className={styles.feedback} role={feedback.includes("updated") ? "status" : "alert"}>
+        <p
+          className={`mb-3.5 font-mono text-xs ${feedback.includes("updated") ? "text-emerald-400" : "text-destructive"}`}
+          role={feedback.includes("updated") ? "status" : "alert"}
+        >
           {feedback}
         </p>
       )}
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full border-collapse text-left text-xs">
           <thead>
             <tr>
-              <th>Order ID</th>
-              <th>Tracking</th>
-              <th>Customer</th>
-              <th>Carrier</th>
-              <th>Status</th>
-              <th>Current hub</th>
-              <th>Current location</th>
-              <th>ETA</th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Order ID
+              </th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Tracking
+              </th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Customer
+              </th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Carrier
+              </th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Status
+              </th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Current hub
+              </th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Current location
+              </th>
+              <th className="bg-secondary px-3 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                ETA
+              </th>
               {isStaff && <th>Actions</th>}
             </tr>
           </thead>
@@ -204,6 +227,7 @@ export function DeliveriesPanel({
               const hub = hubs.find((item) => item.id === order.hubId);
               return (
                 <tr
+                  className="cursor-pointer border-b border-border hover:bg-primary/10 aria-selected:bg-primary/10"
                   key={order.id}
                   onClick={() => setSelectedId(order.id)}
                   aria-selected={mapDelivery?.id === order.id}
@@ -215,6 +239,7 @@ export function DeliveriesPanel({
                   <td>
                     {isStaff ? (
                       <select
+                        className="h-10 max-w-[170px] rounded-md border border-border bg-secondary px-2.5 text-foreground"
                         aria-label={`Status for ${order.id}`}
                         value={draftStatus[order.id] ?? order.status}
                         onChange={(event) =>
@@ -237,6 +262,7 @@ export function DeliveriesPanel({
                   <td>
                     {isStaff && hubRequiredStatuses[draftStatus[order.id] ?? order.status] ? (
                       <select
+                        className="h-10 max-w-[170px] rounded-md border border-border bg-secondary px-2.5 text-foreground"
                         aria-label={`Hub for ${order.id}`}
                         value={draftHubId[order.id] ?? order.hubId ?? ""}
                         onChange={(event) =>
@@ -263,7 +289,7 @@ export function DeliveriesPanel({
                   <td>{order.estimatedDelivery || "—"}</td>
                   {isStaff && (
                     <td>
-                      <button
+                      <Button
                         type="button"
                         aria-label={`Save ${order.id} status`}
                         disabled={
@@ -276,7 +302,7 @@ export function DeliveriesPanel({
                         }}
                       >
                         Save
-                      </button>
+                      </Button>
                     </td>
                   )}
                 </tr>
@@ -285,30 +311,35 @@ export function DeliveriesPanel({
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className={styles.empty}>No active deliveries match your filters.</p>
+          <p className="p-6 text-center text-muted-foreground">
+            No active deliveries match your filters.
+          </p>
         )}
       </div>
-      <nav className={styles.pagination} aria-label="Active delivery pages">
+      <nav
+        className="flex items-center justify-between gap-3 px-0.5 py-3 font-mono text-[11px] text-muted-foreground max-md:flex-col max-md:items-stretch"
+        aria-label="Active delivery pages"
+      >
         <span>
           {filtered.length} deliveries · Page {page} of {totalPages}
         </span>
         <div>
-          <button
+          <Button
             type="button"
             aria-label="Previous page"
             disabled={page <= 1}
             onClick={() => setPage((current) => current - 1)}
           >
             Previous
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             aria-label="Next page"
             disabled={page >= totalPages}
             onClick={() => setPage((current) => current + 1)}
           >
             Next
-          </button>
+          </Button>
         </div>
       </nav>
       {mapDelivery && (

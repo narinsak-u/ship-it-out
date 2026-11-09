@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import type { Map } from "leaflet";
 import type { Hub } from "@/lib/hubs";
 import type { Order } from "@/lib/orders";
-import styles from "@/features/operations/DeliveriesPanel.module.css";
 import "leaflet/dist/leaflet.css";
 export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }>) {
   const container = useRef<HTMLDivElement>(null);
@@ -18,7 +17,12 @@ export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }
       const origin: [number, number] = [order.customer.coords.lat, order.customer.coords.lng];
       const current: [number, number] = [order.currentCoords.lat, order.currentCoords.lng];
       const destination: [number, number] = [order.receiver.coords.lat, order.receiver.coords.lng];
-      map = L.map(container.current, { center: current, zoom: 6, scrollWheelZoom: false, zoomControl: false });
+      map = L.map(container.current, {
+        center: current,
+        zoom: 6,
+        scrollWheelZoom: false,
+        zoomControl: false,
+      });
       if (cartoKey) {
         L.tileLayer(
           `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`,
@@ -28,8 +32,17 @@ export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }
           },
         ).addTo(map);
       }
-      L.polyline([origin, current], { color: "oklch(0.78 0.11 195)", weight: 3, opacity: 0.9 }).addTo(map);
-      L.polyline([current, destination], { color: "oklch(0.78 0.11 195)", weight: 2, opacity: 0.6, dashArray: "6 8" }).addTo(map);
+      L.polyline([origin, current], {
+        color: "oklch(0.78 0.11 195)",
+        weight: 3,
+        opacity: 0.9,
+      }).addTo(map);
+      L.polyline([current, destination], {
+        color: "oklch(0.78 0.11 195)",
+        weight: 2,
+        opacity: 0.6,
+        dashArray: "6 8",
+      }).addTo(map);
       const originIcon = L.divIcon({
         className: "",
         html: '<div style="width:14px;height:14px;border-radius:9999px;background:oklch(0.78 0.11 195);box-shadow:0 0 0 4px oklch(0.78 0.11 195 / 0.25),0 0 12px oklch(0.78 0.11 195 / 0.6)"></div>',
@@ -49,8 +62,14 @@ export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }
         iconAnchor: [14, 14],
       });
       L.marker(origin, { title: `Origin: ${order.origin}`, icon: originIcon }).addTo(map);
-      L.marker(destination, { title: `Destination: ${order.destination}`, icon: destinationIcon }).addTo(map);
-      L.marker(current, { title: `Current location: ${current[0]}, ${current[1]}`, icon: currentIcon }).addTo(map);
+      L.marker(destination, {
+        title: `Destination: ${order.destination}`,
+        icon: destinationIcon,
+      }).addTo(map);
+      L.marker(current, {
+        title: `Current location: ${current[0]}, ${current[1]}`,
+        icon: currentIcon,
+      }).addTo(map);
       map.fitBounds(L.latLngBounds([origin, current, destination]), { padding: [40, 40] });
     });
     return () => {
@@ -73,10 +92,10 @@ export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }
   ]);
 
   return (
-    <>
+    <div className="relative mt-6 overflow-hidden rounded-lg border border-border">
       <div
         ref={container}
-        className={`${styles.map} leaflet-map`}
+        className="leaflet-map h-[300px]"
         role="img"
         aria-label={`Delivery route from ${order.origin} to ${order.destination}; current location ${hub?.name ?? "in transit"}`}
       />
@@ -85,6 +104,6 @@ export function DeliveryMap({ order, hub }: Readonly<{ order: Order; hub?: Hub }
           Map tiles unavailable. Configure NEXT_PUBLIC_CARTO_API_KEY.
         </p>
       )}
-    </>
+    </div>
   );
 }

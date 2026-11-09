@@ -1,8 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Hub, HubStatus } from "@/lib/hubs";
-import styles from "./HubsPanel.module.css";
 
 const provinces = [
   "Amnat Charoen",
@@ -32,11 +48,6 @@ export function HubForm({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    if (!dialogRef.current?.open) dialogRef.current?.showModal();
-  }, []);
-
   const [name, setName] = useState(hub?.name ?? "");
   const [location, setLocation] = useState(hub?.address ?? "");
   const [capacity, setCapacity] = useState(hub?.capacity ?? 1000);
@@ -87,106 +98,120 @@ export function HubForm({
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby="hub-form-title"
-      className={styles.dialog}
-      onCancel={onClose}
+    <Dialog
+      open
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
     >
-      <form onSubmit={submit}>
-        <h2 id="hub-form-title">{hub ? "Edit Hub" : "Add Hub"}</h2>
-        <label>
-          Name
-          <input
-            aria-label="Name"
-            required
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
-        <label>
-          Province / address
-          {hub ? (
-            <input
-              aria-label="Province"
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{hub ? "Edit Hub" : "Add Hub"}</DialogTitle>
+          <DialogDescription>Update hub capacity, location, and status.</DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-4" onSubmit={submit}>
+          <div className="grid gap-2">
+            <Label htmlFor="hub-name">Name</Label>
+            <Input
+              id="hub-name"
               required
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
             />
-          ) : (
-            <select
-              aria-label="Province"
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="hub-location">Province / address</Label>
+            {hub ? (
+              <Input
+                id="hub-location"
+                aria-label="Province"
+                required
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+              />
+            ) : (
+              <Select value={location} onValueChange={setLocation} required>
+                <SelectTrigger id="hub-location" aria-label="Province">
+                  <SelectValue placeholder="Select province…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {provinces.map((province) => (
+                    <SelectItem key={province} value={province}>
+                      {province}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="hub-capacity">Capacity (units)</Label>
+            <Input
+              id="hub-capacity"
+              type="number"
+              min="1"
               required
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-            >
-              <option value="">Select province…</option>
-              {provinces.map((province) => (
-                <option key={province} value={province}>
-                  {province}
-                </option>
-              ))}
-            </select>
+              value={capacity}
+              onChange={(event) => setCapacity(Number(event.target.value))}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="hub-utilization">Current Utilization</Label>
+            <Input
+              id="hub-utilization"
+              type="number"
+              min="0"
+              max={capacity}
+              required
+              value={utilization}
+              onChange={(event) => setUtilization(Number(event.target.value))}
+            />
+          </div>
+          {utilization > capacity && (
+            <p className="text-sm text-destructive" role="alert">
+              Cannot exceed capacity ({capacity})
+            </p>
           )}
-        </label>
-        <label>
-          Capacity (units)
-          <input
-            aria-label="Capacity (units)"
-            type="number"
-            min="1"
-            required
-            value={capacity}
-            onChange={(event) => setCapacity(Number(event.target.value))}
-          />
-        </label>
-        <label>
-          Current Utilization
-          <input
-            aria-label="Current Utilization"
-            type="number"
-            min="0"
-            max={capacity}
-            required
-            value={utilization}
-            onChange={(event) => setUtilization(Number(event.target.value))}
-          />
-        </label>
-        {utilization > capacity && <p role="alert">Cannot exceed capacity ({capacity})</p>}
-        <label>
-          Status
-          <select
-            aria-label="Status"
-            value={status}
-            onChange={(event) => setStatus(event.target.value as HubStatus)}
-          >
-            {statuses.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <div className={styles.formActions}>
-          <button type="button" onClick={onClose} disabled={pending}>
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={
-              !name.trim() ||
-              !location.trim() ||
-              capacity <= 0 ||
-              utilization < 0 ||
-              utilization > capacity ||
-              pending
-            }
-          >
-            {pending ? "Resolving location…" : hub ? "Update Hub" : "Create Hub"}
-          </button>
-        </div>
-      </form>
-    </dialog>
+          <div className="grid gap-2">
+            <Label htmlFor="hub-status">Status</Label>
+            <Select value={status} onValueChange={(value) => setStatus(value as HubStatus)}>
+              <SelectTrigger id="hub-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statuses.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {value}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                !name.trim() ||
+                !location.trim() ||
+                capacity <= 0 ||
+                utilization < 0 ||
+                utilization > capacity ||
+                pending
+              }
+            >
+              {pending ? "Resolving location…" : hub ? "Update Hub" : "Create Hub"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

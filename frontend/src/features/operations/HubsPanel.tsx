@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAuth } from "@/features/auth/AuthProvider";
+import { useAuthStore } from "@/features/auth/auth-store";
 import type { Hub, HubStatus } from "@/lib/hubs";
 import { HubForm } from "./HubForm";
-import styles from "./HubsPanel.module.css";
+import { Button } from "@/components/ui/button";
 
 const pageSize = 10;
 const statuses: HubStatus[] = ["active", "maintenance", "full", "closed"];
@@ -25,7 +25,7 @@ export function HubsPanel({
   const [actionError, setActionError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Hub | null>(null);
   const confirmRef = useRef<HTMLDialogElement>(null);
-  const { isStaff } = useAuth();
+  const isStaff = useAuthStore((state) => state.isStaff);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -91,36 +91,40 @@ export function HubsPanel({
 
   if (loading)
     return (
-      <p className={styles.message} role="status">
+      <p className="py-8 text-center text-muted-foreground" role="status">
         Loading hubs…
       </p>
     );
   if (error)
     return (
-      <div className={styles.message} role="alert">
+      <div className="grid justify-items-center gap-3 py-8 text-muted-foreground" role="alert">
         <p>Failed to load hubs.</p>
-        <button onClick={retry}>Retry</button>
+        <Button onClick={retry}>Retry</Button>
       </div>
     );
 
   return (
     <>
-      <div className={styles.stats} aria-label="Hub status counts">
-        <div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5" aria-label="Hub status counts">
+        <div className="grid gap-2.5 rounded-lg border border-border bg-card p-4">
           <span>Total hubs</span>
-          <strong>{counts.total}</strong>
+          <strong className="font-mono text-2xl">{counts.total}</strong>
         </div>
         {statuses.map((status) => (
-          <div key={status} className={styles[`stat${status[0].toUpperCase()}${status.slice(1)}`]}>
-            <span>{status}</span>
-            <strong>{counts[status]}</strong>
+          <div key={status} className="grid gap-2.5 rounded-lg border border-border bg-card p-4">
+            <span className="capitalize text-muted-foreground">{status}</span>
+            <strong
+              className={`font-mono text-2xl ${status === "active" ? "text-emerald-400" : status === "closed" ? "text-destructive" : "text-amber-300"}`}
+            >
+              {counts[status]}
+            </strong>
           </div>
         ))}
       </div>
-      <div className={styles.controls}>
+      <div className="my-5 grid max-w-sm gap-2">
         <label htmlFor="hub-search">Search hubs</label>
         <input
-          id="hub-search"
+          className="h-11 rounded-lg border border-border bg-card px-3 focus-visible:outline-2 focus-visible:outline-primary"
           type="search"
           placeholder="Search hubs..."
           value={query}
@@ -131,34 +135,46 @@ export function HubsPanel({
         />
       </div>
       {isStaff && (
-        <div className={styles.actions}>
-          <button type="button" onClick={() => setEditing(null)}>
+        <div className="my-4 flex justify-end">
+          <Button type="button" onClick={() => setEditing(null)}>
             Add Hub
-          </button>
+          </Button>
         </div>
       )}
       {actionError && (
-        <p role="alert" className={styles.message}>
+        <p role="alert" className="py-3 text-destructive">
           {actionError}
         </p>
       )}
       {notice && (
-        <p role="status" className={styles.message}>
+        <p role="status" className="py-3 text-emerald-400">
           {notice}
         </p>
       )}
       {filtered.length ? (
         <>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full border-collapse text-left">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Carrier</th>
-                  <th>Address</th>
-                  <th>Capacity</th>
-                  <th>Status</th>
+                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    ID
+                  </th>
+                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Name
+                  </th>
+                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Carrier
+                  </th>
+                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Address
+                  </th>
+                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Capacity
+                  </th>
+                  <th className="bg-secondary p-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Status
+                  </th>
                   {isStaff && <th>Actions</th>}
                 </tr>
               </thead>
@@ -168,15 +184,15 @@ export function HubsPanel({
                     ? Math.round((hub.currentUtilization / hub.capacity) * 100)
                     : 0;
                   return (
-                    <tr key={hub.id}>
+                    <tr key={hub.id} className="border-b border-border">
                       <td data-label="ID">{hub.id}</td>
                       <td data-label="Name">{hub.name}</td>
                       <td data-label="Carrier">{hub.carrierId}</td>
                       <td data-label="Address">{hub.address}</td>
                       <td data-label="Capacity">
-                        <div className={styles.capacity}>
+                        <div className="flex min-w-28 items-center gap-2">
                           <div
-                            className={styles.capacityTrack}
+                            className="h-2 min-w-12 flex-1 overflow-hidden rounded-full bg-secondary [&>span]:block [&>span]:h-full [&>span]:rounded-full [&>span]:bg-primary"
                             role="progressbar"
                             aria-label={`${hub.name} capacity`}
                             aria-valuemin={0}
@@ -187,30 +203,34 @@ export function HubsPanel({
                               style={{ width: `${Math.min(100, Math.max(0, utilization))}%` }}
                             />
                           </div>
-                          <span className={styles.utilization}>{utilization}%</span>
+                          <span className="min-w-8 text-right text-xs text-muted-foreground">
+                            {utilization}%
+                          </span>
                         </div>
                       </td>
                       <td data-label="Status">
-                        <span className={`${styles.status} ${styles[hub.status]}`}>
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-1 capitalize ${hub.status === "active" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : hub.status === "closed" ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-amber-300/30 bg-amber-300/10 text-amber-200"}`}
+                        >
                           {hub.status}
                         </span>
                       </td>
                       {isStaff && (
                         <td data-label="Actions">
-                          <button
+                          <Button
                             type="button"
                             aria-label={`Edit ${hub.name}`}
                             onClick={() => setEditing(hub)}
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
                             aria-label={`Delete ${hub.name}`}
                             onClick={() => setDeleteTarget(hub)}
                           >
                             Delete
-                          </button>
+                          </Button>
                         </td>
                       )}
                     </tr>
@@ -219,40 +239,40 @@ export function HubsPanel({
               </tbody>
             </table>
           </div>
-          <div className={styles.pagination}>
+          <div className="flex items-center justify-between gap-3 py-4 font-mono text-xs text-muted-foreground max-sm:flex-col max-sm:items-stretch">
             <span>
               {filtered.length} hubs · Page {page} of {pages}
             </span>
             <div>
-              <button
+              <Button
                 aria-label="Previous page"
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
               >
                 Previous
-              </button>
-              <button
+              </Button>
+              <Button
                 aria-label="Next page"
                 disabled={page >= pages}
                 onClick={() => setPage(page + 1)}
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         </>
       ) : (
-        <p className={styles.empty}>No hubs match your filters.</p>
+        <p className="p-8 text-center text-muted-foreground">No hubs match your filters.</p>
       )}
       <dialog
         ref={confirmRef}
         aria-labelledby="hub-delete-title"
-        className={styles.dialog}
+        className="fixed inset-0 z-50 m-auto max-h-[calc(100dvh-24px)] w-[min(100%-24px,480px)] overflow-auto rounded-xl border border-border bg-card p-6 text-foreground backdrop:bg-black/65"
         onCancel={() => setDeleteTarget(null)}
       >
         <h2 id="hub-delete-title">Delete Hub</h2>
         <p>Are you sure you want to delete {deleteTarget?.name}? This action cannot be undone.</p>
-        <div className={styles.formActions}>
+        <div className="flex justify-end gap-2">
           <button type="button" onClick={() => setDeleteTarget(null)}>
             Cancel
           </button>

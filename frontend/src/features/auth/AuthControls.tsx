@@ -1,23 +1,35 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { useAuth } from "./AuthProvider";
+import { type FormEvent, useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "./auth-store";
 
 export default function AuthControls() {
   const pathname = usePathname();
-  const { user, isStaff, loading, login, signup, logout } = useAuth();
+  const { user, isStaff, loading, login, signup, logout, initialize } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
   const [pending, setPending] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (open && dialog.current && !dialog.current.open) dialog.current.showModal();
-    if (!open && dialog.current?.open) dialog.current.close();
-  }, [open]);
+    void initialize();
+  }, [initialize]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,69 +67,73 @@ export default function AuthControls() {
   }
 
   return (
-    <>
-      <nav>
-        <a
-          href="/"
-          className={pathname === "/" ? "active" : undefined}
-          aria-current={pathname === "/" ? "page" : undefined}
-        >
-          Home
-        </a>
-        <a
-          href="/orders"
-          className={pathname.startsWith("/orders") ? "active" : undefined}
-          aria-current={pathname.startsWith("/orders") ? "page" : undefined}
-        >
-          Orders
-        </a>
-        <a
-          href="/carriers"
-          className={pathname.startsWith("/carriers") ? "active" : undefined}
-          aria-current={pathname.startsWith("/carriers") ? "page" : undefined}
-        >
-          Carriers
-        </a>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) setError("");
+      }}
+    >
+      <nav aria-label="Main navigation" className="flex flex-wrap items-center justify-end gap-1">
+        {[
+          { label: "Home", href: "/", active: pathname === "/" },
+          { label: "Orders", href: "/orders", active: pathname.startsWith("/orders") },
+          { label: "Carriers", href: "/carriers", active: pathname.startsWith("/carriers") },
+        ].map(({ label, href, active }) => (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "inline-flex min-h-11 items-center rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              active && "bg-secondary text-foreground",
+            )}
+          >
+            {label}
+          </Link>
+        ))}
         {loading ? (
-          <span className="signin" role="status">
+          <span className="px-3 py-2 text-sm text-muted-foreground" role="status">
             Checking session…
           </span>
         ) : user ? (
-          <span className="auth-status">
-            <span className="signin" aria-label={`Signed in as ${user.role}`}>
+          <span className="flex flex-wrap items-center justify-end gap-2">
+            <span
+              className="px-2 text-xs text-muted-foreground"
+              aria-label={`Signed in as ${user.role}`}
+            >
               {user.role} ({user.name}){isStaff ? " · staff access" : " · read-only"}
             </span>
-            <button className="auth-button" type="button" onClick={signOut} disabled={pending}>
+            <Button type="button" variant="outline" onClick={signOut} disabled={pending}>
               Sign out
-            </button>
+            </Button>
           </span>
         ) : (
-          <button className="auth-button signin" type="button" onClick={() => setOpen(true)}>
-            Sign in
-          </button>
+          <DialogTrigger asChild>
+            <Button type="button" variant="outline">
+              Sign in
+            </Button>
+          </DialogTrigger>
         )}
       </nav>
-      {feedback && <span role="alert">{feedback}</span>}
-      <dialog
-        ref={dialog}
-        className="auth-dialog"
-        aria-labelledby="auth-title"
-        onClose={() => setOpen(false)}
-      >
-        <div className="auth-dialog-header">
-          <h2 id="auth-title">{mode === "login" ? "Sign in" : "Create account"}</h2>
-          <button
-            className="auth-close"
+      {feedback && (
+        <p className="m-0 px-4 pb-2 text-sm text-destructive" role="alert">
+          {feedback}
+        </p>
+      )}
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{mode === "login" ? "Sign in" : "Create account"}</DialogTitle>
+          <DialogDescription>
+            {mode === "login"
+              ? "Access your Ship It Out account."
+              : "Create a read-only customer account."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-2" aria-label="Authentication">
+          <Button
             type="button"
-            aria-label="Close"
-            onClick={() => setOpen(false)}
-          >
-            ×
-          </button>
-        </div>
-        <div className="auth-tabs" aria-label="Authentication">
-          <button
-            type="button"
+            variant={mode === "login" ? "secondary" : "ghost"}
             aria-pressed={mode === "login"}
             onClick={() => {
               setMode("login");
@@ -125,9 +141,10 @@ export default function AuthControls() {
             }}
           >
             Sign in
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant={mode === "signup" ? "secondary" : "ghost"}
             aria-pressed={mode === "signup"}
             onClick={() => {
               setMode("signup");
@@ -135,49 +152,52 @@ export default function AuthControls() {
             }}
           >
             Sign up
-          </button>
+          </Button>
         </div>
-        <form className="auth-form" key={mode} onSubmit={submit}>
+        <form key={mode} className="grid gap-4" onSubmit={submit}>
           {mode === "signup" && (
-            <label>
-              Name
-              <input name="name" type="text" autoComplete="name" required />
-            </label>
+            <div className="grid gap-2">
+              <Label htmlFor="auth-name">Name</Label>
+              <Input id="auth-name" name="name" type="text" autoComplete="name" required />
+            </div>
           )}
-          <label>
-            Email
-            <input
+          <div className="grid gap-2">
+            <Label htmlFor="auth-email">Email</Label>
+            <Input
+              id="auth-email"
               name="email"
               type="email"
+              autoComplete="email"
               defaultValue={mode === "login" ? "demo@shipitout.example" : ""}
               required
             />
-          </label>
-          <label>
-            Password
-            <input
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="auth-password">Password</Label>
+            <Input
+              id="auth-password"
               name="password"
               type="password"
               autoComplete={mode === "login" ? "current-password" : "new-password"}
               defaultValue={mode === "login" ? "demo-read-only-2026" : ""}
               required
             />
-          </label>
+          </div>
           {error && (
-            <p className="auth-error" role="alert">
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
-          <button className="auth-submit" type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending}>
             {pending ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
-          </button>
+          </Button>
           {mode === "login" && (
-            <p className="demo-hint">
+            <p className="m-0 rounded-md border border-border bg-secondary p-3 text-sm leading-relaxed text-muted-foreground">
               Read-only demo account. Email: demo@shipitout.example · Password: demo-read-only-2026
             </p>
           )}
         </form>
-      </dialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

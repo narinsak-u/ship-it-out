@@ -1,11 +1,47 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  XAxis,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Button } from "@/components/ui/button";
 import { toAnalyticsData, type AnalyticsData } from "./data";
-import styles from "./AnalyticsPanel.module.css";
 
-const STATUS_COLORS = ["#72d4a1", "#70b9d9", "#f1bd65", "#e77c80", "#a994e8"];
+const STATUS_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const cumulativeConfig = {
+  total: { label: "Shipments", color: "var(--chart-1)" },
+} satisfies ChartConfig;
+const monthlyConfig = {
+  count: { label: "Shipments", color: "var(--chart-2)" },
+} satisfies ChartConfig;
+const weekdayConfig = {
+  count: { label: "Shipments", color: "var(--chart-2)" },
+} satisfies ChartConfig;
+const statusConfig = {
+  count: { label: "Shipments", color: "var(--chart-1)" },
+} satisfies ChartConfig;
 
 function formatMonth(month: string) {
   if (!/^\d{4}-\d{2}$/.test(month)) return month;
@@ -16,20 +52,15 @@ function formatMonth(month: string) {
   });
 }
 
-function points(values: number[], width: number, height: number, max: number) {
-  return values.map(
-    (value, index) =>
-      [
-        values.length < 2 ? width / 2 : (index / (values.length - 1)) * width,
-        height - (value / max) * height,
-      ] as const,
-  );
-}
-
 function ChartFrame({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className={styles.chart} aria-label={title}>
-      <h2>{title}</h2>
+    <section
+      className="min-w-0 rounded-[10px] border border-border bg-card p-[18px] shadow-[0_8px_24px_#0002]"
+      aria-label={title}
+    >
+      <h2 className="mb-[18px] font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -76,17 +107,21 @@ export function AnalyticsPanel({
 
   if (loading)
     return (
-      <p className={styles.message} role="status">
+      <p className="m-0 p-7 text-center font-mono text-[13px] text-muted-foreground" role="status">
         Loading analytics…
       </p>
     );
   if (error || !data)
     return (
-      <div className={styles.message} role="alert">
+      <div className="p-7 text-center font-mono text-[13px] text-muted-foreground" role="alert">
         <p>Failed to load analytics data.</p>
-        <button type="button" onClick={() => setRetry((value) => value + 1)}>
+        <Button
+          className="mx-auto mt-3 block min-h-11 px-4"
+          type="button"
+          onClick={() => setRetry((value) => value + 1)}
+        >
           Retry
-        </button>
+        </Button>
       </div>
     );
 
@@ -107,63 +142,82 @@ export function AnalyticsPanel({
     !statuses.some((item) => item.count)
   )
     return (
-      <p className={styles.message} role="status">
+      <p className="m-0 p-7 text-center font-mono text-[13px] text-muted-foreground" role="status">
         No analytics data available yet.
       </p>
     );
 
-  const cumulative = monthly.reduce<number[]>((result, item) => {
-    result.push((result.at(-1) ?? 0) + item.count);
+  const cumulative = monthly.reduce<{ month: string; total: number }[]>((result, item) => {
+    result.push({ month: item.month, total: (result.at(-1)?.total ?? 0) + item.count });
     return result;
   }, []);
-  const areaPoints = points(cumulative, 600, 180, Math.max(...cumulative, 1));
-  const monthlyCounts = monthly.map((item) => item.count);
-  const linePoints = points(monthlyCounts, 600, 180, Math.max(...monthlyCounts, 1));
-  const maxDayCount = days.reduce((max, item) => Math.max(max, item.count), 1);
-  const totalStatus = statuses.reduce((sum, item) => sum + item.count, 0);
-  let dashOffset = 0;
+  const cumulativeLabel = `Cumulative shipments: ${cumulative.map((item) => `${formatMonth(item.month)} ${item.total}`).join(", ")}`;
+  const weekdayLabel = `Shipments by day: ${days.map((item) => `${item.day} ${item.count}`).join(", ")}`;
+  const monthlyLabel = `Monthly shipments: ${monthly.map((item) => `${formatMonth(item.month)} ${item.count}`).join(", ")}`;
+  const statusLabel = `Shipment statuses: ${statuses.map((item) => `${item.status} ${item.count}`).join(", ")}`;
+  const labelsClass =
+    "flex justify-between gap-1 overflow-hidden font-mono text-[10px] text-muted-foreground [&>span]:min-w-0 [&>span]:overflow-hidden [&>span]:text-ellipsis [&>span]:whitespace-nowrap";
+  const emptyClass = "m-0 p-7 text-center font-mono text-[13px] text-muted-foreground";
 
   return (
-    <div className={styles.dashboard}>
-      <div className={styles.kpis}>
-        <article>
-          <span>Total Shipments</span>
-          <strong>{overview.total.toLocaleString()}</strong>
+    <div className="grid gap-6">
+      <div className="grid grid-cols-2 gap-[10px] min-[621px]:grid-cols-4 min-[621px]:gap-[14px]">
+        <article className="grid min-w-0 gap-3 rounded-[10px] border border-border bg-card p-[18px] shadow-[0_8px_24px_#0002]">
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+            Total Shipments
+          </span>
+          <strong className="font-mono text-[clamp(22px,3vw,30px)] font-semibold">
+            {overview.total.toLocaleString()}
+          </strong>
         </article>
-        <article>
-          <span>On-Time Rate</span>
-          <strong>{onTime}%</strong>
+        <article className="grid min-w-0 gap-3 rounded-[10px] border border-border bg-card p-[18px] shadow-[0_8px_24px_#0002]">
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+            On-Time Rate
+          </span>
+          <strong className="font-mono text-[clamp(22px,3vw,30px)] font-semibold text-success">
+            {onTime}%
+          </strong>
         </article>
-        <article>
-          <span>Regions</span>
-          <strong>{regions.length.toLocaleString()}</strong>
+        <article className="grid min-w-0 gap-3 rounded-[10px] border border-border bg-card p-[18px] shadow-[0_8px_24px_#0002]">
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+            Regions
+          </span>
+          <strong className="font-mono text-[clamp(22px,3vw,30px)] font-semibold text-info">
+            {regions.length.toLocaleString()}
+          </strong>
         </article>
-        <article>
-          <span>Avg Delivery</span>
-          <strong>3.2 days</strong>
+        <article className="grid min-w-0 gap-3 rounded-[10px] border border-border bg-card p-[18px] shadow-[0_8px_24px_#0002]">
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+            Avg Delivery
+          </span>
+          <strong className="font-mono text-[clamp(22px,3vw,30px)] font-semibold">3.2 days</strong>
         </article>
       </div>
       {regions.length > 0 && (
-        <section className={styles.regions} aria-label="Shipments by region">
-          <h2>Shipments by Region</h2>
-          <div>
+        <section className="grid gap-3" aria-label="Shipments by region">
+          <h2 className="m-0 font-mono text-sm font-semibold">Shipments by Region</h2>
+          <div className="grid gap-3">
             {sortedRegions.map((region) => (
-              <div className={styles.region} key={region.name}>
-                <div>
+              <div
+                className="grid gap-[10px] rounded-lg border border-border bg-card p-[14px] font-mono text-xs"
+                key={region.name}
+              >
+                <div className="flex justify-between gap-2">
                   <span>{region.name}</span>
-                  <span>
+                  <span className="text-muted-foreground">
                     {region.total.toLocaleString()}/{overview.total.toLocaleString()} shipments
                   </span>
                 </div>
-                <div className={styles.regionProgress}>
-                  <div className={styles.track}>
+                <div className="flex items-center gap-3">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-secondary">
                     <span
+                      className="block h-full rounded-md bg-gradient-to-br from-accent to-primary"
                       style={{
                         width: `${overview.total ? Math.min((region.total / overview.total) * 100, 100) : 0}%`,
                       }}
                     />
                   </div>
-                  <span className={styles.regionPct}>
+                  <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
                     {overview.total ? Math.round((region.total / overview.total) * 100) : 0}%
                   </span>
                 </div>
@@ -174,149 +228,147 @@ export function AnalyticsPanel({
       )}
       <ChartFrame title="Cumulative Shipments Over Time">
         {monthly.length ? (
-          <div className={styles.plot}>
-            <svg
-              viewBox="-8 -8 616 220"
+          <>
+            <ChartContainer
+              config={cumulativeConfig}
               role="img"
-              aria-label={`Cumulative shipments: ${monthly.map((item, index) => `${formatMonth(item.month)} ${cumulative[index]}`).join(", ")}`}
+              aria-label={cumulativeLabel}
+              className="h-[190px] w-full aspect-auto"
             >
-              <path
-                d={`M ${areaPoints[0][0]} 180 L ${areaPoints.map(([x, y]) => `${x} ${y}`).join(" L ")} L 600 180 Z`}
-                fill="url(#areaFill)"
-              />
-              <defs>
-                <linearGradient id="areaFill" x1="0" x2="0" y1="0" y2="1">
-                  <stop stopColor="#72d4a1" stopOpacity=".35" />
-                  <stop offset="1" stopColor="#72d4a1" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <polyline
-                points={areaPoints.map(([x, y]) => `${x},${y}`).join(" ")}
-                fill="none"
-                stroke="#72d4a1"
-                strokeWidth="3"
-              />
-            </svg>
-            <div className={styles.labels}>
+              <AreaChart data={cumulative} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+                <XAxis dataKey="month" hide />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      labelFormatter={(_, payload) =>
+                        formatMonth(String(payload?.[0]?.payload?.month ?? ""))
+                      }
+                    />
+                  }
+                />
+                <Area
+                  dataKey="total"
+                  type="monotone"
+                  stroke="#72d4a1"
+                  strokeWidth={3}
+                  fill="#72d4a1"
+                  fillOpacity={0.2}
+                />
+              </AreaChart>
+            </ChartContainer>
+            <div className={labelsClass}>
               {monthly.map((item) => (
                 <span key={item.month}>{formatMonth(item.month)}</span>
               ))}
             </div>
-          </div>
+          </>
         ) : (
-          <p className={styles.empty}>No monthly shipment data.</p>
+          <p className={emptyClass}>No monthly shipment data.</p>
         )}
       </ChartFrame>
-      <div className={styles.charts}>
+      <div className="grid grid-cols-1 gap-[14px] min-[621px]:grid-cols-2 min-[901px]:grid-cols-3 [&>:last-child]:min-[901px]:col-span-1 [&>:last-child]:min-[621px]:col-span-full">
         <ChartFrame title="Shipments per Day">
           {days.length ? (
-            <div className={styles.plot}>
-              <svg
-                viewBox="0 0 600 200"
+            <>
+              <ChartContainer
+                config={weekdayConfig}
                 role="img"
-                aria-label={`Shipments by day: ${days.map((item) => `${item.day} ${item.count}`).join(", ")}`}
+                aria-label={weekdayLabel}
+                className="h-[190px] w-full aspect-auto max-[620px]:h-40"
               >
-                {days.map((item, index) => {
-                  const height = (item.count / maxDayCount) * 170;
-                  return (
-                    <rect
-                      key={item.day}
-                      x={index * (600 / days.length) + 12}
-                      y={180 - height}
-                      width={Math.max(8, 600 / days.length - 24)}
-                      height={height}
-                      rx="4"
-                      fill="#70b9d9"
-                    />
-                  );
-                })}
-              </svg>
-              <div className={styles.labels}>
+                <BarChart data={days} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+                  <XAxis dataKey="day" hide />
+                  <ChartTooltip
+                    content={<ChartTooltipContent labelFormatter={(label) => String(label)} />}
+                  />
+                  <Bar dataKey="count" fill="#70b9d9" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+              <div className={labelsClass}>
                 {days.map((item) => (
                   <span key={item.day}>{item.day.slice(0, 3)}</span>
                 ))}
               </div>
-            </div>
+            </>
           ) : (
-            <p className={styles.empty}>No weekday shipment data.</p>
+            <p className={emptyClass}>No weekday shipment data.</p>
           )}
         </ChartFrame>
         <ChartFrame title="Shipments per Month">
           {monthly.length ? (
-            <div className={styles.plot}>
-              <svg
-                viewBox="-8 -8 616 220"
+            <>
+              <ChartContainer
+                config={monthlyConfig}
                 role="img"
-                aria-label={`Monthly shipments: ${monthly.map((item) => `${formatMonth(item.month)} ${item.count}`).join(", ")}`}
+                aria-label={monthlyLabel}
+                className="h-[190px] w-full aspect-auto max-[620px]:h-40"
               >
-                <polyline
-                  points={linePoints.map(([x, y]) => `${x},${y}`).join(" ")}
-                  fill="none"
-                  stroke="#70b9d9"
-                  strokeWidth="3"
-                />
-                {linePoints.map(([x, y], index) => (
-                  <circle key={monthly[index].month} cx={x} cy={y} r="4" fill="#70b9d9" />
-                ))}
-              </svg>
-              <div className={styles.labels}>
+                <LineChart data={monthly} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+                  <XAxis dataKey="month" hide />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent labelFormatter={(label) => formatMonth(String(label))} />
+                    }
+                  />
+                  <Line
+                    dataKey="count"
+                    type="monotone"
+                    stroke="#70b9d9"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: "#70b9d9" }}
+                  />
+                </LineChart>
+              </ChartContainer>
+              <div className={labelsClass}>
                 {monthly.map((item) => (
                   <span key={item.month}>{formatMonth(item.month)}</span>
                 ))}
               </div>
-            </div>
+            </>
           ) : (
-            <p className={styles.empty}>No monthly shipment data.</p>
+            <p className={emptyClass}>No monthly shipment data.</p>
           )}
         </ChartFrame>
         <ChartFrame title="Status Distribution">
-          {statuses.length && totalStatus ? (
-            <div className={styles.donut}>
-              <svg
-                viewBox="0 0 120 120"
+          {statuses.length && statuses.some((item) => item.count) ? (
+            <div className="grid grid-cols-[minmax(90px,140px)_1fr] items-center gap-3 max-[620px]:grid-cols-[minmax(88px,120px)_1fr]">
+              <ChartContainer
+                config={statusConfig}
                 role="img"
-                aria-label={`Shipment statuses: ${statuses.map((item) => `${item.status} ${item.count}`).join(", ")}`}
+                aria-label={statusLabel}
+                className="w-full aspect-square"
               >
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="44"
-                  fill="none"
-                  stroke="var(--border)"
-                  strokeWidth="18"
-                />
-                {statuses.map((item, index) => {
-                  const length = (item.count / totalStatus) * 276.46;
-                  const offset = dashOffset;
-                  dashOffset += length;
-                  return (
-                    <circle
-                      key={item.status}
-                      cx="60"
-                      cy="60"
-                      r="44"
-                      fill="none"
-                      stroke={STATUS_COLORS[index % STATUS_COLORS.length]}
-                      strokeWidth="18"
-                      strokeDasharray={`${length} 276.46`}
-                      strokeDashoffset={-offset}
-                      transform="rotate(-90 60 60)"
-                    />
-                  );
-                })}
-              </svg>
-              <ul>
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent labelKey="status" />} />
+                  <Pie
+                    data={statuses}
+                    dataKey="count"
+                    nameKey="status"
+                    innerRadius="55%"
+                    outerRadius="85%"
+                    strokeWidth={0}
+                  >
+                    {statuses.map((item, index) => (
+                      <Cell key={item.status} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+              <ul className="m-0 grid list-none gap-2 p-0 font-mono text-[11px] capitalize">
                 {statuses.map((item, index) => (
-                  <li key={item.status}>
-                    <i style={{ background: STATUS_COLORS[index % STATUS_COLORS.length] }} />
+                  <li className="flex items-center gap-1.5" key={item.status}>
+                    <i
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: STATUS_COLORS[index % STATUS_COLORS.length] }}
+                    />
                     {item.status.replaceAll("_", " ")}{" "}
-                    <strong>{item.count.toLocaleString()}</strong>
+                    <strong className="ml-auto">{item.count.toLocaleString()}</strong>
                   </li>
                 ))}
               </ul>
             </div>
           ) : (
-            <p className={styles.empty}>No shipment status data.</p>
+            <p className={emptyClass}>No shipment status data.</p>
           )}
         </ChartFrame>
       </div>
