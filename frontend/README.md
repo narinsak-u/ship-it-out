@@ -27,7 +27,7 @@ Next.js runs at `http://localhost:3000`; local Go API defaults to `http://localh
 
 ## Supported app and security
 
-Next.js is the sole frontend. Public shipment and analytics pages render on the server; interactive navigation and management use client components. Browser calls, including login and writes, go to same-origin `/api/*`. `app/api/[...path]/route.ts` forwards requests and cookies to the separately deployed Go API using server-only `API_BASE_URL`. Do not use a browser API origin variable or expose the Go endpoint as a public environment variable. Go remains authoritative for authentication, roles, and protected writes.
+Next.js is the sole frontend. Public shipment and analytics pages render on the server; interactive navigation and management use client components. Browser calls, including login and writes, go to same-origin `/api/*`. `src/app/api/[...path]/route.ts` forwards requests and cookies to the separately deployed Go API using server-only `API_BASE_URL`. Do not use a browser API origin variable or expose the Go endpoint as a public environment variable. Go remains authoritative for authentication, roles, and protected writes.
 
 The login screen visibly displays the read-only demo credentials: `demo@shipitout.example` / `demo-read-only-2026`. No guest mode or guest-stored authentication exists. Demo account is customer-role and cannot write.
 

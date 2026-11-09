@@ -1,16 +1,16 @@
 # Frontend architecture
 
-Next.js App Router is the sole supported frontend and runs on Vercel. The Go API is deployed separately. Next server components fetch public data from `API_BASE_URL`; browser components call the same-origin `/api/*` proxy in `app/api/[...path]/route.ts`. The proxy forwards methods, query strings, and request bodies, plus only `Accept`, `Authorization`, `Content-Type`, `Origin`, and the `jwt` cookie; unrelated browser headers and cookies stay at the Next boundary.
+Next.js App Router is the sole supported frontend and runs on Vercel. The Go API is deployed separately. Next server components fetch public data from `API_BASE_URL`; browser components call the same-origin `/api/*` proxy in `src/app/api/[...path]/route.ts`. The proxy forwards methods, query strings, and request bodies, plus only `Accept`, `Authorization`, `Content-Type`, `Origin`, and the `jwt` cookie; unrelated browser headers and cookies stay at the Next boundary.
 
 ## Application structure
 
-- `app/`: routes, layouts, and server-only route handlers.
+- `src/app/`: routes, layouts, and server-only route handlers.
 - `src/features/auth/`: Zustand auth store and sign-in controls.
 - `src/features/shipments/`: public homepage, server-rendered data helpers, manifest, shipment forms, and tracking search.
 - `src/features/operations/`: carrier operations, hubs, deliveries, and maps.
 - `src/features/analytics/`: API-backed analytics with Recharts charts.
 - `src/components/ui/`: shadcn/ui primitives; `src/lib/utils.ts` merges utility classes.
-- `app/globals.css`: Tailwind v4 theme and base layer; Leaflet vendor CSS and map marker rules are the only global style exceptions.
+- `src/app/globals.css`: Tailwind v4 theme and base layer; Leaflet vendor CSS and map marker rules are the only global style exceptions.
 - `src/lib/`: shared shipment and hub types, API response mappers, and Next server API helpers.
 - `tests/e2e/next-*.spec.ts`: supported Playwright browser coverage.
 
