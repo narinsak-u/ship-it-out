@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Map } from "leaflet";
-import type { Hub } from "@/lib/hubs";
+import type { Hub } from "@/features/hubs/types";
 import type { Shipment } from "@/features/shipments/types";
 import "leaflet/dist/leaflet.css";
 export function DeliveryMap({ order, hub }: Readonly<{ order: Shipment; hub?: Hub }>) {

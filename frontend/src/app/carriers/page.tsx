@@ -2,21 +2,15 @@ import { ChartNoAxesColumnIncreasing, Package, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { AnalyticsPanel } from "@/features/analytics/AnalyticsPanel";
 import { DeliveriesPanel } from "@/features/operations/DeliveriesPanel";
-import { HubsPanel } from "@/features/operations/HubsPanel";
-import type { Hub } from "@/lib/hubs";
+import { HubsPanel } from "@/features/hubs/HubsPanel";
+import type { Hub } from "@/features/hubs/types";
+import { getHubs } from "@/features/hubs/server-api";
 import type { Shipment } from "@/features/shipments/types";
 import { getShipments } from "@/features/shipments/server-api";
 import { toAnalyticsData, type AnalyticsData } from "@/features/analytics/data";
 import { getApiOrigin } from "@/lib/api/server";
 
 export const dynamic = "force-dynamic";
-
-async function getHubs(): Promise<Hub[]> {
-  const response = await fetch(`${getApiOrigin()}/api/hubs`, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Hub API returned ${response.status}`);
-  const result = await response.json();
-  return result.data as Hub[];
-}
 
 async function getActiveDeliveries(): Promise<Shipment[]> {
   return getShipments("shipments?limit=-1&exclude_status=delivered");

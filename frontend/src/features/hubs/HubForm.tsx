@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Hub, HubStatus } from "@/lib/hubs";
+import { saveHub } from "./api";
+import type { Hub, HubStatus } from "./types";
 
 const provinces = [
   "Amnat Charoen",
@@ -73,22 +74,18 @@ export function HubForm({
         coords = geocode.data;
       }
 
-      const body = {
-        name: name.trim(),
-        carrierId: "THUN",
-        address: location.trim(),
-        coords,
-        capacity,
-        currentUtilization: utilization,
-        status,
-      };
-      const response = await fetch(hub ? `/api/hubs/${encodeURIComponent(hub.id)}` : "/api/hubs", {
-        method: hub ? "PUT" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || `Failed to save hub (${response.status}).`);
+      await saveHub(
+        {
+          name: name.trim(),
+          carrierId: "THUN",
+          address: location.trim(),
+          coords: coords!,
+          capacity,
+          currentUtilization: utilization,
+          status,
+        },
+        hub?.id,
+      );
       await onSaved();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Failed to save hub.");
