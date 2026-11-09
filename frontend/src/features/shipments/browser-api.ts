@@ -1,12 +1,5 @@
 import { mapShipment, mapShipments } from "./mappers";
-import type { Shipment, ShipmentDTO, ShipmentPage } from "./types";
-
-interface Envelope<T> {
-  success: boolean;
-  data: T;
-  pagination?: ShipmentPage["pagination"];
-  error?: string;
-}
+import type { ApiEnvelope, Shipment, ShipmentDTO, ShipmentPage } from "./types";
 
 export async function getManifestPage(
   page: number,

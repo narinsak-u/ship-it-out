@@ -29,6 +29,13 @@ export interface ShipmentContact {
 }
 
 
+export interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  pagination?: ShipmentPage["pagination"];
+  error?: string;
+}
+
 export interface Shipment {
   id: string;
   trackingNumber: string;

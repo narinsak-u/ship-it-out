@@ -11,6 +11,7 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { DeliveryMap } from "@/features/operations/DeliveryMap";
 import { Check, ChevronLeft, ChevronRight, Eye, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatShipmentDate } from "@/features/shipments/mappers";
 
 const pageSize = 10;
 const statuses: ShipmentStatus[] = [
@@ -285,7 +286,7 @@ export function DeliveriesPanel({
                     )}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3.5 font-mono text-muted-foreground">
-                    {order.estimatedDelivery || "—"}
+                    {order.estimatedDelivery ? formatShipmentDate(order.estimatedDelivery) : "—"}
                   </td>
                   <td className="px-2 py-2">
                     <div className="flex items-center gap-1">

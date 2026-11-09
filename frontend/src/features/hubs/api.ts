@@ -1,12 +1,13 @@
+import { mapHubs, type HubDTO } from "./mappers";
 import type { Hub } from "./types";
 
 export type HubInput = Omit<Hub, "id">;
 
 export async function getHubs(): Promise<Hub[]> {
   const response = await fetch("/api/hubs", { cache: "no-store" });
-  const result = await response.json();
+  const result = (await response.json()) as { data: HubDTO[]; error?: string };
   if (!response.ok) throw new Error(result.error || `Hub API returned ${response.status}`);
-  return result.data as Hub[];
+  return mapHubs(result.data);
 }
 
 export async function saveHub(hub: HubInput, id?: string): Promise<void> {
