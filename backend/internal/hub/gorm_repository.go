@@ -20,9 +20,13 @@ func NewGormRepository(db *gorm.DB) *GormRepository { return &GormRepository{db:
 
 func (r *GormRepository) FindAll(ctx context.Context) ([]Hub, error) {
 	var records []Record
-	if err := r.db.WithContext(ctx).Find(&records).Error; err != nil { return nil, err }
+	if err := r.db.WithContext(ctx).Find(&records).Error; err != nil {
+		return nil, err
+	}
 	hubs := make([]Hub, len(records))
-	for i := range records { hubs[i] = records[i].hub() }
+	for i := range records {
+		hubs[i] = records[i].hub()
+	}
 	return hubs, nil
 }
 
@@ -37,7 +41,13 @@ func (r *GormRepository) FindByID(ctx context.Context, id string) (*Hub, error) 
 }
 
 func (r *GormRepository) Create(ctx context.Context, hub *Hub) error {
-	if hub.ID == "" { hub.ID = r.generateHubID(ctx) }
+	if hub.ID == "" {
+		id, err := r.generateHubID(ctx)
+		if err != nil {
+			return err
+		}
+		hub.ID = id
+	}
 	return r.db.WithContext(ctx).Create(recordFromHub(*hub)).Error
 }
 
@@ -49,17 +59,21 @@ func (r *GormRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&Record{}, "id = ?", id).Error
 }
 
-func (r *GormRepository) generateHubID(ctx context.Context) string {
+func (r *GormRepository) generateHubID(ctx context.Context) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	var records []Record
-	r.db.WithContext(ctx).Select("id").Find(&records)
+	if err := r.db.WithContext(ctx).Select("id").Find(&records).Error; err != nil {
+		return "", err
+	}
 	maxNum := 0
 	for _, record := range records {
 		parts := strings.SplitN(record.ID, "-", 2)
 		if len(parts) == 2 {
-			if n, err := strconv.Atoi(parts[1]); err == nil && n > maxNum { maxNum = n }
+			if n, err := strconv.Atoi(parts[1]); err == nil && n > maxNum {
+				maxNum = n
+			}
 		}
 	}
-	return fmt.Sprintf("HUB-%03d", maxNum+1)
+	return fmt.Sprintf("HUB-%03d", maxNum+1), nil
 }

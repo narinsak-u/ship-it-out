@@ -2,11 +2,12 @@ package hub
 
 import (
 	"context"
+	"encoding/json"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
@@ -14,28 +15,28 @@ import (
 
 type mockRepo struct{ mock.Mock }
 
-func (m *mockRepo) FindAll(_ context.Context) ([]models.Hub, error) {
+func (m *mockRepo) FindAll(_ context.Context) ([]Hub, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]models.Hub), args.Error(1)
+	return args.Get(0).([]Hub), args.Error(1)
 }
 
-func (m *mockRepo) FindByID(_ context.Context, id string) (*models.Hub, error) {
+func (m *mockRepo) FindByID(_ context.Context, id string) (*Hub, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*models.Hub), args.Error(1)
+	return args.Get(0).(*Hub), args.Error(1)
 }
 
-func (m *mockRepo) Create(_ context.Context, hub *models.Hub) error {
+func (m *mockRepo) Create(_ context.Context, hub *Hub) error {
 	args := m.Called(hub)
 	return args.Error(0)
 }
 
-func (m *mockRepo) Save(_ context.Context, hub *models.Hub) error {
+func (m *mockRepo) Save(_ context.Context, hub *Hub) error {
 	args := m.Called(hub)
 	return args.Error(0)
 }
@@ -47,7 +48,7 @@ func (m *mockRepo) Delete(_ context.Context, id string) error {
 
 func TestHubList_Success(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindAll").Return([]models.Hub{
+	repo.On("FindAll").Return([]Hub{
 		{ID: "HUB-001", Name: "Test Hub", Status: "active"},
 	}, nil)
 
@@ -62,7 +63,7 @@ func TestHubList_Success(t *testing.T) {
 
 func TestHubGetByID_Found(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001", Name: "Test"}, nil)
+	repo.On("FindByID", "HUB-001").Return(&Hub{ID: "HUB-001", Name: "Test"}, nil)
 
 	app := fiber.New()
 	h := NewHandler(NewService(repo))
@@ -86,7 +87,7 @@ func TestHubGetByID_NotFound(t *testing.T) {
 
 func TestHubCreate_Success(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("Create", mock.MatchedBy(func(h *models.Hub) bool {
+	repo.On("Create", mock.MatchedBy(func(h *Hub) bool {
 		return h.Name == "New Hub"
 	})).Return(nil)
 
@@ -97,8 +98,16 @@ func TestHubCreate_Success(t *testing.T) {
 	body := `{"name":"New Hub","carrierId":"CAR-001","address":"Addr","coords":{"lat":10,"lng":20},"capacity":100,"currentUtilization":50,"status":"active"}`
 	req := httptest.NewRequest("POST", "/api/hubs", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	resp, _ := app.Test(req, 1000)
+	resp, err := app.Test(req, 1000)
+	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
+	var response struct {
+		Success bool `json:"success"`
+		Data    Hub  `json:"data"`
+	}
+	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
+	assert.True(t, response.Success)
+	assert.Equal(t, (GeoPoint{Lat: 10, Lng: 20}), response.Data.Coords)
 }
 
 func TestHubCreate_InvalidBody(t *testing.T) {
@@ -115,8 +124,8 @@ func TestHubCreate_InvalidBody(t *testing.T) {
 
 func TestHubUpdate_Success(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001"}, nil).Twice()
-	repo.On("Save", mock.MatchedBy(func(h *models.Hub) bool {
+	repo.On("FindByID", "HUB-001").Return(&Hub{ID: "HUB-001"}, nil).Twice()
+	repo.On("Save", mock.MatchedBy(func(h *Hub) bool {
 		return h.ID == "HUB-001" && h.Name == "Updated"
 	})).Return(nil)
 
@@ -160,7 +169,7 @@ func TestHubDelete_Success(t *testing.T) {
 
 func TestHubUpdate_InvalidBody(t *testing.T) {
 	repo := new(mockRepo)
-	repo.On("FindByID", "HUB-001").Return(&models.Hub{ID: "HUB-001"}, nil)
+	repo.On("FindByID", "HUB-001").Return(&Hub{ID: "HUB-001"}, nil)
 
 	app := fiber.New()
 	h := NewHandler(NewService(repo))

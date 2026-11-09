@@ -1,10 +1,6 @@
 package hub
 
-import (
-	"time"
-
-	"gorm.io/gorm"
-)
+import "time"
 
 type Record struct {
 	ID                 string    `gorm:"primaryKey"`
@@ -29,6 +25,3 @@ func (r Record) hub() Hub {
 	return Hub{ID: r.ID, Name: r.Name, CarrierID: r.CarrierID, Address: r.Address, Lat: r.Lat, Lng: r.Lng, Coords: GeoPoint{Lat: r.Lat, Lng: r.Lng}, Capacity: r.Capacity, CurrentUtilization: r.CurrentUtilization, Status: r.Status, CreatedAt: r.CreatedAt}
 }
 
-func (r *Record) BeforeSave(_ *gorm.DB) error {
-	return nil
-}

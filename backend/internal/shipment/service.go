@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
@@ -25,7 +26,7 @@ const (
 )
 
 type HubRepository interface {
-	FindByID(context.Context, string) (*models.Hub, error)
+	FindByID(context.Context, string) (*hub.Hub, error)
 }
 
 type WorkflowRepository interface {
@@ -91,21 +92,20 @@ func (s *Service) UpdateStatus(ctx context.Context, orderID, status, hubID strin
 		return nil, err
 	}
 	shipment.Status = status
-	var hub *models.Hub
+	var hubRecord *hub.Hub
 	if hubID != "" {
-		hubRecord, err := s.hubs.FindByID(ctx, hubID)
+		hubRecord, err = s.hubs.FindByID(ctx, hubID)
 		if err != nil {
-			if err.Error() == "record not found" || err.Error() == "hub not found" {
+			if errors.Is(err, hub.ErrNotFound) {
 				return nil, ErrInvalidHub
 			}
 			return nil, err
 		}
-		hub = hubRecord
 		shipment.HubID = hubID
-		shipment.CurrentCoords.Lat = hub.Lat
-		shipment.CurrentCoords.Lng = hub.Lng
+		shipment.CurrentCoords.Lat = hubRecord.Coords.Lat
+		shipment.CurrentCoords.Lng = hubRecord.Coords.Lng
 	}
-	event := statusToEvent(*shipment, hub, status)
+	event := statusToEvent(*shipment, hubRecord, status)
 	event.ShipmentID = shipment.ID
 	if err := s.repo.SaveWithEvent(ctx, shipment, &event); err != nil {
 		return nil, err
@@ -159,12 +159,12 @@ func initialEvent(customer models.ContactInfo) models.ShipmentEvent {
 	}}
 }
 
-func statusToEvent(shipment models.Shipment, hub *models.Hub, targetStatus string) models.ShipmentEvent {
+func statusToEvent(shipment models.Shipment, hubRecord *hub.Hub, targetStatus string) models.ShipmentEvent {
 	var eventStatus, description string
 	var location models.Location
 	hubLocation := func(fallback string, lat, lng float64) models.Location {
-		if hub != nil {
-			return models.Location{Name: hub.Name + ", " + hub.Address, Lat: hub.Coords.Lat, Lng: hub.Coords.Lng}
+		if hubRecord != nil {
+			return models.Location{Name: hubRecord.Name + ", " + hubRecord.Address, Lat: hubRecord.Coords.Lat, Lng: hubRecord.Coords.Lng}
 		}
 		return models.Location{Name: fallback, Lat: lat, Lng: lng}
 	}

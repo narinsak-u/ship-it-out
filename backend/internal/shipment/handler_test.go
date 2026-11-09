@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"github.com/gofiber/fiber/v2"
+	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -100,12 +101,12 @@ type mockHubRepo struct {
 	mock.Mock
 }
 
-func (m *mockHubRepo) FindByID(_ context.Context, id string) (*models.Hub, error) {
+func (m *mockHubRepo) FindByID(_ context.Context, id string) (*hub.Hub, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*models.Hub), args.Error(1)
+	return args.Get(0).(*hub.Hub), args.Error(1)
 }
 
 // ---- Tests ----
@@ -257,9 +258,9 @@ func TestShipmentUpdateStatus_WithHub(t *testing.T) {
 		Customer: models.ContactInfo{SubDistrict: "S", District: "D", Province: "P"},
 		Receiver: models.ContactInfo{SubDistrict: "S2", District: "D2", Province: "P2"},
 	}, nil)
-	hubRepo.On("FindByID", "HUB-001").Return(&models.Hub{
+	hubRepo.On("FindByID", "HUB-001").Return(&hub.Hub{
 		ID: "HUB-001", Name: "Bangkok Hub", Address: "Bangkok",
-		Lat: 13.7563, Lng: 100.5018,
+		Coords: hub.GeoPoint{Lat: 13.7563, Lng: 100.5018},
 	}, nil)
 	repo.On("Save", mock.Anything).Return(nil)
 	repo.On("CreateEvent", mock.Anything).Return(nil)

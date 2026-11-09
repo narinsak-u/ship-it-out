@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/narinsak-u/backend/internal/models"
 	"github.com/narinsak-u/backend/pkg/utils"
 )
 
@@ -37,7 +36,7 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 }
 
 func (h *Handler) Create(c *fiber.Ctx) error {
-	var hub models.Hub
+	var hub Hub
 	if err := c.BodyParser(&hub); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}
@@ -55,7 +54,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 		}
 		return utils.Error(c, 500, "failed to update hub")
 	}
-	var hub models.Hub
+	var hub Hub
 	if err := c.BodyParser(&hub); err != nil {
 		return utils.Error(c, 400, "invalid request body")
 	}

@@ -47,7 +47,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{}, &bootstrapState{}, &demoBootstrapState{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hub.Record{}, &bootstrapState{}, &demoBootstrapState{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,7 +67,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 	if err := db.Create(&preservedShipment).Error; err != nil {
 		t.Fatal(err)
 	}
-	preservedHub := models.Hub{ID: "HUB-PRESERVED", Name: "Preserved", CarrierID: "carrier", Address: "address", Capacity: 10, CurrentUtilization: 1, Status: "active"}
+	preservedHub := hub.Record{ID: "HUB-PRESERVED", Name: "Preserved", CarrierID: "carrier", Address: "address", Capacity: 10, CurrentUtilization: 1, Status: "active"}
 	if err := db.Create(&preservedHub).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +292,7 @@ func TestAdminCutoverHTTPAndPersistence(t *testing.T) {
 		model any
 		label string
 		want  int64
-	}{{&models.Shipment{}, "shipment", 1}, {&models.Hub{}, "hub", 2}, {&models.ShipmentEvent{}, "event", 1}} {
+	}{{&models.Shipment{}, "shipment", 1}, {&hub.Record{}, "hub", 2}, {&models.ShipmentEvent{}, "event", 1}} {
 		var count int64
 		if err := db.Model(record.model).Count(&count).Error; err != nil || count != record.want {
 			t.Fatalf("preserved %s count = %d, want %d, err %v", record.label, count, record.want, err)

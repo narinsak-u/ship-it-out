@@ -3,6 +3,7 @@ package shipment
 import (
 	"testing"
 
+	"github.com/narinsak-u/backend/internal/hub"
 	"github.com/narinsak-u/backend/internal/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,9 +19,9 @@ func TestStatusToEvent_AllStatuses(t *testing.T) {
 		Destination: "R, R2, P2",
 	}
 
-	hub := &models.Hub{
+	hubRecord := &hub.Hub{
 		ID: "HUB-001", Name: "Bangkok Hub", Address: "Bangkok",
-		Coords: models.GeoPoint{Lat: 13.7563, Lng: 100.5018},
+		Coords: hub.GeoPoint{Lat: 13.7563, Lng: 100.5018},
 	}
 
 	tests := []struct {
@@ -45,9 +46,9 @@ func TestStatusToEvent_AllStatuses(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var h *models.Hub
+			var h *hub.Hub
 			if tt.hasHub {
-				h = hub
+				h = hubRecord
 			}
 			event := statusToEvent(shipment, h, tt.status)
 			assert.Equal(t, tt.wantDesc, event.Description)
@@ -76,8 +77,8 @@ func TestStatusToEvent_LocationSources(t *testing.T) {
 	assert.Equal(t, 30.0, e2.Location.Lat)
 	assert.Equal(t, 40.0, e2.Location.Lng)
 
-	hub := &models.Hub{Coords: models.GeoPoint{Lat: 50.0, Lng: 60.0}}
-	e3 := statusToEvent(shipment, hub, "in_transit")
+	hubRecord := &hub.Hub{Coords: hub.GeoPoint{Lat: 50.0, Lng: 60.0}}
+	e3 := statusToEvent(shipment, hubRecord, "in_transit")
 	assert.Equal(t, 50.0, e3.Location.Lat)
 	assert.Equal(t, 60.0, e3.Location.Lng)
 }

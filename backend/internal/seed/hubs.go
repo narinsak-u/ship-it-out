@@ -1,9 +1,10 @@
 package seed
 
 import (
+	"context"
 	"time"
 
-	"github.com/narinsak-u/backend/internal/models"
+	"github.com/narinsak-u/backend/internal/hub"
 	"gorm.io/gorm"
 )
 
@@ -15,20 +16,20 @@ func SeedHubs(db *gorm.DB) error {
 	defer tx.Rollback()
 
 	var count int64
-	if err := tx.Model(&models.Hub{}).Count(&count).Error; err != nil {
+	if err := tx.Model(&hub.Record{}).Count(&count).Error; err != nil {
 		return err
 	}
 	if count > 0 {
 		return nil
 	}
 
-	hubs := []models.Hub{
+	hubs := []hub.Hub{
 		{
 			ID:                 "HUB-001",
 			Name:               "Bangkok Hub",
 			CarrierID:          "THUN",
 			Address:            "Bangkok",
-			Coords:             models.GeoPoint{Lat: 13.7563, Lng: 100.5018},
+			Coords:             hub.GeoPoint{Lat: 13.7563, Lng: 100.5018},
 			Capacity:           5000,
 			CurrentUtilization: 3400,
 			Status:             "active",
@@ -39,7 +40,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Chonburi Hub",
 			CarrierID:          "THUN",
 			Address:            "Chonburi",
-			Coords:             models.GeoPoint{Lat: 13.3611, Lng: 100.9847},
+			Coords:             hub.GeoPoint{Lat: 13.3611, Lng: 100.9847},
 			Capacity:           3000,
 			CurrentUtilization: 2100,
 			Status:             "active",
@@ -50,7 +51,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Kanchanaburi Hub",
 			CarrierID:          "THUN",
 			Address:            "Kanchanaburi",
-			Coords:             models.GeoPoint{Lat: 14.0199, Lng: 99.4778},
+			Coords:             hub.GeoPoint{Lat: 14.0199, Lng: 99.4778},
 			Capacity:           4000,
 			CurrentUtilization: 2800,
 			Status:             "active",
@@ -61,7 +62,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Chiang Mai Hub",
 			CarrierID:          "THUN",
 			Address:            "Chiang Mai",
-			Coords:             models.GeoPoint{Lat: 18.7883, Lng: 98.9853},
+			Coords:             hub.GeoPoint{Lat: 18.7883, Lng: 98.9853},
 			Capacity:           2000,
 			CurrentUtilization: 820,
 			Status:             "active",
@@ -72,7 +73,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Phuket Hub",
 			CarrierID:          "THUN",
 			Address:            "Phuket",
-			Coords:             models.GeoPoint{Lat: 7.8804, Lng: 98.3923},
+			Coords:             hub.GeoPoint{Lat: 7.8804, Lng: 98.3923},
 			Capacity:           2500,
 			CurrentUtilization: 210,
 			Status:             "active",
@@ -83,7 +84,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Korat Hub",
 			CarrierID:          "THUN",
 			Address:            "Nakhon Ratchasima",
-			Coords:             models.GeoPoint{Lat: 14.9799, Lng: 102.0977},
+			Coords:             hub.GeoPoint{Lat: 14.9799, Lng: 102.0977},
 			Capacity:           3500,
 			CurrentUtilization: 1800,
 			Status:             "active",
@@ -94,7 +95,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Khon Kaen Hub",
 			CarrierID:          "THUN",
 			Address:            "Khon Kaen",
-			Coords:             models.GeoPoint{Lat: 16.4322, Lng: 102.8236},
+			Coords:             hub.GeoPoint{Lat: 16.4322, Lng: 102.8236},
 			Capacity:           2800,
 			CurrentUtilization: 1400,
 			Status:             "active",
@@ -105,7 +106,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Udon Thani Hub",
 			CarrierID:          "THUN",
 			Address:            "Udon Thani",
-			Coords:             models.GeoPoint{Lat: 17.3647, Lng: 102.8159},
+			Coords:             hub.GeoPoint{Lat: 17.3647, Lng: 102.8159},
 			Capacity:           2200,
 			CurrentUtilization: 1100,
 			Status:             "active",
@@ -116,7 +117,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Ubon Ratchathani Hub",
 			CarrierID:          "THUN",
 			Address:            "Ubon Ratchathani",
-			Coords:             models.GeoPoint{Lat: 15.2448, Lng: 104.8474},
+			Coords:             hub.GeoPoint{Lat: 15.2448, Lng: 104.8474},
 			Capacity:           2000,
 			CurrentUtilization: 900,
 			Status:             "active",
@@ -127,7 +128,7 @@ func SeedHubs(db *gorm.DB) error {
 			Name:               "Buriram Hub",
 			CarrierID:          "THUN",
 			Address:            "Buriram",
-			Coords:             models.GeoPoint{Lat: 14.9951, Lng: 103.1035},
+			Coords:             hub.GeoPoint{Lat: 14.9951, Lng: 103.1035},
 			Capacity:           1800,
 			CurrentUtilization: 600,
 			Status:             "active",
@@ -135,8 +136,9 @@ func SeedHubs(db *gorm.DB) error {
 		},
 	}
 
-	for _, h := range hubs {
-		if err := tx.Create(&h).Error; err != nil {
+	repository := hub.NewGormRepository(tx)
+	for i := range hubs {
+		if err := repository.Create(context.Background(), &hubs[i]); err != nil {
 			return err
 		}
 	}

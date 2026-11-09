@@ -61,7 +61,7 @@ func Run() error {
 	}
 	defer sqlDB.Close()
 
-	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &models.Hub{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Shipment{}, &models.ShipmentEvent{}, &hub.Record{}); err != nil {
 		return fmt.Errorf("database migration failed: %w", err)
 	}
 	if err := seed.BootstrapAdmin(db, config.App.AdminName, config.App.AdminEmail, config.App.AdminPassword, config.App.AdminRoleCutover); err != nil {
