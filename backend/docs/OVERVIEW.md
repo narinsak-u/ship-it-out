@@ -22,23 +22,22 @@ Go API server for the Thun-u-der Express shipment tracking platform. Built with 
 
 ```
 backend/
-├── main.go                     # Startup, migration/seeding, dependency construction, server start
+├── cmd/server/main.go           # Server process entry point
 ├── internal/
-│   ├── server/routes.go        # Route registration; receives prebuilt handlers and auth repository
-│   ├── config/config.go        # Environment config and validation
-│   ├── database/postgres.go    # PostgreSQL connection
-│   ├── seed/                   # Admin/demo account, hubs, and shipment bootstrap
-│   ├── models/                 # GORM models and coordinate hooks
-│   ├── middleware/             # Auth, staff authorization, CORS, logging, rate limits
-│   ├── auth/                   # Handler, service, repository interface + GORM adapter
-│   ├── shipment/               # Handler, service, repository interface + GORM adapter
-│   ├── hub/                    # Handler, service, repository interface + GORM adapter
-│   ├── tracking/               # Focused public tracking handler and service
-│   ├── analytics/              # Focused analytics handler, service, repository + GORM adapter
-│   └── health/                 # Health endpoint
-├── pkg/utils/                  # Shared response and password helpers
+│   ├── bootstrap/               # Startup, dependency and route composition, health behavior, shutdown
+│   ├── platform/                # Config, database, generic middleware, and HTTP envelope utilities
+│   ├── seed/                    # Bootstrap orchestration; delegates seed writes to feature adapters
+│   ├── auth/
+│   │   ├── domain/              # User domain model
+│   │   ├── application/         # Authentication workflows
+│   │   ├── infrastructure/     # User GORM persistence and password adapter
+│   │   └── presentation/        # HTTP handlers, auth middleware, and auth rate limiter
+│   ├── shipment/                # Shipment domain, application, infrastructure, presentation
+│   ├── hub/                     # Hub domain, application, infrastructure, presentation
+│   ├── tracking/                # Public tracking application and presentation
+│   └── analytics/               # Analytics application, including region mapping
 ├── Dockerfile / docker-compose.yml
-└── docs/                       # Overview, workflows, data, and logging references
+└── docs/                        # Overview, workflows, data, and logging references
 ```
 
 ---
@@ -106,9 +105,7 @@ Hub (standalone)
 
 ### Coords Storage Pattern
 
-`GeoPoint` fields use `gorm:"-"` (not stored directly). Values are synced to flat `_lat`/`_lng` columns via GORM hooks:
-- **`BeforeSave`** — copies `Coords.Lat/Lng` into flat columns before insert/update
-- **`AfterFind`** — reconstructs `Coords` from flat columns after query
+`GeoPoint` fields are stored in flat `_lat`/`_lng` database columns. Shipment infrastructure maps them to nested API values.
 
 This gives clean JSON with nested objects while keeping normal DB columns for querying.
 
@@ -117,12 +114,13 @@ This gives clean JSON with nested objects while keeping normal DB columns for qu
 ## Architecture Notes
 
 - Feature packages keep HTTP handlers, Fiber-independent services, focused repository interfaces, and GORM adapters together.
-- `main.go` owns startup and manual dependency construction. `internal/server` only registers routes and middleware around supplied handlers.
-- Tracking and analytics use dedicated service/repository interfaces rather than shipment persistence APIs.
+- `cmd/server` delegates startup to `internal/bootstrap`, which composes feature dependencies and routes, and owns health behavior and shutdown.
+- `internal/platform` provides generic middleware and HTTP envelope utilities; auth-specific middleware and rate limiting belong to auth presentation.
+- Auth infrastructure owns the user GORM model/repository and password adapter; analytics application owns province-to-region mapping.
+- Tracking and analytics use dedicated application and repository interfaces rather than shipment persistence APIs.
 - Shipment creation, status changes, and deletion run their related database writes in transactions. PostgreSQL constraints and database-backed ID allocation protect writes across server instances.
-- Coordinate hooks preserve the nested API representation while storing flat latitude/longitude columns.
 - Staff writes require a fresh database role check; public reads, registration role assignment, cookie/JWT behavior, and route contracts remain unchanged.
-- Seed/bootstrap functions run after AutoMigrate and preserve existing data; no refactor migration is introduced.
+- Bootstrap runs seed orchestration after AutoMigrate; seed writes use feature-owned adapters and preserve existing data. No refactor migration changes API or schema behavior.
 - Middleware order: CORS → security headers → logger; auth-specific rate limiting and auth/staff checks are attached to routes.
 
 ---
@@ -146,7 +144,7 @@ docker compose up
 
 # Without Docker
 cd backend
-go run .            # requires separate Postgres
+go run ./cmd/server # requires separate Postgres
 ```
 
 ---

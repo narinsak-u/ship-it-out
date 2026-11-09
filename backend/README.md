@@ -13,28 +13,23 @@ docker compose up
 
 # Without Docker (requires separate Postgres)
 cp .env.example .env
-go run .
+go run ./cmd/server
 ```
 
 ## Directory Structure
 
 ```
 backend/
-├── main.go                    # Startup, migration/seeding, dependency construction, server start
+├── cmd/server/main.go         # Server process entry point
 ├── internal/
-│   ├── server/routes.go       # Route registration for prebuilt feature handlers
-│   ├── config/                # Environment config and validation
-│   ├── database/              # PostgreSQL connection
-│   ├── seed/                  # Admin/demo, hub, and shipment bootstrap
-│   ├── models/                # GORM models and coordinate hooks
-│   ├── middleware/            # Auth, staff checks, CORS, security, logging, rate limits
-│   ├── auth/                  # Handler, service, repository, GORM adapter
-│   ├── shipment/              # Handler, service, repository, GORM adapter, PostgreSQL tests
-│   ├── hub/                   # Handler, service, repository, GORM adapter
-│   ├── tracking/              # Focused public tracking handler and service
-│   ├── analytics/             # Handler, service, repository, GORM adapter
-│   └── health/                # Health endpoint
-├── pkg/utils/                 # Response and password helpers
+│   ├── bootstrap/             # Startup, dependency/route composition, health behavior, shutdown
+│   ├── platform/              # Config, database, generic middleware, HTTP envelope utilities
+│   ├── seed/                  # Bootstrap orchestration; feature-owned seed adapters write data
+│   ├── auth/                  # User domain, workflows, GORM/password infrastructure, presentation and auth rate limiter
+│   ├── shipment/              # Shipment domain, application, infrastructure, presentation
+│   ├── hub/                   # Hub domain, application, infrastructure, presentation
+│   ├── tracking/              # Public tracking application and presentation
+│   └── analytics/             # Analytics application (including region map) and infrastructure/presentation
 ├── Dockerfile
 ├── docker-compose.yml
 └── docs/                      # Overview, workflows, data, and logging references
@@ -82,7 +77,7 @@ docker compose down -v && docker compose up
 
 # Without Docker: connect to Postgres and truncate tables
 psql $DATABASE_URL -c "TRUNCATE hubs, shipments, shipment_events RESTART IDENTITY CASCADE;"
-go run .
+go run ./cmd/server
 ```
 
 
@@ -175,21 +170,19 @@ go tool cover -html=coverage.out          # HTML report
 
 | Package | Type | Coverage | Notes |
 |---------|------|----------|-------|
-| `pkg/utils` | Unit | 100% | Hash/response helpers |
-| `internal/config` | Unit | 100% | Env loading |
-| `internal/models` | Unit | 100% | GORM BeforeSave/AfterFind hooks |
+| `internal/platform` | Unit | — | Generic middleware and HTTP envelope utilities |
+| `internal/auth` | HTTP + mock | 74% | User persistence/password infrastructure, auth presentation and workflows |
 | `internal/tracking` | HTTP + mock | 89% | Handler + tracking service |
-| `internal/analytics` | HTTP + mock | 81% | Handler + analytics service |
-| `internal/auth` | HTTP + mock | 74% | Handler + repository |
-| `internal/middleware` | Unit | 61% | Rate limiter, JWT auth middleware |
-| `internal/shipment` | HTTP + mock | 54% | Handler + statusToEvent (100%) |
-| `internal/hub` | HTTP + mock | 49% | Handler + repository |
-| `main.go`, `internal/database`, `internal/seed` | Integration | PostgreSQL-backed startup/seed behavior |
+| `internal/analytics` | HTTP + mock | 81% | Handler + analytics service and region mapping |
+| `internal/bootstrap` | HTTP smoke | — | Route composition, health behavior, and access compatibility |
+| `internal/shipment/{domain,application,infrastructure,presentation}` | HTTP + unit + PostgreSQL | — | Domain workflows, API DTOs, GORM adapter, and transaction/ID guarantees |
+| `internal/hub/{domain,application,infrastructure,presentation}` | HTTP + mock | 49% | Layered domain, use case, GORM adapter, and handler |
+| `internal/bootstrap` | HTTP smoke | — | Route composition, health, and access compatibility |
 Shipment repository integration coverage requires an expendable PostgreSQL database. It creates a private schema and drops it on cleanup:
 
 ```bash
 export SHIPMENT_TEST_DATABASE_URL='postgres://user:pass@127.0.0.1:5432/shipments_test?sslmode=disable'
-go test ./internal/shipment -run TestGormRepositoryTransactionsAndConcurrentIDs -count=1
+go test ./internal/shipment/infrastructure -run TestGormRepositoryTransactionsAndConcurrentIDs -count=1
 ```
 
-The test verifies creation, status-update, and deletion rollback behavior, plus concurrent order/tracking ID uniqueness across separate database connections. Repository mappings and unique-constraint behavior remain covered by database schema/hooks and must be verified against PostgreSQL when running the suite.
+The test verifies coordinate mapping, creation/status/deletion rollback, and concurrent order/tracking ID uniqueness across separate database connections.

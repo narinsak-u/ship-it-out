@@ -147,7 +147,7 @@ Client → GET /api/shipments?page=1&limit=10&search=bangkok&status=in_transit
          ├─ 3. Count total matching rows
          ├─ 4. Apply OFFSET = (page-1) * limit, LIMIT = limit
          ├─ 5. ORDER BY created_at DESC
-         ├─ 6. AfterFind fires → reconstructs Coords for each shipment
+         ├─ 6. Shipment repository maps flat coordinates into domain values
          └─ 7. Return { data: [...], pagination: { page, limit, total, totalPages } } → 200
 ```
 
@@ -162,7 +162,7 @@ Client → GET /api/shipments/ORD-10245
          ├─ 1. Extract orderId from URL param
          ├─ 2. Query Shipment WHERE order_id = ?
          │     └─ If not found → 404 "shipment not found"
-         ├─ 3. AfterFind fires → reconstructs Coords
+         ├─ 3. Shipment repository maps flat coordinates into domain values
          └─ 4. Return Shipment → 200
 ```
 
@@ -190,7 +190,7 @@ Client → POST /api/shipments (staff required)
          │     pending status, 72-hour ETA, and zero progress
          ├─ 3. Repository opens a PostgreSQL transaction and takes transaction-scoped
          │     advisory lock before allocating ORD-<number> and TH<year><5 digits>
-         ├─ 4. GORM hooks map nested coordinates to flat DB columns
+         ├─ 4. Shipment repository maps nested coordinates to existing flat DB columns
          ├─ 5. Insert shipment and initial "Label Created" event in same transaction
          │     └─ Any write failure rolls back both records
          └─ 6. Return Shipment → 200
@@ -224,7 +224,7 @@ Client → PUT /api/shipments/ORD-10245 (staff required)
          │     ├─ Customer → updates Customer + Origin + CurrentCoords
          │     ├─ Receiver → updates Receiver + Destination
          │     ├─ Carrier, Weight, Items, EstimatedDelivery → direct update
-         ├─ 5. BeforeSave fires → syncs coords
+         ├─ 5. Shipment repository maps updated coordinates to flat DB columns
          ├─ 6. Save shipment
          └─ 7. Return updated Shipment → 200
 ```
@@ -302,7 +302,7 @@ Client → GET /api/track/TH202612345
          ├─ 1. Extract trackingNumber from URL param
          ├─ 2. Query Shipment by tracking_number column
          │     └─ If not found → 404
-         ├─ 3. AfterFind fires → reconstructs Coords
+         ├─ 3. Shipment repository maps flat coordinates into domain values
          ├─ 4. Query ShipmentEvents WHERE shipment_id = shipment.ID
          │     ordered by created_at asc
          └─ 5. Return { shipment, events } → 200
@@ -413,9 +413,7 @@ Client → GET /api/analytics/overview
           └─ 6. Return { total, active, delivered, by_status, by_region } → 200
 ```
 
-**Notes:**
-- `by_status` is a GROUP BY via GORM's `Select().Group().Scan()`.
-- `by_region` maps each shipment's destination province to one of 6 Thai regions (Central, East, North, West, North-east, South) via `internal/data/regions.go`.
+- `by_region` maps each shipment's destination province to one of 6 Thai regions (Central, East, North, West, North-east, South) in the analytics application.
 
 **Response shape:**
 ```json
@@ -473,9 +471,9 @@ Client → GET /api/analytics/timeseries
 
 ---
 
-## 6. Rate Limiting Middleware
+## 6. Auth Rate Limiting
 
-**Purpose:** Prevent brute-force attacks on authentication endpoints using an in-memory sliding-window rate limiter keyed by client IP.
+**Purpose:** Prevent brute-force attacks on authentication endpoints using an in-memory sliding-window rate limiter keyed by client IP. The limiter belongs to auth presentation.
 
 **Configuration:**
 
@@ -507,16 +505,7 @@ Request arrives at login or register
 
 ### Entry Point
 
-`main.go` after `AutoMigrate`:
-
-```go
-if err := seed.SeedHubs(database.DB); err != nil {
-	log.Fatal().Err(err).Msg("hub seed failed")
-}
-if err := seed.SeedShipments(database.DB); err != nil {
-	log.Fatal().Err(err).Msg("shipment seed failed")
-}
-```
+Bootstrap runs migrations and coordinates seed workflows. Seed writes go through feature-owned adapters: the hub adapter writes hubs, and the shipment adapter writes shipments and their events. Existing seed behavior and data are preserved.
 
 ### 7.1 SeedHubs
 
@@ -533,4 +522,4 @@ Inserts 6 hubs in Eastern Thailand (idempotent — skips if rows exist):
 
 ### 7.2 SeedShipments
 
-Inserts 12 shipments (ORD-10245 through ORD-10260) with full contact info for customer/receiver (Thai names and addresses), tracking numbers in TH2026xxxxx format, and 1-6 tracking events each spanning a plausible status lifecycle. Idempotent — skips if rows exist.
+The feature-owned shipment infrastructure adapter inserts 20 shipments (ORD-10245 through ORD-10264) with full contact info for customer/receiver (Thai names and addresses), tracking numbers, and tracking events spanning plausible status lifecycles. Idempotent — skips if rows exist.

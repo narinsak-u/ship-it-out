@@ -22,7 +22,7 @@ Set server-only `API_BASE_URL` to the Go API origin without `/api`. Browser API 
 
 | Command | Purpose |
 | --- | --- |
-| `go run .` | Start API server (needs Postgres) |
+| `go run ./cmd/server` | Start API server (needs Postgres) |
 | `docker compose up -d` | Start Postgres 16 |
 | `go build ./...` | Compile packages |
 | `go vet ./...` | Static analysis |
@@ -33,7 +33,7 @@ Backend listens on `http://localhost:8080`; frontend listens on `http://localhos
 
 ## Backend conventions
 
-- Fiber handlers return `pkg/utils` response helpers.
+- Fiber handlers use `internal/platform/http` response helpers.
 - All API routes use `/api/` and response format `{"success":true,"data":...}` or `{"success":false,"error":"..."}`.
 - JWT sessions use HTTP-only cookies; Go is authoritative for roles and protected writes.
 - Explicitly handle errors; use pointer request fields for partial updates.
@@ -46,6 +46,7 @@ Backend listens on `http://localhost:8080`; frontend listens on `http://localhos
 - `backend/docs/WORKFLOW.md`: request and response flows.
 - `docs/adr/0001-nextjs-frontend-api-origin.md`: deployment and browser API origin.
 - `docs/adr/0002-staff-only-writes.md`: authorization and production cutover.
+
 
 ## Agent skills
 
