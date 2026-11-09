@@ -1,5 +1,5 @@
-import { mapShipments } from "./mappers";
-import type { ShipmentDTO, ShipmentPage } from "./types";
+import { mapShipment, mapShipments } from "./mappers";
+import type { Shipment, ShipmentDTO, ShipmentPage } from "./types";
 
 interface Envelope<T> {
   success: boolean;
@@ -23,6 +23,34 @@ export async function getManifestPage(
     throw new Error(result.error || `Shipment API returned ${response.status}`);
   }
   return { data: mapShipments(result.data), pagination: result.pagination! };
+}
+
+export async function getActiveShipments(): Promise<Shipment[]> {
+  const response = await fetch("/api/shipments?limit=-1&exclude_status=delivered", {
+    cache: "no-store",
+  });
+  const result = (await response.json()) as Envelope<ShipmentDTO[]>;
+  if (!response.ok || !result.success) {
+    throw new Error(result.error || `Shipment API returned ${response.status}`);
+  }
+  return mapShipments(result.data);
+}
+
+export async function updateShipmentStatus(
+  id: string,
+  status: Shipment["status"],
+  hubId: string,
+): Promise<Shipment> {
+  const response = await fetch(`/api/shipments/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ status, ...(hubId ? { hubId } : {}) }),
+  });
+  const result = (await response.json()) as Envelope<ShipmentDTO>;
+  if (!response.ok || !result.success) {
+    throw new Error(result.error || `Request failed (${response.status})`);
+  }
+  return mapShipment(result.data);
 }
 
 export async function deleteShipment(id: string): Promise<void> {

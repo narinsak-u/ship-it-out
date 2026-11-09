@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { mapShipment } from "@/features/shipments/mappers";
-import { statusLabels, type Shipment, type ShipmentDTO, type ShipmentStatus } from "@/features/shipments/types";
+import {
+  getActiveShipments,
+  updateShipmentStatus,
+} from "@/features/shipments/browser-api";
+import { statusLabels, type Shipment, type ShipmentStatus } from "@/features/shipments/types";
 import type { Hub } from "@/features/hubs/types";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { DeliveryMap } from "@/features/operations/DeliveryMap";
@@ -29,14 +32,6 @@ const hubRequiredStatuses: Record<ShipmentStatus, boolean> = {
   delivered: false,
 };
 
-async function fetchDeliveries(): Promise<Shipment[]> {
-  const response = await fetch("/api/shipments?limit=-1&exclude_status=delivered", {
-    cache: "no-store",
-  });
-  const result = await response.json();
-  return (result.data as ShipmentDTO[]).map(mapShipment);
-}
-
 export function DeliveriesPanel({
   initialDeliveries,
   hubs,
@@ -58,7 +53,7 @@ export function DeliveriesPanel({
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      setDeliveries(await fetchDeliveries());
+      setDeliveries(await getActiveShipments());
       setUpdatedAt(Date.now());
       setError("");
     } catch {
@@ -105,14 +100,7 @@ export function DeliveriesPanel({
     }
     setFeedback("");
     try {
-      const response = await fetch(`/api/shipments/${encodeURIComponent(order.id)}/status`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status, ...(hubId ? { hubId } : {}) }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
-      const updated = mapShipment(result.data as ShipmentDTO);
+      const updated = await updateShipmentStatus(order.id, status, hubId);
       setDeliveries((current) =>
         updated.status === "delivered"
           ? current.filter((delivery) => delivery.id !== updated.id)

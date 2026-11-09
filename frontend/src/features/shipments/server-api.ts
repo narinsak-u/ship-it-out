@@ -28,6 +28,10 @@ export async function getShipments(path: string): Promise<Shipment[]> {
   return mapShipments(result.data);
 }
 
+export async function getActiveShipments(): Promise<Shipment[]> {
+  return getShipments("shipments?limit=-1&exclude_status=delivered");
+}
+
 export async function getShipment(id: string): Promise<Shipment | null> {
   const response = await fetch(
     `${getApiOrigin()}/api/shipments/${encodeURIComponent(id)}`,

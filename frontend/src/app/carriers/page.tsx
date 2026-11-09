@@ -8,13 +8,9 @@ import { HubsPanel } from "@/features/hubs/HubsPanel";
 import type { Hub } from "@/features/hubs/types";
 import { getHubs } from "@/features/hubs/server-api";
 import type { Shipment } from "@/features/shipments/types";
-import { getShipments } from "@/features/shipments/server-api";
+import { getActiveShipments } from "@/features/shipments/server-api";
 
 export const dynamic = "force-dynamic";
-
-async function getActiveDeliveries(): Promise<Shipment[]> {
-  return getShipments("shipments?limit=-1&exclude_status=delivered");
-}
 
 export default async function CarriersPage({
   searchParams,
@@ -44,7 +40,7 @@ export default async function CarriersPage({
     }
   } else {
     try {
-      [deliveries, hubs] = await Promise.all([getActiveDeliveries(), getHubs()]);
+      [deliveries, hubs] = await Promise.all([getActiveShipments(), getHubs()]);
     } catch {
       deliveriesError = true;
     }
