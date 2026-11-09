@@ -17,6 +17,7 @@ import (
 
 type Hub = domain.Hub
 type GeoPoint = domain.GeoPoint
+
 var NewService = application.NewService
 var ErrNotFound = application.ErrNotFound
 
@@ -119,6 +120,12 @@ func TestHubCreate_Success(t *testing.T) {
 	assert.Contains(t, data, "coords")
 	assert.NotContains(t, data, "lat")
 	assert.NotContains(t, data, "lng")
+	var coordsJSON map[string]json.RawMessage
+	assert.NoError(t, json.Unmarshal(data["coords"], &coordsJSON))
+	assert.Contains(t, coordsJSON, "lat")
+	assert.Contains(t, coordsJSON, "lng")
+	assert.NotContains(t, coordsJSON, "Lat")
+	assert.NotContains(t, coordsJSON, "Lng")
 	var coords GeoPoint
 	assert.NoError(t, json.Unmarshal(data["coords"], &coords))
 	assert.Equal(t, (GeoPoint{Lat: 10, Lng: 20}), coords)
