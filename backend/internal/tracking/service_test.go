@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/narinsak-u/backend/internal/models"
-	"github.com/narinsak-u/backend/internal/shipment"
+	shipmentapplication "github.com/narinsak-u/backend/internal/shipment/application"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,7 +36,7 @@ func TestServiceTrack(t *testing.T) {
 }
 
 func TestServiceTrack_NotFound(t *testing.T) {
-	_, err := NewService(fakeShipmentQuery{findErr: shipment.ErrNotFound}).Track(context.Background(), "TH-7")
+	_, err := NewService(fakeShipmentQuery{findErr: shipmentapplication.ErrNotFound}).Track(context.Background(), "TH-7")
 	assert.ErrorIs(t, err, ErrShipmentNotFound)
 }
 
